@@ -4,14 +4,35 @@
   "description": "JavaScript library for reading Glossarist GCR packages and v2 concept data",
   "type": "module",
   "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "src"
+  ],
   "exports": {
-    ".": "./src/index.js",
-    "./gcr": "./src/gcr-reader.js",
-    "./concept": "./src/concept-reader.js"
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./gcr": {
+      "types": "./src/gcr-reader.d.ts",
+      "import": "./src/gcr-reader.js",
+      "default": "./src/gcr-reader.js"
+    },
+    "./concept": {
+      "types": "./src/concept-reader.d.ts",
+      "import": "./src/concept-reader.js",
+      "default": "./src/concept-reader.js"
+    }
   },
   "scripts": {
+    "lint": "eslint src/ test/",
+    "pretest": "node test/fixtures/build-fixtures.js",
     "test": "node --test test/*.test.js",
-    "test:verbose": "node --test --test-reporter spec test/*.test.js"
+    "test:verbose": "node --test --test-reporter spec test/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage test/*.test.js",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "glossarist",
@@ -24,10 +45,25 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/glossarist/glossarist-js"
+    "url": "git+https://github.com/glossarist/glossarist-js.git"
+  },
+  "homepage": "https://github.com/glossarist/glossarist-js#readme",
+  "bugs": {
+    "url": "https://github.com/glossarist/glossarist-js/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "js-yaml": "^4.1.0",
     "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.3.0",
+    "globals": "^17.6.0"
   }
 }

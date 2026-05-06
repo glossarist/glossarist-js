@@ -2,23 +2,34 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import { parseConceptYaml, naturalSort } from './gcr-reader.js';
+import { InvalidInputError } from './errors.js';
+
+function assertDir(dir, fnName) {
+  if (typeof dir !== 'string' || dir.trim() === '') {
+    throw new InvalidInputError(`${fnName} requires a directory path`, 'non-empty string');
+  }
+}
 
 /**
  * Read all v2 glossarist concept YAML files from a directory.
- * Handles both canonical format (termid + language keys) and
- * managed concept format (data.identifier + data.localized_concepts).
+ * @param {string} dir - path to directory containing concept YAML files
+ * @returns {import('./gcr-reader.js').Concept[]}
+ * @throws {InvalidInputError} if dir is missing or empty
  *
- * Returns an array of normalized concept objects.
+ * @example
+ * const concepts = readConcepts('./geolexica-v2/');
+ * console.log(concepts[0].localizations.eng.terms[0].designation);
  */
 export function readConcepts(dir) {
+  assertDir(dir, 'readConcepts');
   const files = fs.readdirSync(dir)
     .filter(f => f.endsWith('.yaml') && f !== 'register.yaml')
-    .sort(naturalSortKey);
+    .sort(naturalSort);
 
   const concepts = [];
   for (const file of files) {
     const raw = fs.readFileSync(path.join(dir, file), 'utf8');
-    const concept = parseConceptYaml(raw);
+    const concept = parseConceptYaml(raw, file);
     if (concept && concept.termid) {
       concepts.push(concept);
     }
@@ -28,18 +39,38 @@ export function readConcepts(dir) {
 
 /**
  * Read a single concept file by ID from a directory.
+ * @param {string} dir - path to directory containing concept YAML files
+ * @param {string} id - concept identifier (filename without .yaml)
+ * @returns {import('./gcr-reader.js').Concept | null}
+ * @throws {InvalidInputError} if dir or id is missing or empty
+ *
+ * @example
+ * const concept = readConcept('./geolexica-v2/', '3.1.1.1');
+ * if (concept) console.log(concept.termid);
  */
 export function readConcept(dir, id) {
+  assertDir(dir, 'readConcept');
+  if (typeof id !== 'string' || id.trim() === '') {
+    throw new InvalidInputError('readConcept requires a concept ID', 'non-empty string');
+  }
   const filePath = path.join(dir, `${id}.yaml`);
   if (!fs.existsSync(filePath)) return null;
   const raw = fs.readFileSync(filePath, 'utf8');
-  return parseConceptYaml(raw);
+  return parseConceptYaml(raw, `${id}.yaml`);
 }
 
 /**
- * List all concept IDs in a directory.
+ * List all concept IDs in a directory, optionally filtered by prefix.
+ * @param {string} dir - path to directory
+ * @param {string} [prefix] - optional prefix filter
+ * @returns {string[]}
+ * @throws {InvalidInputError} if dir is missing or empty
+ *
+ * @example
+ * const ids = listConceptIds('./geolexica-v2/', '3.1.'); // ['3.1.1.1', '3.1.1.2', ...]
  */
 export function listConceptIds(dir, prefix) {
+  assertDir(dir, 'listConceptIds');
   let files = fs.readdirSync(dir).filter(f => f.endsWith('.yaml') && f !== 'register.yaml');
   if (prefix) {
     files = files.filter(f => f.startsWith(prefix));
@@ -51,27 +82,13 @@ export function listConceptIds(dir, prefix) {
 
 /**
  * Read register.yaml from a dataset directory (if present).
+ * @param {string} dir - path to directory
+ * @returns {Record<string, unknown> | null}
+ * @throws {InvalidInputError} if dir is missing or empty
  */
 export function readRegister(dir) {
+  assertDir(dir, 'readRegister');
   const p = path.join(dir, 'register.yaml');
   if (!fs.existsSync(p)) return null;
   return yaml.load(fs.readFileSync(p, 'utf8'));
-}
-
-function naturalSortKey(a, b) {
-  const re = /(\d+|\D+)/g;
-  const pa = a.match(re) || [];
-  const pb = b.match(re) || [];
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const na = pa[i] || '';
-    const nb = pb[i] || '';
-    if (/^\d+$/.test(na) && /^\d+$/.test(nb)) {
-      const diff = parseInt(na, 10) - parseInt(nb, 10);
-      if (diff !== 0) return diff;
-    } else {
-      const cmp = na.localeCompare(nb);
-      if (cmp !== 0) return cmp;
-    }
-  }
-  return 0;
 }

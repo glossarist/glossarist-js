@@ -1,11 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { loadGcr } from '../src/gcr-reader.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // These tests use real GCR packages from /tmp if available
 const ISOTC204 = '/tmp/isotc204-release.gcr';

@@ -39,6 +39,21 @@ describe('Citation', () => {
     assert.equal(c.source, null);
   });
 
+  it('isStructured returns true for object source', () => {
+    const c = new Citation({ source: { ref: 'ISO 9000' } });
+    assert.equal(c.isStructured, true);
+  });
+
+  it('isStructured returns false for string source', () => {
+    const c = new Citation({ source: 'ISO 9000' });
+    assert.equal(c.isStructured, false);
+  });
+
+  it('isStructured returns false for null source', () => {
+    const c = new Citation();
+    assert.equal(c.isStructured, false);
+  });
+
   it('round-trips via toJSON/fromJSON', () => {
     const c = new Citation({ source: { ref: 'ISO 9000' }, clause: '3.1' });
     const c2 = Citation.fromJSON(c.toJSON());

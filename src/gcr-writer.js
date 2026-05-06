@@ -4,7 +4,7 @@ import { InvalidInputError } from './errors.js';
 
 export class GcrWriter {
   static async createBuffer(options) {
-    if (!options || !Array.isArray(options.concepts)) {
+    if (!options || !options.concepts || typeof options.concepts[Symbol.iterator] !== 'function') {
       throw new InvalidInputError(
         'GcrWriter requires { concepts: Concept[] }',
         'object with concepts array',

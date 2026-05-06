@@ -11,6 +11,23 @@ export class ValidationRule {
   validate(value: any, path: string): ValidationError[];
 }
 
+export class ConceptValidator {
+  addRule(rule: ValidationRule): this;
+  validate(concept: any): {
+    valid: boolean;
+    errors: ValidationError[];
+    warnings: ValidationError[];
+  };
+}
+
+export class RegisterValidator {
+  validate(register: any): {
+    valid: boolean;
+    errors: ValidationError[];
+    warnings: ValidationError[];
+  };
+}
+
 export function validateConcept(concept: any): {
   valid: boolean;
   errors: ValidationError[];
@@ -23,4 +40,4 @@ export function validateRegister(register: any): {
   warnings: ValidationError[];
 };
 
-export function createConceptValidator(): import('./concept-validator').ConceptValidator;
+export function createConceptValidator(): ConceptValidator;

@@ -4,7 +4,7 @@
 [![npm version](https://img.shields.io/npm/v/glossarist.svg)](https://www.npmjs.com/package/glossarist)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-JavaScript library for reading [Glossarist](https://github.com/glossarist) GCR packages (ZIP archives) and v2 glossarist concept data (YAML files). Works in Node.js and browsers.
+JavaScript SDK for reading and writing [Glossarist](https://github.com/glossarist) GCR packages — manages terminology concepts with rich domain models, bidirectional YAML serialization, validation, and cross-reference resolution.
 
 ## Install
 
@@ -12,105 +12,213 @@ JavaScript library for reading [Glossarist](https://github.com/glossarist) GCR p
 npm install glossarist
 ```
 
-Requires Node.js 18+.
+Requires Node.js 20+.
 
 ## Usage
 
-### Reading a GCR package
+### Read a GCR package
 
 ```js
 import { loadGcr } from 'glossarist';
-import fs from 'fs';
 
-const buf = fs.readFileSync('my-dataset.gcr');
-const pkg = await loadGcr(buf);
-
-// Metadata
+const pkg = await loadGcr(fs.readFileSync('my-dataset.gcr'));
 const meta = await pkg.metadata();
-console.log(meta.shortname, meta.version, meta.concept_count);
 
-// List concept IDs
-const ids = await pkg.conceptIds();
-
-// Read a specific concept
-const concept = await pkg.concept('3.1.1.1');
-console.log(concept.termid);
-console.log(concept.localizations.eng.terms[0].designation);
-
-// Iterate all concepts (streaming)
+// Stream concepts (memory-efficient for large datasets)
 await pkg.eachConcept((concept) => {
-  console.log(concept.termid);
+  console.log(concept.id, concept.primaryDesignation('eng'));
 });
 ```
 
-`loadGcr` accepts `Buffer`, `ArrayBuffer`, `Uint8Array`, `Blob`, or a base64-encoded string.
-
-### Reading concept YAML files from a directory
+### Read from a directory
 
 ```js
-import { readConcepts, readConcept, listConceptIds } from 'glossarist';
+import { readConcepts, readRegister } from 'glossarist';
 
-// Read all concepts
 const concepts = readConcepts('./geolexica-v2/');
-console.log(`Loaded ${concepts.length} concepts`);
-
-// Read a single concept by ID
-const concept = readConcept('./geolexica-v2/', '3.1.1.1');
-
-// List IDs with optional prefix filter
-const ids = listConceptIds('./geolexica-v2/', '3.1.');
+const register = readRegister('./geolexica-v2/');
 ```
 
-### Browser usage
-
-The GCR reader works in browsers via jszip. The concept directory reader requires Node.js `fs`.
-
-```html
-<script type="module">
-  import { loadGcr } from 'glossarist/gcr';
-
-  const response = await fetch('/datasets/isotc204.gcr');
-  const buf = await response.arrayBuffer();
-  const pkg = await loadGcr(buf);
-  const meta = await pkg.metadata();
-</script>
-```
-
-## Concept format
-
-Glossarist-js normalizes both storage formats into a consistent structure:
+### Write a GCR package
 
 ```js
-{
-  termid: '3.1.1.1',           // concept identifier
-  term: 'entity',               // primary term (canonical format only)
-  localizations: {
-    eng: {
-      terms: [{ type: 'expression', designation: 'entity', normative_status: 'preferred' }],
-      definition: [{ content: 'concrete or abstract thing...' }],
-      notes: [],
-      examples: [],
-      sources: [{ type: 'authoritative', origin: { ref: 'ISO/TS 14812:2022' } }],
-      entry_status: 'valid',
-    },
-    fra: { ... },
-  },
-  raw: { ... },                 // original parsed YAML
+import { createGcr, ManagedConceptCollection, conceptParser } from 'glossarist';
+
+const concept = conceptParser.parse(`
+  termid: "3.1.1.1"
+  eng:
+    terms:
+      - type: expression
+        designation: entity
+    definition:
+      - content: A concrete or abstract thing.
+`);
+
+const buf = await createGcr([concept], { shortname: 'test' });
+fs.writeFileSync('out.gcr', buf);
+```
+
+### Domain model
+
+Every domain entity is a class instance with `toJSON()`, `fromJSON()`, `equals()`, and `clone()`:
+
+```js
+import { Concept, LocalizedConcept, Expression, DetailedDefinition } from 'glossarist/models';
+
+const lc = new LocalizedConcept({
+  language_code: 'eng',
+  terms: [{ type: 'expression', designation: 'entity', normative_status: 'preferred' }],
+  definition: [{ content: 'A concrete or abstract thing.' }],
+  entry_status: 'valid',
+});
+
+const concept = new Concept({
+  id: '3.1.1.1',
+  localizations: { eng: lc.toJSON() },
+});
+
+console.log(concept.primaryDesignation('eng')); // 'entity'
+console.log(concept.definition('eng'));         // 'A concrete or abstract thing.'
+
+// Round-trip invariant
+const restored = Concept.fromJSON(concept.toJSON());
+console.log(concept.equals(restored)); // true
+```
+
+### Validation
+
+```js
+import { validateConcept, validateRegister, createConceptValidator, ValidationRule } from 'glossarist';
+
+// Built-in rules: language codes, designation types, entry status
+const result = validateConcept(concept);
+if (!result.valid) {
+  for (const err of result.errors) {
+    console.log(`[${err.severity}] ${err.path}: ${err.message}`);
+  }
+}
+
+// Custom rules
+class NoDuplicateTermsRule extends ValidationRule {
+  constructor() { super('no-duplicate-terms', 'warning'); }
+  validate(value, path) {
+    // check for duplicate designations...
+  }
+}
+
+const validator = createConceptValidator().addRule(new NoDuplicateTermsRule());
+validator.validate(concept);
+
+// Register validation
+validateRegister({ schema_version: '1', shortname: 'my-dataset' });
+```
+
+### UUID generation
+
+Deterministic UUID v5 matching the Ruby glossarist gem:
+
+```js
+import { conceptUuid, localizedConceptUuid } from 'glossarist';
+
+conceptUuid('3.1.1.1');                    // → UUID v5 (stable across runs)
+localizedConceptUuid('3.1.1.1', 'eng');   // → different UUID v5
+```
+
+### Reference resolution
+
+Extract and resolve cross-references between concepts:
+
+```js
+import { referenceResolver } from 'glossarist';
+import { ConceptCollection } from 'glossarist';
+
+const collection = new ConceptCollection(allConcepts);
+
+// Find all references in a concept
+const refs = referenceResolver.extractReferences(concept);
+
+// Resolve against a collection
+const resolved = referenceResolver.resolveAll(concept, collection);
+for (const [target, resolvedConcept] of resolved) {
+  if (!resolvedConcept) console.warn(`Broken reference: ${target}`);
 }
 ```
 
-Language codes are discovered dynamically from the YAML keys — any ISO 639-3 code works without code changes.
+### Managed collection lifecycle
 
-### Supported formats
+```js
+import { ManagedConceptCollection, conceptParser } from 'glossarist';
 
-| Format | Structure | Used by |
-|--------|-----------|---------|
-| **Canonical** | Single YAML document with `termid` and language keys (`eng:`, `fra:`) | IEV (iec-electropedia) |
-| **Managed concept** | Multi-document YAML: first doc has `data.identifier` + `data.localized_concepts`, subsequent docs have `data.language_code` | isotc204, isotc211, osgeo |
+const mcc = new ManagedConceptCollection();
+
+// Load from GCR
+await mcc.loadFromGcr(fs.readFileSync('dataset.gcr'));
+
+// Load from directory
+mcc.loadFromDirectory('./concepts/');
+
+// Add or replace a concept
+mcc.add(newConcept);
+
+// Save back
+mcc.saveToDirectory('./out/');
+const buf = await mcc.saveToGcr({ metadata: { shortname: 'test' } });
+```
+
+### V1 format migration
+
+```js
+import { V1Reader, migrateV1ToV2 } from 'glossarist';
+
+if (V1Reader.isV1Directory('./concepts-v1/')) {
+  const concepts = V1Reader.readAll('./concepts-v1/');
+  await migrateV1ToV2('./concepts-v1/', './concepts-v2/');
+}
+```
+
+### Concept serialization
+
+Serialize to canonical (single-doc) or managed (multi-doc) format:
+
+```js
+import { conceptSerializer } from 'glossarist';
+
+conceptSerializer.toCanonicalYaml(concept);   // single YAML doc with termid + lang keys
+conceptSerializer.toManagedYaml(concept);   // multi-doc YAML with data.identifier
+conceptSerializer.toYaml(concept);          // auto-detect: uses term for canonical, id for managed
+conceptSerializer.toRegisterYaml(register); // register.yaml format
+```
+
+## Sub-path exports
+
+```js
+import 'glossarist';          // everything
+import 'glossarist/gcr';     // browser-friendly GCR reader (no fs)
+import 'glossarist/concept';  // Node.js filesystem reader
+import 'glossarist/models';   // domain model classes
+import 'glossarist/validators'; // validation framework
+```
+
+## Architecture
+
+```
+Public API (index.js)
+├── Domain models     → Concept, LocalizedConcept, Designation (Expression, Symbol, ...),
+│                       Citation, ConceptSource, RelatedConcept, DetailedDefinition, NonVerbRep
+├── Parsing           → ConceptParser (canonical + managed format detection)
+├── Serialization     → ConceptSerializer (canonical + managed YAML output)
+├── I/O               → loadGcr, readConcepts, createGcr, writeConcepts
+├── Collections       → ConceptCollection (Proxy-based, queryable), ManagedConceptCollection
+├── Validation        → ConceptValidator, RegisterValidator, ValidationRule (pluggable)
+├── Utilities         → conceptUuid, referenceResolver, V1Reader
+└── Errors            → GlossaristError, InvalidInputError, YamlParseError
+```
+
+Models are pure — no I/O, serialization, or filesystem dependencies. Serialization formats are pluggable. Validation rules are pluggable.
 
 ## Error handling
 
-All public functions validate inputs and throw descriptive errors with context:
+All public functions validate inputs and throw typed errors:
 
 ```js
 import { InvalidInputError, YamlParseError } from 'glossarist';
@@ -119,59 +227,25 @@ try {
   await pkg.concept('3.1.1.1');
 } catch (err) {
   if (err instanceof YamlParseError) {
-    // err.message: "Failed to parse YAML for 3.1.1.1: ..."
-    // err.cause: the original YAML parse error
+    // Malformed YAML — err.cause chains the original error
+    // err.message includes the concept ID for easy location
   } else if (err instanceof InvalidInputError) {
-    // Invalid input (null, empty string, wrong type)
+    // Null, empty, or wrong-type arguments
   }
 }
 ```
-
-Errors include the concept ID or filename in their message, making it easy to locate failures in large datasets.
-
-- **`GlossaristError`** — base class for all library errors
-- **`InvalidInputError`** — null, undefined, empty, or wrong-type arguments
-- **`YamlParseError`** — malformed YAML with `cause` chaining the original error
 
 ## TypeScript
 
 TypeScript declarations are included. No `@types/` package needed.
 
 ```ts
-import { loadGcr, readConcepts, type Concept, type GcrMetadata } from 'glossarist';
+import { loadGcr, type Concept, type GcrMetadata } from 'glossarist';
+import { Concept, LocalizedConcept, Designation } from 'glossarist/models';
 
 const pkg = await loadGcr(buffer);
 const meta: GcrMetadata | null = await pkg.metadata();
 ```
-
-## API
-
-### GCR Package (`glossarist/gcr`)
-
-- `loadGcr(input)` — Load a GCR ZIP from Buffer/ArrayBuffer/Uint8Array/Blob/base64 string. Returns `GcrPackage`.
-- `GcrPackage#metadata()` — Parse `metadata.yaml`.
-- `GcrPackage#register()` — Parse optional `register.yaml`.
-- `GcrPackage#conceptIds()` — Array of concept IDs (natural-sorted).
-- `GcrPackage#concept(id)` — Read and normalize a single concept.
-- `GcrPackage#eachConcept(callback)` — Stream all concepts.
-- `GcrPackage#allConcepts()` — Load all concepts into an array.
-- `parseConceptYaml(raw, context?)` — Parse raw YAML string into normalized concept object. `context` is an optional concept ID or filename for error messages.
-- `naturalSort(a, b)` — Natural sort comparator for concept IDs.
-
-### Concept Directory Reader (`glossarist/concept`)
-
-Node.js only (uses `fs`).
-
-- `readConcepts(dir)` — Read all concept YAML files from a directory.
-- `readConcept(dir, id)` — Read a single concept by ID.
-- `listConceptIds(dir, prefix?)` — List concept IDs, optionally filtered by prefix.
-- `readRegister(dir)` — Read `register.yaml` if present.
-
-### Errors
-
-- `GlossaristError` — base error class
-- `InvalidInputError` — bad input arguments
-- `YamlParseError` — YAML parse failures (has `cause`, includes concept context)
 
 ## Development
 
@@ -181,8 +255,6 @@ npm test                # regenerate fixtures + run all tests
 npm run lint            # lint src/ and test/
 npm run test:coverage   # run with coverage report
 ```
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for full guidelines.
 
 ## License
 

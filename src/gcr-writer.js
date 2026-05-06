@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { conceptSerializer } from './concept-serializer.js';
 import { InvalidInputError } from './errors.js';
+import { compiledPath, isKnownFormat } from './compiled-format.js';
 
 export class GcrWriter {
   static async createBuffer(options) {
@@ -29,7 +30,23 @@ export class GcrWriter {
       zip.file(`concepts/${concept.id}.yaml`, y);
     }
 
+    if (options.compiledFormats) {
+      GcrWriter._writeCompiledFormats(zip, options.compiledFormats);
+    }
+
     return zip.generateAsync({ type: 'uint8array' });
+  }
+
+  static _writeCompiledFormats(zip, compiledFormats) {
+    for (const [format, entries] of Object.entries(compiledFormats)) {
+      if (!isKnownFormat(format)) {
+        throw new RangeError(`Unknown compiled format: ${format}`);
+      }
+      const map = entries instanceof Map ? entries : new Map(Object.entries(entries));
+      for (const [id, content] of map) {
+        zip.file(compiledPath(format, id), content);
+      }
+    }
   }
 }
 

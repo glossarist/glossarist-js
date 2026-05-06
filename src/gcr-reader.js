@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import yaml from 'js-yaml';
 import { conceptParser } from './concept-parser.js';
 import { InvalidInputError } from './errors.js';
+import { COMPILED_EXTENSIONS, parseCompiledPath, compiledPath } from './compiled-format.js';
 
 const BASE64_RE = /^[A-Za-z0-9+/]{100,}={0,2}$/;
 
@@ -147,6 +148,106 @@ export class GcrPackage {
       if (c) concepts.push(c);
     }
     return concepts;
+  }
+
+  // --- Compiled / machine formats (TBX, JSON-LD, Turtle, JSONL) ---
+
+  /**
+   * List compiled format directories present in this package.
+   * Only returns formats whose `compiled/{format}/` directory contains at least one file.
+   * @returns {Promise<string[]>}
+   */
+  async compiledFormats() {
+    const seen = new Set();
+    this._zip.forEach((relativePath, entry) => {
+      if (!entry.dir) {
+        const parsed = parseCompiledPath(relativePath);
+        if (parsed) seen.add(parsed.format);
+      }
+    });
+    return COMPILED_EXTENSIONS.keys
+      ? [...COMPILED_EXTENSIONS.keys()].filter((f) => seen.has(f))
+      : [...seen];
+  }
+
+  /**
+   * List entry IDs for a given compiled format.
+   * @param {string} format - e.g. 'tbx', 'jsonld', 'turtle', 'jsonl'
+   * @returns {Promise<string[]>}
+   */
+  async compiledFormatIds(format) {
+    const prefix = `compiled/${format}/`;
+    const ids = [];
+    this._zip.forEach((relativePath, entry) => {
+      if (!entry.dir && relativePath.startsWith(prefix)) {
+        const parsed = parseCompiledPath(relativePath);
+        if (parsed && parsed.format === format) ids.push(parsed.id);
+      }
+    });
+    return ids.sort(naturalSort);
+  }
+
+  /**
+   * Check whether a compiled format is present.
+   * @param {string} format
+   * @returns {Promise<boolean>}
+   */
+  async hasCompiledFormat(format) {
+    const prefix = `compiled/${format}/`;
+    let found = false;
+    this._zip.forEach((relativePath, entry) => {
+      if (!found && !entry.dir && relativePath.startsWith(prefix)) {
+        found = true;
+      }
+    });
+    return found;
+  }
+
+  /**
+   * Read a single compiled-format file as a string.
+   * @param {string} format - e.g. 'jsonld'
+   * @param {string} id - concept ID or document name (e.g. '3.1.1.1', 'glossary')
+   * @returns {Promise<string | null>} null if the file doesn't exist
+   */
+  async compiledFile(format, id) {
+    return this._readText(compiledPath(format, id));
+  }
+
+  /**
+   * Read a single compiled-format file as a Uint8Array (for binary content).
+   * @param {string} format
+   * @param {string} id
+   * @returns {Promise<Uint8Array | null>}
+   */
+  async compiledFileBuffer(format, id) {
+    const entry = this._zip.file(compiledPath(format, id));
+    if (!entry) return null;
+    return entry.async('uint8array');
+  }
+
+  /**
+   * Iterate all entries for a compiled format.
+   * @param {string} format
+   * @param {(id: string, content: string) => void | Promise<void>} callback
+   * @returns {Promise<void>}
+   */
+  async eachCompiledFile(format, callback) {
+    const ids = await this.compiledFormatIds(format);
+    for (const id of ids) {
+      const content = await this.compiledFile(format, id);
+      if (content !== null) await callback(id, content);
+    }
+  }
+
+  /**
+   * Load all entries for a compiled format into a Map (id → content).
+   * @param {string} format
+   * @returns {Promise<Map<string, string>>}
+   */
+  async allCompiledFiles(format) {
+    const map = new Map();
+    await this.eachCompiledFile(format, (id, content) => { map.set(id, content); });
+    return map;
   }
 
   /** @private @param {string} filePath @returns {Promise<string | null>} */

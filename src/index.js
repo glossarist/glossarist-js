@@ -11,6 +11,15 @@ export { V1Reader, migrateV1ToV2 } from './v1-reader.js';
 export { GlossaristError, InvalidInputError, YamlParseError } from './errors.js';
 
 export {
+  COMPILED_EXTENSIONS,
+  COMPILED_FORMATS,
+  isKnownFormat,
+  compiledFilename,
+  compiledPath,
+  parseCompiledPath,
+} from './compiled-format.js';
+
+export {
   GlossaristModel,
   Concept, LocalizedConcept,
   Designation, Expression, Abbreviation, Symbol, GraphicalSymbol,

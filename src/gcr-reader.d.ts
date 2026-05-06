@@ -68,6 +68,23 @@ export class GcrPackage {
   eachConcept(callback: (concept: Concept, index: number) => void | Promise<void>): Promise<void>;
   /** Load all concepts into an array. */
   allConcepts(): Promise<Concept[]>;
+
+  // Compiled / machine formats (TBX, JSON-LD, Turtle, JSONL)
+
+  /** List compiled format directories present in this package. */
+  compiledFormats(): Promise<string[]>;
+  /** List entry IDs for a given compiled format. */
+  compiledFormatIds(format: string): Promise<string[]>;
+  /** Check whether a compiled format is present. */
+  hasCompiledFormat(format: string): Promise<boolean>;
+  /** Read a single compiled-format file as a string. */
+  compiledFile(format: string, id: string): Promise<string | null>;
+  /** Read a single compiled-format file as a Uint8Array. */
+  compiledFileBuffer(format: string, id: string): Promise<Uint8Array | null>;
+  /** Iterate all entries for a compiled format. */
+  eachCompiledFile(format: string, callback: (id: string, content: string) => void | Promise<void>): Promise<void>;
+  /** Load all entries for a compiled format into a Map. */
+  allCompiledFiles(format: string): Promise<Map<string, string>>;
 }
 
 /** Parse raw concept YAML (canonical or managed format) into a normalized Concept. */

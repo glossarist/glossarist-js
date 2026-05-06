@@ -70,6 +70,7 @@ export class Citation extends GlossaristModel {
   readonly version: string | null;
   readonly clause: string | null;
   readonly link: string | null;
+  readonly isStructured: boolean;
   toString(): string;
 }
 

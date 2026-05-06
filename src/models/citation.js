@@ -21,6 +21,10 @@ export class Citation extends GlossaristModel {
     }
   }
 
+  get isStructured() {
+    return typeof this.source === 'object' && this.source !== null;
+  }
+
   toString() {
     if (this.ref) return this.ref;
     if (typeof this.source === 'string') return this.source;

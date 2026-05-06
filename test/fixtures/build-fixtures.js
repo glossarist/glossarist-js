@@ -178,4 +178,120 @@ async function buildManagedGcr() {
 
 await buildCanonicalGcr();
 await buildManagedGcr();
+await buildCompiledGcr();
 console.log('Done!');
+
+async function buildCompiledGcr() {
+  const zip = new JSZip();
+
+  zip.file('metadata.yaml', [
+    'shortname: test-compiled',
+    'version: 1.0.0',
+    'title: Test Dataset with Compiled Formats',
+    'concept_count: 2',
+    'languages:',
+    '  - eng',
+    'schema_version: "1"',
+    'glossarist_version: 2.5.2',
+    'created_at: 2026-01-01T00:00:00Z',
+    'compiled_formats:',
+    '  - tbx',
+    '  - jsonld',
+    '  - turtle',
+  ].join('\n'));
+
+  // Concepts in canonical format
+  zip.file('concepts/001.yaml', [
+    'termid: "001"',
+    'eng:',
+    '  terms:',
+    '    - type: expression',
+    '      designation: entity',
+    '  definition:',
+    '    - content: A concrete or abstract thing.',
+    '  entry_status: valid',
+  ].join('\n'));
+
+  zip.file('concepts/002.yaml', [
+    'termid: "002"',
+    'eng:',
+    '  terms:',
+    '    - type: expression',
+    '      designation: function',
+    '  definition:',
+    '    - content: An action or activity.',
+    '  entry_status: valid',
+  ].join('\n'));
+
+  // TBX: single whole-document file
+  zip.file('compiled/tbx/test-compiled.tbx.xml', [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<tbx style="dca" type="TBX-Basic" xml:lang="en">',
+    '  <tbxHeader>',
+    '    <fileDesc><titleStmt><title>Test Compiled Dataset</title></titleStmt></fileDesc>',
+    '  </tbxHeader>',
+    '  <text>',
+    '    <body>',
+    '      <conceptEntry id="c001">',
+    '        <langSec xml:lang="en">',
+    '          <tig>',
+    '            <term>entity</term>',
+    '          </tig>',
+    '        </langSec>',
+    '      </conceptEntry>',
+    '      <conceptEntry id="c002">',
+    '        <langSec xml:lang="en">',
+    '          <tig>',
+    '            <term>function</term>',
+    '          </tig>',
+    '        </langSec>',
+    '      </conceptEntry>',
+    '    </body>',
+    '  </text>',
+    '</tbx>',
+  ].join('\n'));
+
+  // JSON-LD: per-concept files
+  zip.file('compiled/jsonld/001.jsonld', JSON.stringify({
+    '@context': { skos: 'http://www.w3.org/2004/02/skos/core#', dcterms: 'http://purl.org/dc/terms/' },
+    '@id': 'https://glossarist.org/concept/001',
+    '@type': 'skos:Concept',
+    notation: '001',
+    prefLabel: { eng: 'entity' },
+    definition: { eng: 'A concrete or abstract thing.' },
+  }, null, 2));
+
+  zip.file('compiled/jsonld/002.jsonld', JSON.stringify({
+    '@context': { skos: 'http://www.w3.org/2004/02/skos/core#', dcterms: 'http://purl.org/dc/terms/' },
+    '@id': 'https://glossarist.org/concept/002',
+    '@type': 'skos:Concept',
+    notation: '002',
+    prefLabel: { eng: 'function' },
+    definition: { eng: 'An action or activity.' },
+  }, null, 2));
+
+  // Turtle: per-concept files
+  zip.file('compiled/turtle/001.ttl', [
+    '@prefix skos: <http://www.w3.org/2004/02/skos/core#> .',
+    '@prefix dcterms: <http://purl.org/dc/terms/> .',
+    '',
+    '<https://glossarist.org/concept/001> a skos:Concept ;',
+    '  skos:notation "001" ;',
+    '  skos:prefLabel "entity"@eng ;',
+    '  skos:definition "A concrete or abstract thing."@eng .',
+  ].join('\n'));
+
+  zip.file('compiled/turtle/002.ttl', [
+    '@prefix skos: <http://www.w3.org/2004/02/skos/core#> .',
+    '@prefix dcterms: <http://purl.org/dc/terms/> .',
+    '',
+    '<https://glossarist.org/concept/002> a skos:Concept ;',
+    '  skos:notation "002" ;',
+    '  skos:prefLabel "function"@eng ;',
+    '  skos:definition "An action or activity."@eng .',
+  ].join('\n'));
+
+  const buf = await zip.generateAsync({ type: 'nodebuffer' });
+  fs.writeFileSync(path.join(__dirname, 'compiled.gcr'), buf);
+  console.log('Created compiled.gcr');
+}

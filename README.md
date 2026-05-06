@@ -58,6 +58,66 @@ const buf = await createGcr([concept], { shortname: 'test' });
 fs.writeFileSync('out.gcr', buf);
 ```
 
+### Compiled / machine formats in GCR
+
+GCR packages can contain pre-compiled machine formats (TBX, JSON-LD, Turtle, JSONL) inside a `compiled/` directory. This mirrors the Ruby glossarist gem's `COMPILED_EXTENSIONS` convention.
+
+```js
+import { loadGcr } from 'glossarist';
+
+const pkg = await loadGcr(fs.readFileSync('dataset.gcr'));
+
+// Discover which compiled formats are present
+const formats = await pkg.compiledFormats();       // ['tbx', 'jsonld', 'turtle']
+
+// List entry IDs for a specific format
+const ids = await pkg.compiledFormatIds('jsonld'); // ['3.1.1.1', '3.1.1.2']
+
+// Read a single compiled file as string
+const jsonld = await pkg.compiledFile('jsonld', '3.1.1.1');
+
+// Read a single compiled file as binary
+const buf = await pkg.compiledFileBuffer('jsonld', '3.1.1.1');
+
+// Iterate all entries for a format
+await pkg.eachCompiledFile('turtle', (id, content) => {
+  console.log(id, content.length);
+});
+
+// Load all entries for a format into a Map
+const allTurtle = await pkg.allCompiledFiles('turtle');
+
+// Check if a format is present
+await pkg.hasCompiledFormat('tbx'); // true
+```
+
+#### Write compiled formats into a GCR package
+
+```js
+import { GcrWriter } from 'glossarist';
+
+const buf = await GcrWriter.createBuffer({
+  concepts: [...],
+  metadata: { shortname: 'my-dataset' },
+  compiledFormats: {
+    tbx:    { 'my-dataset': tbxXmlString },
+    jsonld: { '3.1.1.1': jsonldString, '3.1.1.2': jsonldString },
+    turtle: { '3.1.1.1': ttlString },
+  },
+});
+```
+
+#### Format registry
+
+```js
+import { COMPILED_FORMATS, COMPILED_EXTENSIONS, isKnownFormat } from 'glossarist';
+
+COMPILED_FORMATS;                           // ['tbx', 'jsonld', 'turtle', 'jsonl']
+COMPILED_EXTENSIONS.get('tbx');             // 'tbx.xml'
+COMPILED_EXTENSIONS.get('turtle');           // 'ttl'
+isKnownFormat('csv');                        // false
+```
+
 ### Domain model
 
 Every domain entity is a class instance with `toJSON()`, `fromJSON()`, `equals()`, and `clone()`:
@@ -208,6 +268,7 @@ Public API (index.js)
 ├── Parsing           → ConceptParser (canonical + managed format detection)
 ├── Serialization     → ConceptSerializer (canonical + managed YAML output)
 ├── I/O               → loadGcr, readConcepts, createGcr, writeConcepts
+├── Compiled formats  → CompiledFormatRegistry (TBX, JSON-LD, Turtle, JSONL in GCR)
 ├── Collections       → ConceptCollection (Proxy-based, queryable), ManagedConceptCollection
 ├── Validation        → ConceptValidator, RegisterValidator, ValidationRule (pluggable)
 ├── Utilities         → conceptUuid, referenceResolver, V1Reader

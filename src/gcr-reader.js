@@ -1,8 +1,7 @@
 import JSZip from 'jszip';
 import yaml from 'js-yaml';
-import { InvalidInputError, YamlParseError } from './errors.js';
-
-const STRUCTURAL_KEYS = new Set(['termid', 'term']);
+import { conceptParser } from './concept-parser.js';
+import { InvalidInputError } from './errors.js';
 
 const BASE64_RE = /^[A-Za-z0-9+/]{100,}={0,2}$/;
 
@@ -120,7 +119,7 @@ export class GcrPackage {
   async concept(id) {
     const raw = await this._readText(`concepts/${id}.yaml`);
     if (raw === null) return null;
-    return parseConceptYaml(raw, id);
+    return conceptParser.parse(raw, id);
   }
 
   /**
@@ -163,13 +162,6 @@ export class GcrPackage {
 /**
  * Parse concept YAML (canonical or managed format) into a normalized object.
  *
- * Canonical format (single doc):
- *   { termid: "3.1.1.1", eng: { terms: [...], definition: [...] }, ... }
- *
- * Managed concept format (multi-doc):
- *   doc 0: { data: { identifier: "3.1.1.1", localized_concepts: { eng: "uuid" } }, id: "uuid" }
- *   doc 1+: { data: { language_code: "eng", terms: [...], ... }, id: "uuid" }
- *
  * @param {string} raw - raw YAML string
  * @param {string} [context] - concept ID or filename for error messages
  * @returns {Concept}
@@ -181,73 +173,7 @@ export class GcrPackage {
  * console.log(concept.localizations.eng.terms[0].designation); // "test"
  */
 export function parseConceptYaml(raw, context) {
-  const label = context ?? 'concept';
-
-  if (raw == null) {
-    throw new InvalidInputError(`parseConceptYaml requires a non-empty YAML string (${label})`, 'non-null string');
-  }
-  if (typeof raw !== 'string' || raw.trim() === '') {
-    throw new InvalidInputError(`parseConceptYaml requires a non-empty YAML string (${label})`, 'non-empty string');
-  }
-
-  let docs;
-  try {
-    docs = yaml.loadAll(raw, null, { schema: yaml.DEFAULT_SCHEMA });
-  } catch (err) {
-    throw new YamlParseError(label, err);
-  }
-
-  if (docs.length === 1 && docs[0]?.termid !== undefined) {
-    return normalizeCanonical(docs[0]);
-  }
-
-  if (docs.length >= 1 && docs[0]?.data?.identifier !== undefined) {
-    return normalizeManaged(docs);
-  }
-
-  if (docs[0] == null) {
-    throw new YamlParseError(label, new Error('YAML document is empty'));
-  }
-
-  return normalizeCanonical(docs[0]);
-}
-
-/** @private @param {Record<string, any>} doc @returns {Concept} */
-function normalizeCanonical(doc) {
-  const localizations = {};
-  for (const key of Object.keys(doc)) {
-    if (!STRUCTURAL_KEYS.has(key) && typeof doc[key] === 'object' && doc[key] !== null) {
-      localizations[key] = doc[key];
-    }
-  }
-  return {
-    termid: String(doc.termid),
-    term: doc.term || null,
-    localizations,
-    raw: doc,
-  };
-}
-
-/** @private @param {Record<string, any>[]} docs @returns {Concept} */
-function normalizeManaged(docs) {
-  const mc = docs[0];
-  const termid = String(mc.data.identifier);
-  const localizations = {};
-
-  for (const doc of docs.slice(1)) {
-    if (!doc || !doc.data || !doc.data.language_code) continue;
-    const lang = doc.data.language_code;
-    const lcData = { ...doc.data };
-    delete lcData.language_code;
-    localizations[lang] = lcData;
-  }
-
-  return {
-    termid,
-    term: null,
-    localizations,
-    raw: mc,
-  };
+  return conceptParser.parse(raw, context);
 }
 
 // --- Helpers ---

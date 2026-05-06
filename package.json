@@ -1,6 +1,6 @@
 {
   "name": "glossarist",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "JavaScript library for reading Glossarist GCR packages and v2 concept data",
   "type": "module",
   "main": "src/index.js",

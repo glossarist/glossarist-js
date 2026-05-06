@@ -10,7 +10,7 @@ cd glossarist-js
 npm install
 ```
 
-Requires **Node.js 18+** (uses ESM and `node:test`).
+Requires **Node.js 20+** (uses ESM and `node:test`).
 
 ## Development
 
@@ -27,10 +27,10 @@ Run a single test file:
 node --test test/gcr-reader.test.js
 ```
 
-Run tests matching a name pattern:
+Run all tests matching a pattern:
 
 ```bash
-node --test --test-name-pattern 'base64' test/*.test.js
+node --test --test-name-pattern 'canonical' test/**/*.test.js
 ```
 
 ## Test fixtures

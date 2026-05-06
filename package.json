@@ -1,7 +1,7 @@
 {
   "name": "glossarist",
   "version": "0.1.1",
-  "description": "JavaScript library for reading Glossarist GCR packages and v2 concept data",
+  "description": "JavaScript SDK for Glossarist GCR packages — read, write, validate, and manage terminology concepts",
   "type": "module",
   "main": "src/index.js",
   "types": "src/index.d.ts",
@@ -24,14 +24,24 @@
       "types": "./src/concept-reader.d.ts",
       "import": "./src/concept-reader.js",
       "default": "./src/concept-reader.js"
+    },
+    "./models": {
+      "types": "./src/models/index.d.ts",
+      "import": "./src/models/index.js",
+      "default": "./src/models/index.js"
+    },
+    "./validators": {
+      "types": "./src/validators/index.d.ts",
+      "import": "./src/validators/index.js",
+      "default": "./src/validators/index.js"
     }
   },
   "scripts": {
     "lint": "eslint src/ test/",
     "pretest": "node test/fixtures/build-fixtures.js",
-    "test": "node --test test/*.test.js",
-    "test:verbose": "node --test --test-reporter spec test/*.test.js",
-    "test:coverage": "node --test --experimental-test-coverage test/*.test.js",
+    "test": "find test -name '*.test.js' | sort | xargs node --test",
+    "test:verbose": "find test -name '*.test.js' | sort | xargs node --test --test-reporter spec",
+    "test:coverage": "find test -name '*.test.js' | sort | xargs node --test --experimental-test-coverage",
     "prepublishOnly": "npm test"
   },
   "keywords": [

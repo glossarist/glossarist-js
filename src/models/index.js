@@ -1,0 +1,10 @@
+export { GlossaristModel } from './base.js';
+export { Concept } from './concept.js';
+export { LocalizedConcept } from './localized-concept.js';
+export { Designation, Expression, Abbreviation, Symbol, GraphicalSymbol } from './designation.js';
+export { Citation } from './citation.js';
+export { ConceptSource } from './concept-source.js';
+export { RelatedConcept, RELATIONSHIP_TYPES } from './related-concept.js';
+export { ConceptDate, DATE_TYPES } from './concept-date.js';
+export { DetailedDefinition } from './detailed-definition.js';
+export { NonVerbRep } from './non-verb-rep.js';

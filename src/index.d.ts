@@ -39,3 +39,11 @@ export { V1Reader, migrateV1ToV2 } from './v1-reader';
 
 // Errors
 export { GlossaristError, InvalidInputError, YamlParseError } from './errors';
+
+// Compiled format registry
+export const COMPILED_EXTENSIONS: ReadonlyMap<string, string>;
+export const COMPILED_FORMATS: readonly string[];
+export function isKnownFormat(format: string): boolean;
+export function compiledFilename(format: string, id: string): string;
+export function compiledPath(format: string, id: string): string;
+export function parseCompiledPath(zipPath: string): { format: string; id: string } | null;

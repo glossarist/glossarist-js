@@ -24,6 +24,7 @@ This is a pure ESM package (`"type": "module"`) with no build step. The public A
 - **Public API** (`src/index.js`) — re-exports everything
 - **Collection layer** — `ConceptCollection` (Proxy-based, indexed access, query methods), `ManagedConceptCollection` (load/save lifecycle)
 - **I/O layer** — `loadGcr`/`GcrPackage` (ZIP), `readConcepts`/`writeConcepts` (filesystem)
+- **Compiled formats** — `CompiledFormatRegistry` in `src/compiled-format.js` defines the known machine formats (tbx, jsonld, turtle, jsonl) and their file extensions inside GCR. `GcrPackage` exposes read methods (`compiledFormats()`, `compiledFile()`, `allCompiledFiles()`); `GcrWriter` accepts `compiledFormats` option for writing. Directory convention: `compiled/{format}/{id}.{ext}`.
 - **Serialization layer** — `ConceptSerializer` (canonical + managed YAML output)
 - **Parsing layer** — `ConceptParser` (format detection + normalization), `parseConceptYaml` (backward compat)
 - **Model layer** — domain classes with no I/O dependencies: `Concept`, `LocalizedConcept`, `Designation` hierarchy, `Citation`, `DetailedDefinition`, `NonVerbRep`, `ConceptSource`, `RelatedConcept`, `ConceptDate`

@@ -1,5 +1,8 @@
 import { Concept } from './models/index';
 
+/** Compiled formats map: format name → id → content string. */
+export type CompiledFormatsMap = Record<string, Record<string, string> | Map<string, string>>;
+
 export class GcrWriter {
   static createBuffer(options: {
     concepts: Concept[];
@@ -7,6 +10,7 @@ export class GcrWriter {
     register?: Record<string, unknown>;
     uuidFn?: () => string;
     format?: 'canonical' | 'managed' | 'auto';
+    compiledFormats?: CompiledFormatsMap;
   }): Promise<Uint8Array>;
 }
 

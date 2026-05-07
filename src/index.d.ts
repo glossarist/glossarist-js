@@ -47,3 +47,8 @@ export function isKnownFormat(format: string): boolean;
 export function compiledFilename(format: string, id: string): string;
 export function compiledPath(format: string, id: string): string;
 export function parseCompiledPath(zipPath: string): { format: string; id: string } | null;
+
+// Dataset asset registry
+export const DATASET_ASSETS: readonly { path: string; type: string }[];
+export const FILE_ASSETS: readonly { path: string; type: string }[];
+export const DIRECTORY_ASSETS: readonly { path: string; type: string }[];

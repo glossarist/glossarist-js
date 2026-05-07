@@ -1,4 +1,5 @@
-export { loadGcr, GcrPackage, parseConceptYaml, naturalSort } from './gcr-reader.js';
+export { naturalSort } from './sort.js';
+export { loadGcr, GcrPackage, parseConceptYaml } from './gcr-reader.js';
 export { readConcepts, readConcept, listConceptIds, readRegister } from './concept-reader.js';
 export { writeConcept, writeConcepts } from './concept-writer.js';
 export { createGcr, GcrWriter } from './gcr-writer.js';

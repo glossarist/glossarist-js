@@ -179,6 +179,7 @@ async function buildManagedGcr() {
 await buildCanonicalGcr();
 await buildManagedGcr();
 await buildCompiledGcr();
+await buildAssetsGcr();
 console.log('Done!');
 
 async function buildCompiledGcr() {
@@ -294,4 +295,52 @@ async function buildCompiledGcr() {
   const buf = await zip.generateAsync({ type: 'nodebuffer' });
   fs.writeFileSync(path.join(__dirname, 'compiled.gcr'), buf);
   console.log('Created compiled.gcr');
+}
+
+async function buildAssetsGcr() {
+  const zip = new JSZip();
+
+  zip.file('metadata.yaml', [
+    'shortname: test-assets',
+    'version: 1.0.0',
+    'title: Test Dataset with Assets',
+    'concept_count: 1',
+    'languages:',
+    '  - eng',
+    'schema_version: "1"',
+    'glossarist_version: 2.6.1',
+    'created_at: 2026-01-01T00:00:00Z',
+  ].join('\n'));
+
+  zip.file('concepts/001.yaml', [
+    'termid: "001"',
+    'eng:',
+    '  terms:',
+    '    - type: expression',
+    '      designation: latitude',
+    '  definition:',
+    '    - content: Angular distance from the equatorial plane.',
+    '  entry_status: valid',
+  ].join('\n'));
+
+  // Bibliography
+  zip.file('bibliography.yaml', [
+    'ISO_19111_2019:',
+    '  type: standard',
+    '  title: Geographic information — Referencing by coordinates',
+    'ISO_8601_2019:',
+    '  type: standard',
+    '  title: Date and time — Representations for information interchange',
+  ].join('\n'));
+
+  // Images
+  const pngHeader = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  zip.file('images/figure1.png', pngHeader);
+
+  const svgContent = '<svg xmlns="http://www.w3.org/2000/svg"><circle r="10"/></svg>';
+  zip.file('images/diagrams/schema.svg', svgContent);
+
+  const buf = await zip.generateAsync({ type: 'nodebuffer' });
+  fs.writeFileSync(path.join(__dirname, 'assets.gcr'), buf);
+  console.log('Created assets.gcr');
 }

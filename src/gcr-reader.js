@@ -3,6 +3,7 @@ import yaml from 'js-yaml';
 import { conceptParser } from './concept-parser.js';
 import { InvalidInputError } from './errors.js';
 import { COMPILED_FORMATS, parseCompiledPath, compiledPath } from './compiled-format.js';
+import { DATASET_ASSETS, findFileAsset, findDirectoryAssetPath } from './dataset-asset.js';
 import { naturalSort } from './sort.js';
 
 export { naturalSort } from './sort.js';
@@ -250,21 +251,57 @@ export class GcrPackage {
   // --- Dataset assets (bibliography, images, etc.) ---
 
   /**
+   * List all dataset asset entries found in this package.
+   * Each entry has { path, type, asset } where asset is the registry descriptor.
+   * @returns {Promise<Array<{ path: string, type: 'file' | 'directory', asset: { path: string, type: string } }>>}
+   */
+  async datasetAssetEntries() {
+    const entries = [];
+    this._zip.forEach((relativePath, zipEntry) => {
+      if (zipEntry.dir) return;
+      const fileAsset = findFileAsset(relativePath);
+      if (fileAsset) {
+        entries.push({ path: relativePath, type: 'file', asset: fileAsset });
+        return;
+      }
+      const dirAsset = findDirectoryAssetPath(relativePath);
+      if (dirAsset) {
+        entries.push({ path: relativePath, type: 'directory', asset: dirAsset });
+      }
+    });
+    return entries;
+  }
+
+  /**
+   * Read a file-type dataset asset by its registered path (e.g. 'bibliography.yaml').
+   * @param {string} assetPath - registered file asset path
+   * @returns {Promise<string | null>}
+   */
+  async readDatasetFileAsset(assetPath) {
+    return this._readText(assetPath);
+  }
+
+  /**
    * Read bibliography.yaml from the package as a string (raw YAML).
    * @returns {Promise<string | null>}
    */
   async bibliography() {
-    return this._readText('bibliography.yaml');
+    const fileAsset = DATASET_ASSETS.find((a) => a.type === 'file' && a.path === 'bibliography.yaml');
+    return fileAsset ? this._readText(fileAsset.path) : null;
   }
 
   /**
    * Check whether the images/ directory is present and non-empty.
+   * Uses the dataset-asset registry to find the images directory.
    * @returns {Promise<boolean>}
    */
   async hasImages() {
+    const asset = DATASET_ASSETS.find((a) => a.type === 'directory' && a.path === 'images');
+    if (!asset) return false;
+    const prefix = `${asset.path}/`;
     let found = false;
     this._zip.forEach((relativePath, entry) => {
-      if (!found && !entry.dir && relativePath.startsWith('images/')) {
+      if (!found && !entry.dir && relativePath.startsWith(prefix)) {
         found = true;
       }
     });
@@ -273,12 +310,16 @@ export class GcrPackage {
 
   /**
    * List all image file paths (relative to ZIP root).
+   * Uses the dataset-asset registry to find the images directory.
    * @returns {Promise<string[]>}
    */
   async imageFileNames() {
+    const asset = DATASET_ASSETS.find((a) => a.type === 'directory' && a.path === 'images');
+    if (!asset) return [];
+    const prefix = `${asset.path}/`;
     const names = [];
     this._zip.forEach((relativePath, entry) => {
-      if (!entry.dir && relativePath.startsWith('images/')) {
+      if (!entry.dir && relativePath.startsWith(prefix)) {
         names.push(relativePath);
       }
     });
@@ -291,7 +332,9 @@ export class GcrPackage {
    * @returns {Promise<Uint8Array | null>}
    */
   async imageFile(path) {
-    const fullPath = path.startsWith('images/') ? path : `images/${path}`;
+    const asset = DATASET_ASSETS.find((a) => a.type === 'directory' && a.path === 'images');
+    if (!asset) return null;
+    const fullPath = path.startsWith(`${asset.path}/`) ? path : `${asset.path}/${path}`;
     const entry = this._zip.file(fullPath);
     if (!entry) return null;
     return entry.async('uint8array');

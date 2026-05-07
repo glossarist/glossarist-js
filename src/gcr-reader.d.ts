@@ -85,6 +85,21 @@ export class GcrPackage {
   eachCompiledFile(format: string, callback: (id: string, content: string) => void | Promise<void>): Promise<void>;
   /** Load all entries for a compiled format into a Map. */
   allCompiledFiles(format: string): Promise<Map<string, string>>;
+
+  // Dataset assets (bibliography, images)
+
+  /** Read bibliography.yaml from the package as raw YAML string. */
+  bibliography(): Promise<string | null>;
+  /** Check whether the images/ directory is present and non-empty. */
+  hasImages(): Promise<boolean>;
+  /** List all image file paths (relative to ZIP root). */
+  imageFileNames(): Promise<string[]>;
+  /** Read a single image file as Uint8Array. */
+  imageFile(path: string): Promise<Uint8Array | null>;
+  /** Iterate all image files. */
+  eachImageFile(callback: (path: string, content: Uint8Array) => void | Promise<void>): Promise<void>;
+  /** Load all image files into a Map (path → Uint8Array). */
+  allImageFiles(): Promise<Map<string, Uint8Array>>;
 }
 
 /** Parse raw concept YAML (canonical or managed format) into a normalized Concept. */

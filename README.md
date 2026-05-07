@@ -118,6 +118,51 @@ COMPILED_EXTENSIONS.get('turtle');           // 'ttl'
 isKnownFormat('csv');                        // false
 ```
 
+### Bibliography and images in GCR
+
+GCR packages can contain a `bibliography.yaml` file and an `images/` directory, making the archive fully self-contained. This mirrors the Ruby glossarist gem's `DATASET_ASSETS` convention.
+
+```js
+import { loadGcr } from 'glossarist';
+
+const pkg = await loadGcr(fs.readFileSync('dataset.gcr'));
+
+// Bibliography (raw YAML string)
+const bib = await pkg.bibliography();         // 'ISO_19111_2019:\n  ...' or null
+
+// Images
+await pkg.hasImages();                        // true
+const names = await pkg.imageFileNames();     // ['images/fig1.png', ...]
+const img = await pkg.imageFile('fig1.png');  // Uint8Array or null
+const allImages = await pkg.allImageFiles();  // Map<string, Uint8Array>
+```
+
+#### Write bibliography and images into a GCR package
+
+```js
+import { GcrWriter } from 'glossarist';
+
+const buf = await GcrWriter.createBuffer({
+  concepts: [...],
+  metadata: { shortname: 'my-dataset' },
+  bibliography: 'ISO_19111_2019:\n  title: Geographic information',
+  images: {
+    'figure1.png': pngBuffer,
+    'diagrams/schema.svg': svgString,
+  },
+});
+```
+
+#### Dataset asset registry
+
+```js
+import { DATASET_ASSETS, FILE_ASSETS, DIRECTORY_ASSETS } from 'glossarist';
+
+DATASET_ASSETS;   // [{ path: 'bibliography.yaml', type: 'file' }, { path: 'images', type: 'directory' }]
+FILE_ASSETS;      // [{ path: 'bibliography.yaml', type: 'file' }]
+DIRECTORY_ASSETS; // [{ path: 'images', type: 'directory' }]
+```
+
 ### Domain model
 
 Every domain entity is a class instance with `toJSON()`, `fromJSON()`, `equals()`, and `clone()`:
@@ -269,6 +314,7 @@ Public API (index.js)
 ├── Serialization     → ConceptSerializer (canonical + managed YAML output)
 ├── I/O               → loadGcr, readConcepts, createGcr, writeConcepts
 ├── Compiled formats  → CompiledFormatRegistry (TBX, JSON-LD, Turtle, JSONL in GCR)
+├── Dataset assets    → DATASET_ASSETS registry (bibliography.yaml, images/ in GCR)
 ├── Collections       → ConceptCollection (Proxy-based, queryable), ManagedConceptCollection
 ├── Validation        → ConceptValidator, RegisterValidator, ValidationRule (pluggable)
 ├── Utilities         → conceptUuid, referenceResolver, V1Reader

@@ -2,7 +2,7 @@ import JSZip from 'jszip';
 import yaml from 'js-yaml';
 import { conceptParser } from './concept-parser.js';
 import { InvalidInputError } from './errors.js';
-import { COMPILED_EXTENSIONS, parseCompiledPath, compiledPath } from './compiled-format.js';
+import { COMPILED_FORMATS, parseCompiledPath, compiledPath } from './compiled-format.js';
 
 const BASE64_RE = /^[A-Za-z0-9+/]{100,}={0,2}$/;
 
@@ -154,7 +154,6 @@ export class GcrPackage {
 
   /**
    * List compiled format directories present in this package.
-   * Only returns formats whose `compiled/{format}/` directory contains at least one file.
    * @returns {Promise<string[]>}
    */
   async compiledFormats() {
@@ -165,9 +164,7 @@ export class GcrPackage {
         if (parsed) seen.add(parsed.format);
       }
     });
-    return COMPILED_EXTENSIONS.keys
-      ? [...COMPILED_EXTENSIONS.keys()].filter((f) => seen.has(f))
-      : [...seen];
+    return COMPILED_FORMATS.filter((f) => seen.has(f));
   }
 
   /**
@@ -247,6 +244,82 @@ export class GcrPackage {
   async allCompiledFiles(format) {
     const map = new Map();
     await this.eachCompiledFile(format, (id, content) => { map.set(id, content); });
+    return map;
+  }
+
+  // --- Dataset assets (bibliography, images, etc.) ---
+
+  /**
+   * Read bibliography.yaml from the package as a string (raw YAML).
+   * @returns {Promise<string | null>}
+   */
+  async bibliography() {
+    return this._readText('bibliography.yaml');
+  }
+
+  /**
+   * Check whether the images/ directory is present and non-empty.
+   * @returns {Promise<boolean>}
+   */
+  async hasImages() {
+    let found = false;
+    this._zip.forEach((relativePath, entry) => {
+      if (!found && !entry.dir && relativePath.startsWith('images/')) {
+        found = true;
+      }
+    });
+    return found;
+  }
+
+  /**
+   * List all image file paths (relative to ZIP root).
+   * @returns {Promise<string[]>}
+   */
+  async imageFileNames() {
+    const names = [];
+    this._zip.forEach((relativePath, entry) => {
+      if (!entry.dir && relativePath.startsWith('images/')) {
+        names.push(relativePath);
+      }
+    });
+    return names.sort();
+  }
+
+  /**
+   * Read a single image file as a Uint8Array.
+   * @param {string} path - relative path starting with 'images/' or just the filename
+   * @returns {Promise<Uint8Array | null>}
+   */
+  async imageFile(path) {
+    const fullPath = path.startsWith('images/') ? path : `images/${path}`;
+    const entry = this._zip.file(fullPath);
+    if (!entry) return null;
+    return entry.async('uint8array');
+  }
+
+  /**
+   * Iterate all image files.
+   * @param {(path: string, content: Uint8Array) => void | Promise<void>} callback
+   * @returns {Promise<void>}
+   */
+  async eachImageFile(callback) {
+    const names = await this.imageFileNames();
+    for (const name of names) {
+      const entry = this._zip.file(name);
+      if (entry) {
+        const content = await entry.async('uint8array');
+        await callback(name, content);
+      }
+    }
+  }
+
+  /**
+   * Load all image files into a Map (path → Uint8Array).
+   * @returns {Promise<Map<string, Uint8Array>>}
+   */
+  async allImageFiles() {
+    const map = new Map();
+    await this.eachImageFile((path, content) => { map.set(path, content); });
     return map;
   }
 

@@ -32,5 +32,6 @@ export {
   Designation, Expression, Abbreviation, Symbol, GraphicalSymbol,
   Citation, ConceptSource, RelatedConcept, ConceptDate,
   DetailedDefinition, NonVerbRep,
+  GcrMetadata, GcrStatistics,
   RELATIONSHIP_TYPES, DATE_TYPES,
 } from './models/index.js';

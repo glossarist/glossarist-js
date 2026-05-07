@@ -4,6 +4,7 @@ import { conceptParser } from './concept-parser.js';
 import { InvalidInputError } from './errors.js';
 import { COMPILED_FORMATS, parseCompiledPath, compiledPath } from './compiled-format.js';
 import { DATASET_ASSETS, findFileAsset, findDirectoryAssetPath } from './dataset-asset.js';
+import { GcrMetadata } from './models/gcr-metadata.js';
 import { naturalSort } from './sort.js';
 
 export { naturalSort } from './sort.js';
@@ -82,12 +83,12 @@ export class GcrPackage {
   }
 
   /**
-   * Read and parse metadata.yaml from the package.
+   * Read and parse metadata.yaml from the package as a GcrMetadata instance.
    * @returns {Promise<GcrMetadata | null>}
    */
   async metadata() {
     const raw = await this._readText('metadata.yaml');
-    return raw ? yaml.load(raw) : null;
+    return raw ? GcrMetadata.fromYaml(raw) : null;
   }
 
   /**

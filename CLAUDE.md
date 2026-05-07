@@ -28,8 +28,8 @@ This is a pure ESM package (`"type": "module"`) with no build step. The public A
 - **Dataset assets** — `DATASET_ASSETS` in `src/dataset-asset.js` defines the known file/directory assets (bibliography.yaml, images/) bundled in GCR packages. `GcrPackage` exposes `bibliography()`, `hasImages()`, `imageFile()`, `imageFileNames()`, `allImageFiles()`; `GcrWriter` accepts `bibliography` and `images` options. Mirrors Ruby glossarist gem's `GcrPackage::DATASET_ASSETS`.
 - **Serialization layer** — `ConceptSerializer` (canonical + managed YAML output)
 - **Parsing layer** — `ConceptParser` (format detection + normalization), `parseConceptYaml` (backward compat)
-- **Model layer** — domain classes with no I/O dependencies: `Concept`, `LocalizedConcept`, `Designation` hierarchy, `Citation`, `DetailedDefinition`, `NonVerbRep`, `ConceptSource`, `RelatedConcept`, `ConceptDate`
-- **Supporting** — `GlossaristModel` base class, `ValidationRule` framework, UUID generation, reference resolution, V1 migration
+- **Model layer** — domain classes with no I/O dependencies: `Concept`, `LocalizedConcept`, `Designation` hierarchy, `Citation`, `DetailedDefinition`, `NonVerbRep`, `ConceptSource`, `RelatedConcept`, `ConceptDate`, `GcrMetadata`, `GcrStatistics`
+- **Supporting** — `GlossaristModel` base class, `ValidationRule` framework, UUID generation, reference resolution, V1 migration, `naturalSort` (in `src/sort.js`)
 
 ### Error hierarchy
 
@@ -50,7 +50,7 @@ Language codes are discovered dynamically from YAML keys — any object-valued k
 
 ### Two readers
 
-- **`src/gcr-reader.js`** — `GcrPackage` class wraps a JSZip instance. Reads concepts from `concepts/*.yaml` inside a ZIP archive. Works in both Node.js and browsers (no `fs` dependency). Contains `loadGcr`, `naturalSort`, base64 auto-detection, and backward-compatible `parseConceptYaml`.
+- **`src/gcr-reader.js`** — `GcrPackage` class wraps a JSZip instance. Reads concepts from `concepts/*.yaml` inside a ZIP archive. Works in both Node.js and browsers (no `fs` dependency). Contains `loadGcr`, base64 auto-detection, and backward-compatible `parseConceptYaml`. `naturalSort` is re-exported from `src/sort.js`. Dataset asset methods use the `dataset-asset.js` registry for discovery.
 - **`src/concept-reader.js`** — Reads concept YAML files from a filesystem directory. Node.js only. Delegates to `conceptParser.parse()`.
 
 ### Package entry points

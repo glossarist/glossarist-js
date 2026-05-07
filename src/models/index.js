@@ -8,3 +8,5 @@ export { RelatedConcept, RELATIONSHIP_TYPES } from './related-concept.js';
 export { ConceptDate, DATE_TYPES } from './concept-date.js';
 export { DetailedDefinition } from './detailed-definition.js';
 export { NonVerbRep } from './non-verb-rep.js';
+export { GcrMetadata } from './gcr-metadata.js';
+export { GcrStatistics } from './gcr-statistics.js';;

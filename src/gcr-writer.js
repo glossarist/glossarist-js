@@ -2,6 +2,8 @@ import JSZip from 'jszip';
 import { conceptSerializer } from './concept-serializer.js';
 import { InvalidInputError } from './errors.js';
 import { compiledPath, isKnownFormat } from './compiled-format.js';
+import { GcrMetadata } from './models/gcr-metadata.js';
+import { GcrStatistics } from './models/gcr-statistics.js';
 
 export class GcrWriter {
   static async createBuffer(options) {
@@ -15,7 +17,8 @@ export class GcrWriter {
     const zip = new JSZip();
 
     if (options.metadata) {
-      zip.file('metadata.yaml', conceptSerializer.toRegisterYaml(options.metadata));
+      const meta = GcrWriter._normalizeMetadata(options.metadata, options.concepts);
+      zip.file('metadata.yaml', conceptSerializer.toRegisterYaml(meta));
     }
     if (options.register) {
       zip.file('register.yaml', conceptSerializer.toRegisterYaml(options.register));
@@ -43,6 +46,26 @@ export class GcrWriter {
     }
 
     return zip.generateAsync({ type: 'uint8array' });
+  }
+
+  static _normalizeMetadata(metadata, concepts) {
+    if (metadata instanceof GcrMetadata) {
+      const meta = metadata.clone();
+      if (!meta.statistics && concepts.length > 0) {
+        meta.statistics = GcrStatistics.fromConcepts(concepts);
+      }
+      if (!meta.conceptCount) meta.conceptCount = concepts.length;
+      return meta.toJSON();
+    }
+
+    const data = { ...metadata };
+    if (!data.statistics && concepts.length > 0) {
+      data.statistics = GcrStatistics.fromConcepts(concepts).toJSON();
+    }
+    if (!data.concept_count && concepts.length > 0) {
+      data.concept_count = concepts.length;
+    }
+    return data;
   }
 
   static _writeCompiledFormats(zip, compiledFormats) {

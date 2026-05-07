@@ -13,6 +13,7 @@ import {
 } from '../src/dataset-asset.js';
 import { loadGcr } from '../src/gcr-reader.js';
 import { GcrWriter } from '../src/gcr-writer.js';
+import { GcrMetadata } from '../src/models/gcr-metadata.js';
 import { ManagedConceptCollection } from '../src/managed-concept-collection.js';
 import { Concept } from '../src/models/index.js';
 
@@ -136,6 +137,26 @@ describe('GcrPackage dataset assets', () => {
     const c = await pkg.concept('001');
     assert.equal(c.termid, '001');
     assert.equal(c.localizations.eng.terms[0].designation, 'latitude');
+  });
+
+  it('datasetAssetEntries discovers all assets', async () => {
+    const entries = await pkg.datasetAssetEntries();
+    assert.ok(entries.length >= 3);
+    const paths = entries.map((e) => e.path);
+    assert.ok(paths.includes('bibliography.yaml'));
+    assert.ok(paths.some((p) => p.startsWith('images/')));
+    const bibEntry = entries.find((e) => e.path === 'bibliography.yaml');
+    assert.equal(bibEntry.type, 'file');
+    const imgEntry = entries.find((e) => e.path.startsWith('images/'));
+    assert.equal(imgEntry.type, 'directory');
+  });
+
+  it('metadata returns GcrMetadata instance', async () => {
+    const meta = await pkg.metadata();
+    assert.ok(meta instanceof GcrMetadata);
+    assert.equal(meta.shortname, 'test-assets');
+    assert.equal(meta.concept_count, 1);
+    assert.equal(meta.conceptCount, 1);
   });
 });
 

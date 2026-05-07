@@ -34,6 +34,14 @@ export class GcrWriter {
       GcrWriter._writeCompiledFormats(zip, options.compiledFormats);
     }
 
+    if (options.bibliography) {
+      zip.file('bibliography.yaml', options.bibliography);
+    }
+
+    if (options.images) {
+      GcrWriter._writeImages(zip, options.images);
+    }
+
     return zip.generateAsync({ type: 'uint8array' });
   }
 
@@ -46,6 +54,14 @@ export class GcrWriter {
       for (const [id, content] of map) {
         zip.file(compiledPath(format, id), content);
       }
+    }
+  }
+
+  static _writeImages(zip, images) {
+    const map = images instanceof Map ? images : new Map(Object.entries(images));
+    for (const [path, content] of map) {
+      const fullPath = path.startsWith('images/') ? path : `images/${path}`;
+      zip.file(fullPath, content);
     }
   }
 }

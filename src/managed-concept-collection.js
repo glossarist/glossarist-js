@@ -2,16 +2,20 @@ import { ConceptCollection } from './concept-collection.js';
 import { readConcepts, readRegister } from './concept-reader.js';
 import { writeConcepts } from './concept-writer.js';
 import { loadGcr } from './gcr-reader.js';
-import { createGcr } from './gcr-writer.js';
+import { GcrWriter } from './gcr-writer.js';
 
 export class ManagedConceptCollection {
   constructor() {
     this._concepts = new ConceptCollection();
     this._register = null;
+    this._bibliography = null;
+    this._images = null;
   }
 
   get concepts() { return this._concepts; }
   get register() { return this._register; }
+  get bibliography() { return this._bibliography; }
+  get images() { return this._images; }
 
   loadFromDirectory(dir) {
     this._concepts = new ConceptCollection(readConcepts(dir));
@@ -23,6 +27,8 @@ export class ManagedConceptCollection {
     const pkg = await loadGcr(input);
     this._concepts = new ConceptCollection(await pkg.allConcepts());
     this._register = await pkg.register();
+    this._bibliography = await pkg.bibliography();
+    this._images = await pkg.allImageFiles();
     return this;
   }
 
@@ -34,7 +40,15 @@ export class ManagedConceptCollection {
   }
 
   async saveToGcr(options = {}) {
-    return createGcr(this._concepts, options.metadata);
+    return GcrWriter.createBuffer({
+      concepts: this._concepts,
+      metadata: options.metadata,
+      register: this._register,
+      format: options.format,
+      compiledFormats: options.compiledFormats,
+      bibliography: this._bibliography,
+      images: this._images,
+    });
   }
 
   add(concept) {
@@ -56,6 +70,16 @@ export class ManagedConceptCollection {
 
   setRegister(data) {
     this._register = data;
+    return this;
+  }
+
+  setBibliography(yamlString) {
+    this._bibliography = yamlString;
+    return this;
+  }
+
+  setImages(images) {
+    this._images = images instanceof Map ? images : new Map(Object.entries(images));
     return this;
   }
 }

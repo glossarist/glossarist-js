@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import { conceptParser } from './concept-parser.js';
-import { naturalSort } from './gcr-reader.js';
+import { naturalSort } from './sort.js';
 import { InvalidInputError } from './errors.js';
 
 function assertDir(dir, fnName) {

@@ -1,52 +1,4 @@
-/** A single term designation. */
-export interface Term {
-  type: string;
-  designation: string;
-  normative_status?: string;
-}
-
-/** A definition content block. */
-export interface Definition {
-  content: string;
-}
-
-/** A bibliographic source reference. */
-export interface Source {
-  type: string;
-  origin?: { ref: string };
-}
-
-/** Localized concept data for a single language. */
-export interface Localization {
-  terms: Term[];
-  definition?: Definition[];
-  notes?: { content: string }[];
-  examples?: { content: string }[];
-  sources?: Source[];
-  entry_status?: string;
-  normative_status?: string;
-}
-
-/** A normalized glossarist concept. */
-export interface Concept {
-  termid: string;
-  term: string | null;
-  localizations: Record<string, Localization>;
-  raw: Record<string, unknown>;
-}
-
-/** GCR package metadata from metadata.yaml. */
-export interface GcrMetadata {
-  shortname: string;
-  version?: string;
-  title?: string;
-  concept_count?: number;
-  languages?: string[];
-  schema_version?: string;
-  glossarist_version?: string;
-  created_at?: string;
-  statistics?: Record<string, unknown>;
-}
+import { Concept, GcrMetadata } from './models/index';
 
 /**
  * Load a GCR package from a ZIP archive.
@@ -56,7 +8,7 @@ export function loadGcr(input: Buffer | ArrayBuffer | Uint8Array | Blob | string
 
 /** A loaded GCR package (ZIP archive of glossarist concept data). */
 export class GcrPackage {
-  /** Read and parse metadata.yaml. */
+  /** Read and parse metadata.yaml as a GcrMetadata instance. */
   metadata(): Promise<GcrMetadata | null>;
   /** Read and parse optional register.yaml. */
   register(): Promise<Record<string, unknown> | null>;
@@ -88,6 +40,10 @@ export class GcrPackage {
 
   // Dataset assets (bibliography, images)
 
+  /** List all dataset asset entries found in this package. */
+  datasetAssetEntries(): Promise<Array<{ path: string; type: 'file' | 'directory'; asset: { path: string; type: string } }>>;
+  /** Read a file-type dataset asset by its registered path. */
+  readDatasetFileAsset(assetPath: string): Promise<string | null>;
   /** Read bibliography.yaml from the package as raw YAML string. */
   bibliography(): Promise<string | null>;
   /** Check whether the images/ directory is present and non-empty. */
@@ -102,7 +58,7 @@ export class GcrPackage {
   allImageFiles(): Promise<Map<string, Uint8Array>>;
 }
 
-/** Parse raw concept YAML (canonical or managed format) into a normalized Concept. */
+/** Parse raw concept YAML (canonical or managed format) into a Concept. */
 export function parseConceptYaml(raw: string, context?: string): Concept;
 
 /** Natural sort comparator for concept IDs like "3.1.1.1", "551-12-39". */

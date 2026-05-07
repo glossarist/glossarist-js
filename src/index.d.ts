@@ -5,12 +5,12 @@ export {
   Designation, Expression, Abbreviation, Symbol, GraphicalSymbol,
   Citation, ConceptSource, RelatedConcept, ConceptDate,
   DetailedDefinition, NonVerbRep,
+  GcrMetadata, GcrStatistics,
   RELATIONSHIP_TYPES, DATE_TYPES,
 } from './models/index';
 
 // GCR reader
 export { loadGcr, GcrPackage, parseConceptYaml, naturalSort } from './gcr-reader';
-export type { GcrMetadata } from './gcr-reader';
 
 // GCR writer
 export { createGcr, GcrWriter } from './gcr-writer';
@@ -52,3 +52,6 @@ export function parseCompiledPath(zipPath: string): { format: string; id: string
 export const DATASET_ASSETS: readonly { path: string; type: string }[];
 export const FILE_ASSETS: readonly { path: string; type: string }[];
 export const DIRECTORY_ASSETS: readonly { path: string; type: string }[];
+export function findFileAsset(path: string): { path: string; type: string } | undefined;
+export function findDirectoryAssetPath(zipPath: string): { path: string; type: string } | undefined;
+export function isDatasetAssetPath(zipPath: string): boolean;

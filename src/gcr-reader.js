@@ -3,11 +3,11 @@ import yaml from 'js-yaml';
 import { conceptParser } from './concept-parser.js';
 import { InvalidInputError } from './errors.js';
 import { COMPILED_FORMATS, parseCompiledPath, compiledPath } from './compiled-format.js';
+import { naturalSort } from './sort.js';
+
+export { naturalSort } from './sort.js';
 
 const BASE64_RE = /^[A-Za-z0-9+/]{100,}={0,2}$/;
-
-const NATURAL_SORT_RE = /(\d+|\D+)/g;
-const DIGIT_RE = /^\d+$/;
 
 /**
  * @typedef {Object} Term
@@ -348,34 +348,6 @@ export class GcrPackage {
  */
 export function parseConceptYaml(raw, context) {
   return conceptParser.parse(raw, context);
-}
-
-// --- Helpers ---
-
-/**
- * Natural sort comparator for concept IDs like "3.1.1.1", "551-12-39".
- * @param {string} a
- * @param {string} b
- * @returns {number}
- *
- * @example
- * ['3.1.10', '3.1.2', '3.1.1'].sort(naturalSort); // ['3.1.1', '3.1.2', '3.1.10']
- */
-export function naturalSort(a, b) {
-  const pa = a.match(NATURAL_SORT_RE) || [];
-  const pb = b.match(NATURAL_SORT_RE) || [];
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const na = pa[i] || '';
-    const nb = pb[i] || '';
-    if (DIGIT_RE.test(na) && DIGIT_RE.test(nb)) {
-      const diff = parseInt(na, 10) - parseInt(nb, 10);
-      if (diff !== 0) return diff;
-    } else {
-      const cmp = na.localeCompare(nb);
-      if (cmp !== 0) return cmp;
-    }
-  }
-  return 0;
 }
 
 /**

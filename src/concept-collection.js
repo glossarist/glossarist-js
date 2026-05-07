@@ -1,4 +1,4 @@
-import { naturalSort } from './gcr-reader.js';
+import { naturalSort } from './sort.js';
 
 const _items = Symbol('items');
 

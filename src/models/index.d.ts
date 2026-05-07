@@ -106,3 +106,42 @@ export class NonVerbRep extends GlossaristModel {
   readonly formula: string | null;
   readonly sources: Citation[];
 }
+
+export class GcrStatistics extends GlossaristModel {
+  readonly totalConcepts: number;
+  readonly conceptsWithDefinitions: number;
+  readonly conceptsByStatus: Record<string, number>;
+  readonly total_concepts: number;
+  readonly concepts_with_definitions: number;
+  readonly concepts_by_status: Record<string, number>;
+  static fromConcepts(concepts: Concept[]): GcrStatistics;
+  static fromJSON(data: Record<string, unknown>): GcrStatistics;
+}
+
+export class GcrMetadata extends GlossaristModel {
+  readonly shortname: string | null;
+  readonly version: string | null;
+  readonly title: string | null;
+  readonly description: string | null;
+  readonly owner: string | null;
+  readonly tags: string[];
+  readonly conceptCount: number;
+  readonly languages: string[];
+  readonly createdAt: string | null;
+  readonly glossaristVersion: string | null;
+  readonly schemaVersion: string;
+  readonly homepage: string | null;
+  readonly repository: string | null;
+  readonly license: string | null;
+  readonly uriPrefix: string | null;
+  readonly conceptUriTemplate: string | null;
+  readonly compiledFormats: string[];
+  readonly statistics: GcrStatistics | null;
+  readonly concept_count: number;
+  readonly created_at: string | null;
+  readonly glossarist_version: string | null;
+  readonly schema_version: string;
+  readonly compiled_formats: string[];
+  static fromYaml(yamlString: string): GcrMetadata;
+  static fromJSON(data: Record<string, unknown>): GcrMetadata;
+}

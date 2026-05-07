@@ -1,4 +1,4 @@
-import { Concept } from './models/index';
+import { Concept, GcrMetadata } from './models/index';
 
 /** Compiled formats map: format name → id → content string. */
 export type CompiledFormatsMap = Record<string, Record<string, string> | Map<string, string>>;
@@ -9,7 +9,7 @@ export type ImagesMap = Record<string, Uint8Array | string | ArrayBuffer> | Map<
 export class GcrWriter {
   static createBuffer(options: {
     concepts: Concept[];
-    metadata?: Record<string, unknown>;
+    metadata?: GcrMetadata | Record<string, unknown>;
     register?: Record<string, unknown>;
     uuidFn?: () => string;
     format?: 'canonical' | 'managed' | 'auto';

@@ -1,4 +1,4 @@
-import type { Concept } from './gcr-reader';
+import type { Concept } from './models/index';
 
 /** Read all concept YAML files from a directory. */
 export function readConcepts(dir: string): Concept[];

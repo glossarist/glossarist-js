@@ -20,6 +20,12 @@ export {
 } from './compiled-format.js';
 
 export {
+  DATASET_ASSETS,
+  FILE_ASSETS,
+  DIRECTORY_ASSETS,
+} from './dataset-asset.js';
+
+export {
   GlossaristModel,
   Concept, LocalizedConcept,
   Designation, Expression, Abbreviation, Symbol, GraphicalSymbol,

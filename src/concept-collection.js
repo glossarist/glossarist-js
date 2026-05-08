@@ -37,8 +37,7 @@ export class ConceptCollection {
 
   byStatus(status) {
     return new ConceptCollection(this[_items].filter(c => {
-      const langs = c.languages;
-      return langs.length > 0 && c.localization(langs[0])?.entryStatus === status;
+      return c.languages.some(lang => c.localization(lang)?.entryStatus === status);
     }));
   }
 

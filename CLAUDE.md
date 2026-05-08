@@ -29,7 +29,7 @@ This is a pure ESM package (`"type": "module"`) with no build step. The public A
 - **Serialization layer** — `ConceptSerializer` (canonical + managed YAML output)
 - **Parsing layer** — `ConceptParser` (format detection + normalization), `parseConceptYaml` (backward compat)
 - **Model layer** — domain classes with no I/O dependencies: `Concept`, `LocalizedConcept`, `Designation` hierarchy, `Citation`, `DetailedDefinition`, `NonVerbRep`, `ConceptSource`, `RelatedConcept`, `ConceptDate`, `GcrMetadata`, `GcrStatistics`
-- **Supporting** — `GlossaristModel` base class, `ValidationRule` framework, UUID generation, reference resolution, V1 migration, `naturalSort` (in `src/sort.js`)
+- **Supporting** — `GlossaristModel` base class, `ValidationRule` framework, `GcrValidator` (full-package async validation), `ValidationResult`, UUID generation, reference resolution, V1 migration, `naturalSort` (in `src/sort.js`)
 
 ### Error hierarchy
 

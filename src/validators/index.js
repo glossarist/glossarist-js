@@ -1,10 +1,13 @@
 export { ValidationError } from './validation-error.js';
 export { ValidationRule } from './validation-rule.js';
+export { ValidationResult } from './validation-result.js';
 export { ConceptValidator, LanguageCodeRule, DesignationTypeRule, EntryStatusRule } from './concept-validator.js';
 export { RegisterValidator } from './register-validator.js';
+export { GcrValidator } from './gcr-validator.js';
 
 import { ConceptValidator, LanguageCodeRule, DesignationTypeRule, EntryStatusRule } from './concept-validator.js';
 import { RegisterValidator } from './register-validator.js';
+import { GcrValidator } from './gcr-validator.js';
 
 const _default = new ConceptValidator()
   .addRule(new LanguageCodeRule())
@@ -21,4 +24,8 @@ export function createConceptValidator() {
 
 export function validateRegister(register) {
   return new RegisterValidator().validate(register);
+}
+
+export async function validateGcrPackage(pkg) {
+  return new GcrValidator().validate(pkg);
 }

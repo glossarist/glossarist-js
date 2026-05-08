@@ -26,7 +26,7 @@ export { ConceptCollection } from './concept-collection';
 export { ManagedConceptCollection } from './managed-concept-collection';
 
 // Validators
-export { validateConcept, validateRegister, createConceptValidator, ValidationError, ValidationRule, RegisterValidator } from './validators/index';
+export { validateConcept, validateRegister, validateGcrPackage, createConceptValidator, ValidationError, ValidationRule, ValidationResult, RegisterValidator, GcrValidator } from './validators/index';
 
 // UUID
 export { conceptUuid, localizedConceptUuid, uuidV5 } from './uuid';

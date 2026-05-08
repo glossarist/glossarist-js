@@ -57,10 +57,25 @@ describe('ConceptCollection', () => {
     assert.equal(cc.byLanguage('eng').length, 3);
   });
 
-  it('byStatus filters by entry status', () => {
+  it('byStatus filters by entry status (checks all localizations)', () => {
     const cc = makeCollection();
     assert.equal(cc.byStatus('valid').length, 1);
     assert.equal(cc.byStatus('draft').length, 1);
+
+    const multiStatus = parseConceptYaml([
+      'termid: "multi"',
+      'eng:',
+      '  terms:',
+      '    - designation: a',
+      '  entry_status: valid',
+      'fra:',
+      '  terms:',
+      '    - designation: b',
+      '  entry_status: draft',
+    ].join('\n'));
+    const cc2 = new ConceptCollection([multiStatus]);
+    assert.equal(cc2.byStatus('valid').length, 1);
+    assert.equal(cc2.byStatus('draft').length, 1);
   });
 
   it('index creates a Map for O(1) lookup', () => {

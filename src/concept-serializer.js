@@ -39,6 +39,10 @@ export class ConceptSerializer {
       id: genId(),
     };
 
+    if (concept.domains.length > 0) {
+      mainDoc.data.domains = concept.domains.map(d => d.toJSON());
+    }
+
     const parts = [
       '---\n' + yaml.dump(mainDoc, DUMP_OPTS),
       ...langDocs.map(d => '---\n' + yaml.dump(d, DUMP_OPTS)),

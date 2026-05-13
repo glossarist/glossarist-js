@@ -13,6 +13,7 @@ export class Concept extends GlossaristModel {
   readonly localizations: Record<string, any>;
   readonly raw: Record<string, unknown> | null;
   readonly relatedConcepts: RelatedConcept[];
+  readonly domains: ConceptReference[];
   readonly dates: ConceptDate[];
   readonly sources: ConceptSource[];
   readonly status: string | null;
@@ -34,6 +35,7 @@ export class LocalizedConcept extends GlossaristModel {
   readonly examples: { content: string }[];
   readonly sources: ConceptSource[];
   readonly entryStatus: string | null;
+  readonly domain: string | null;
   readonly primaryDesignation: string | null;
   readonly primaryDefinition: string | null;
   static fromJSON(data: Record<string, unknown>): LocalizedConcept;
@@ -86,6 +88,17 @@ export class RelatedConcept extends GlossaristModel {
   readonly type: string;
   readonly content: string | null;
   readonly ref: Citation | null;
+}
+
+export class ConceptReference extends GlossaristModel {
+  readonly conceptId: string | null;
+  readonly refType: string | null;
+  readonly source: string | null;
+  readonly urn: string | null;
+  readonly isLocal: boolean;
+  readonly isExternal: boolean;
+  static domain(conceptId: string): ConceptReference;
+  static fromJSON(data: Record<string, unknown>): ConceptReference;
 }
 
 export const DATE_TYPES: readonly string[];

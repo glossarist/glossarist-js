@@ -114,3 +114,57 @@ describe('ConceptSerializer — toRegisterYaml', () => {
     assert.ok(yaml.includes('shortname:'));
   });
 });
+
+describe('ConceptSerializer — domains in managed output', () => {
+  it('includes domains in managed YAML output', () => {
+    const raw = [
+      '---',
+      'data:',
+      '  identifier: 103-01-01',
+      '  localized_concepts:',
+      '    eng: uuid-a',
+      '  domains:',
+      '    - concept_id: area-103',
+      '      ref_type: domain',
+      '    - concept_id: section-103-01',
+      '      ref_type: domain',
+      'id: uuid-main',
+      '---',
+      'data:',
+      '  terms:',
+      '    - designation: functional',
+      '  language_code: eng',
+      '  domain: section-103-01',
+      'id: uuid-a',
+    ].join('\n');
+    const concept = conceptParser.parse(raw);
+    const yaml = conceptSerializer.toManagedYaml(concept);
+    assert.ok(yaml.includes('domains:'));
+    assert.ok(yaml.includes('concept_id: area-103'));
+    assert.ok(yaml.includes('ref_type: domain'));
+
+    const reparsed = conceptParser.parse(yaml);
+    assert.equal(reparsed.domains.length, 2);
+    assert.equal(reparsed.domains[0].conceptId, 'area-103');
+  });
+
+  it('omits domains when empty', () => {
+    const raw = [
+      '---',
+      'data:',
+      '  identifier: 3.1.1.1',
+      '  localized_concepts:',
+      '    eng: uuid-a',
+      'id: uuid-main',
+      '---',
+      'data:',
+      '  terms:',
+      '    - designation: entity',
+      '  language_code: eng',
+      'id: uuid-a',
+    ].join('\n');
+    const concept = conceptParser.parse(raw);
+    const yaml = conceptSerializer.toManagedYaml(concept);
+    assert.ok(!yaml.includes('domains:'));
+  });
+});

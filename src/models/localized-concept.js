@@ -15,6 +15,7 @@ export class LocalizedConcept extends GlossaristModel {
     this.entryStatus = data.entry_status ?? data.entryStatus ?? null;
     this.reviewType = data.review_type ?? data.reviewType ?? null;
     this.classification = data.classification ?? null;
+    this.domain = data.domain ?? null;
 
     this._terms = null;
     this._definitions = null;
@@ -83,6 +84,7 @@ export class LocalizedConcept extends GlossaristModel {
     if (this.entryStatus != null) obj.entry_status = this.entryStatus;
     if (this.reviewType != null) obj.review_type = this.reviewType;
     if (this.classification != null) obj.classification = this.classification;
+    if (this.domain != null) obj.domain = this.domain;
     return obj;
   }
 

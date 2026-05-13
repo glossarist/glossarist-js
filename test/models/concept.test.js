@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { Concept } from '../../src/models/concept.js';
+import { ConceptReference } from '../../src/models/concept-reference.js';
 import { LocalizedConcept } from '../../src/models/localized-concept.js';
 import { parseConceptYaml } from '../../src/gcr-reader.js';
 
@@ -175,5 +176,139 @@ describe('LocalizedConcept model', () => {
     assert.deepEqual(lc.terms, []);
     assert.equal(lc.primaryDesignation, null);
     assert.equal(lc.primaryDefinition, null);
+  });
+
+  it('preserves domain property', () => {
+    const lc = new LocalizedConcept({
+      language_code: 'eng',
+      terms: [{ type: 'expression', designation: 'test' }],
+      domain: 'section-103-01',
+    });
+    assert.equal(lc.domain, 'section-103-01');
+    const json = lc.toJSON();
+    assert.equal(json.domain, 'section-103-01');
+  });
+});
+
+describe('ConceptReference model', () => {
+  it('creates a domain reference', () => {
+    const ref = ConceptReference.domain('area-103');
+    assert.equal(ref.conceptId, 'area-103');
+    assert.equal(ref.refType, 'domain');
+    assert.ok(ref.isLocal);
+  });
+
+  it('serializes to JSON with snake_case keys', () => {
+    const ref = ConceptReference.domain('section-103-01');
+    const json = ref.toJSON();
+    assert.deepEqual(json, { concept_id: 'section-103-01', ref_type: 'domain' });
+  });
+
+  it('round-trips through fromJSON', () => {
+    const ref = ConceptReference.domain('area-103');
+    const json = ref.toJSON();
+    const ref2 = ConceptReference.fromJSON(json);
+    assert.ok(ref.equals(ref2));
+  });
+
+  it('handles external references', () => {
+    const ref = new ConceptReference({
+      source: 'urn:iec:std:iec:60050',
+      concept_id: '103-01-01',
+      ref_type: 'domain',
+    });
+    assert.ok(ref.isExternal);
+    assert.equal(ref.source, 'urn:iec:std:iec:60050');
+  });
+
+  it('handles URN references', () => {
+    const ref = new ConceptReference({ urn: 'urn:iso:std:iso:4217' });
+    assert.ok(ref.isExternal);
+    assert.equal(ref.urn, 'urn:iso:std:iso:4217');
+  });
+});
+
+describe('Concept domains', () => {
+  it('accepts domains as ConceptReference objects', () => {
+    const c = new Concept({
+      id: '103-01-01',
+      domains: [
+        ConceptReference.domain('area-103'),
+        ConceptReference.domain('section-103-01'),
+      ],
+    });
+    assert.equal(c.domains.length, 2);
+    assert.equal(c.domains[0].conceptId, 'area-103');
+    assert.equal(c.domains[1].conceptId, 'section-103-01');
+  });
+
+  it('normalizes domains from plain objects', () => {
+    const c = new Concept({
+      id: '103-01-01',
+      domains: [
+        { concept_id: 'area-103', ref_type: 'domain' },
+      ],
+    });
+    assert.equal(c.domains.length, 1);
+    assert.ok(c.domains[0] instanceof ConceptReference);
+    assert.equal(c.domains[0].conceptId, 'area-103');
+  });
+
+  it('normalizes legacy groups strings to ConceptReference', () => {
+    const c = new Concept({
+      id: '103-01-01',
+      groups: ['area-103', 'section-103-01'],
+    });
+    assert.equal(c.domains.length, 2);
+    assert.ok(c.domains[0] instanceof ConceptReference);
+    assert.equal(c.domains[0].conceptId, 'area-103');
+    assert.equal(c.domains[0].refType, 'domain');
+    assert.equal(c.domains[1].conceptId, 'section-103-01');
+  });
+
+  it('prefers domains over groups', () => {
+    const c = new Concept({
+      id: '103-01-01',
+      domains: [{ concept_id: 'area-103', ref_type: 'domain' }],
+      groups: ['area-999'],
+    });
+    assert.equal(c.domains.length, 1);
+    assert.equal(c.domains[0].conceptId, 'area-103');
+  });
+
+  it('defaults to empty domains', () => {
+    const c = new Concept({ id: '001' });
+    assert.deepEqual(c.domains, []);
+  });
+
+  it('serializes domains in toJSON', () => {
+    const c = new Concept({
+      id: '103-01-01',
+      domains: [
+        ConceptReference.domain('area-103'),
+        ConceptReference.domain('section-103-01'),
+      ],
+    });
+    const json = c.toJSON();
+    assert.equal(json.domains.length, 2);
+    assert.equal(json.domains[0].concept_id, 'area-103');
+    assert.equal(json.domains[0].ref_type, 'domain');
+  });
+
+  it('omits empty domains from toJSON', () => {
+    const c = new Concept({ id: '001' });
+    const json = c.toJSON();
+    assert.equal(json.domains, undefined);
+  });
+
+  it('round-trips through fromJSON with domains', () => {
+    const c = new Concept({
+      id: '103-01-01',
+      domains: [ConceptReference.domain('area-103')],
+    });
+    const json = c.toJSON();
+    const c2 = Concept.fromJSON(json);
+    assert.equal(c2.domains.length, 1);
+    assert.equal(c2.domains[0].conceptId, 'area-103');
   });
 });

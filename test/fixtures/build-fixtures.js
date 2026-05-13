@@ -120,6 +120,11 @@ async function buildManagedGcr() {
     '  localized_concepts:',
     '    eng: aaaaaaaa-1111-5555-aaaa-aaaaaaaaaaaa',
     '    fra: bbbbbbbb-2222-5555-bbbb-bbbbbbbbbbbb',
+    '  domains:',
+    '    - concept_id: area-103',
+    '      ref_type: domain',
+    '    - concept_id: section-103-01',
+    '      ref_type: domain',
     'id: cccccccc-3333-5555-cccc-cccccccccccc',
     '---',
     'data:',
@@ -135,6 +140,7 @@ async function buildManagedGcr() {
     '      type: authoritative',
     '  language_code: eng',
     '  entry_status: valid',
+    '  domain: section-103-01',
     'id: aaaaaaaa-1111-5555-aaaa-aaaaaaaaaaaa',
     '---',
     'data:',
@@ -146,6 +152,7 @@ async function buildManagedGcr() {
     '      designation: entité',
     '  language_code: fra',
     '  entry_status: valid',
+    '  domain: section-103-01',
     'id: bbbbbbbb-2222-5555-bbbb-bbbbbbbbbbbb',
   ].join('\n'));
 

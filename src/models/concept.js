@@ -1,6 +1,7 @@
 import { GlossaristModel } from './base.js';
 import { LocalizedConcept } from './localized-concept.js';
 import { RelatedConcept } from './related-concept.js';
+import { ConceptReference } from './concept-reference.js';
 import { ConceptDate } from './concept-date.js';
 import { ConceptSource } from './concept-source.js';
 
@@ -13,6 +14,7 @@ export class Concept extends GlossaristModel {
     this._cache = {};
 
     this.relatedConcepts = _mapInstances(data.relatedConcepts ?? data.related_concepts ?? [], RelatedConcept);
+    this.domains = _normalizeDomains(data.domains, data.groups);
     this.dates = _mapInstances(data.dates ?? [], ConceptDate);
     this.sources = _mapInstances(data.sources ?? [], ConceptSource);
     this.status = data.status ?? null;
@@ -84,6 +86,9 @@ export class Concept extends GlossaristModel {
     if (this.relatedConcepts.length > 0) {
       obj.relatedConcepts = this.relatedConcepts.map(rc => rc.toJSON());
     }
+    if (this.domains.length > 0) {
+      obj.domains = this.domains.map(d => d.toJSON());
+    }
     if (this.dates.length > 0) {
       obj.dates = this.dates.map(d => d.toJSON());
     }
@@ -101,4 +106,16 @@ export class Concept extends GlossaristModel {
 
 function _mapInstances(arr, Cls) {
   return arr.map(item => item instanceof Cls ? item : new Cls(item));
+}
+
+function _normalizeDomains(domains, groups) {
+  if (domains) {
+    return domains.map(d => d instanceof ConceptReference ? d : new ConceptReference(d));
+  }
+  if (groups) {
+    return groups.map(g => typeof g === 'string'
+      ? ConceptReference.domain(g)
+      : new ConceptReference(g));
+  }
+  return [];
 }

@@ -70,6 +70,8 @@ export class ConceptParser {
       id: String(mc.data.identifier),
       term: null,
       localizations,
+      domains: mc.data.domains,
+      groups: mc.data.groups,
       raw: mc,
     });
   }

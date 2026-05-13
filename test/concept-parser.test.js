@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { ConceptParser, conceptParser } from '../src/concept-parser.js';
 import { Concept } from '../src/models/concept.js';
+import { ConceptReference } from '../src/models/concept-reference.js';
 import { InvalidInputError, YamlParseError } from '../src/errors.js';
 
 describe('ConceptParser', () => {
@@ -118,6 +119,62 @@ describe('ConceptParser', () => {
       ].join('\n');
       const concept = conceptParser.parse(raw);
       assert.deepEqual(concept.languages, ['eng']);
+    });
+
+    it('parses domains from managed concept data', () => {
+      const raw = [
+        '---',
+        'data:',
+        '  identifier: 103-01-01',
+        '  localized_concepts:',
+        '    eng: uuid-a',
+        '  domains:',
+        '    - concept_id: area-103',
+        '      ref_type: domain',
+        '    - concept_id: section-103-01',
+        '      ref_type: domain',
+        'id: uuid-main',
+        '---',
+        'data:',
+        '  terms:',
+        '    - designation: functional',
+        '  language_code: eng',
+        '  domain: section-103-01',
+        'id: uuid-a',
+      ].join('\n');
+      const concept = conceptParser.parse(raw);
+      assert.equal(concept.id, '103-01-01');
+      assert.equal(concept.domains.length, 2);
+      assert.ok(concept.domains[0] instanceof ConceptReference);
+      assert.equal(concept.domains[0].conceptId, 'area-103');
+      assert.equal(concept.domains[0].refType, 'domain');
+      assert.equal(concept.domains[1].conceptId, 'section-103-01');
+      assert.equal(concept.localization('eng').domain, 'section-103-01');
+    });
+
+    it('normalizes legacy groups to ConceptReference domains', () => {
+      const raw = [
+        '---',
+        'data:',
+        '  identifier: 103-01-01',
+        '  localized_concepts:',
+        '    eng: uuid-a',
+        '  groups:',
+        '    - area-103',
+        '    - section-103-01',
+        'id: uuid-main',
+        '---',
+        'data:',
+        '  terms:',
+        '    - designation: functional',
+        '  language_code: eng',
+        'id: uuid-a',
+      ].join('\n');
+      const concept = conceptParser.parse(raw);
+      assert.equal(concept.domains.length, 2);
+      assert.ok(concept.domains[0] instanceof ConceptReference);
+      assert.equal(concept.domains[0].conceptId, 'area-103');
+      assert.equal(concept.domains[0].refType, 'domain');
     });
   });
 

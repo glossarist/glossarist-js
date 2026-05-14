@@ -1,7 +1,7 @@
 import { GlossaristModel } from './base.js';
 
 export const DATE_TYPES = Object.freeze([
-  'accepted', 'amended', 'published', 'withdrawn', 'created',
+  'accepted', 'amended', 'retired',
 ]);
 
 export class ConceptDate extends GlossaristModel {

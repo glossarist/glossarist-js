@@ -6,6 +6,9 @@ import { ConceptSource } from '../../src/models/concept-source.js';
 import { RelatedConcept, RELATIONSHIP_TYPES } from '../../src/models/related-concept.js';
 import { DetailedDefinition } from '../../src/models/detailed-definition.js';
 import { NonVerbRep } from '../../src/models/non-verb-rep.js';
+import { GrammarInfo } from '../../src/models/grammar-info.js';
+import { Pronunciation } from '../../src/models/pronunciation.js';
+import { Locality } from '../../src/models/locality.js';
 
 // --- Citation ---
 
@@ -24,7 +27,7 @@ describe('Citation', () => {
 
   it('handles plain string input', () => {
     const c = new Citation('ISO 9000');
-    assert.equal(c.source, 'ISO 9000');
+    assert.equal(c.text, 'ISO 9000');
     assert.equal(c.toString(), 'ISO 9000');
   });
 
@@ -54,11 +57,73 @@ describe('Citation', () => {
     assert.equal(c.isStructured, false);
   });
 
+  it('stores locality', () => {
+    const c = new Citation({ source: 'ISO', id: '9001', locality: { type: 'clause', reference_from: '3.1' } });
+    assert.ok(c.locality instanceof Locality);
+    assert.equal(c.locality.type, 'clause');
+    assert.equal(c.locality.referenceFrom, '3.1');
+  });
+
   it('round-trips via toJSON/fromJSON', () => {
     const c = new Citation({ source: { ref: 'ISO 9000' }, clause: '3.1' });
     const c2 = Citation.fromJSON(c.toJSON());
     assert.deepEqual(c.toJSON(), c2.toJSON());
     assert.ok(c.equals(c2));
+  });
+});
+
+// --- GrammarInfo ---
+
+describe('GrammarInfo', () => {
+  it('stores gender and number', () => {
+    const gi = new GrammarInfo({ gender: 'm', number: 'singular', noun: true });
+    assert.equal(gi.gender, 'm');
+    assert.equal(gi.number, 'singular');
+    assert.equal(gi.noun, true);
+    assert.equal(gi.verb, false);
+  });
+
+  it('round-trips', () => {
+    const gi = new GrammarInfo({ gender: 'f', verb: true });
+    const json = gi.toJSON();
+    assert.equal(json.gender, 'f');
+    assert.equal(json.verb, true);
+    assert.equal(json.noun, undefined);
+    assert.ok(gi.equals(GrammarInfo.fromJSON(json)));
+  });
+});
+
+// --- Pronunciation ---
+
+describe('Pronunciation', () => {
+  it('stores content and system', () => {
+    const p = new Pronunciation({ content: 'toːkjoː', system: 'IPA', language: 'jpn' });
+    assert.equal(p.content, 'toːkjoː');
+    assert.equal(p.system, 'IPA');
+    assert.equal(p.language, 'jpn');
+  });
+
+  it('round-trips', () => {
+    const p = new Pronunciation({ content: 'test', country: 'US' });
+    assert.ok(p.equals(Pronunciation.fromJSON(p.toJSON())));
+  });
+});
+
+// --- Locality ---
+
+describe('Locality', () => {
+  it('stores type and references', () => {
+    const loc = new Locality({ type: 'clause', reference_from: '3.1', reference_to: '3.5' });
+    assert.equal(loc.type, 'clause');
+    assert.equal(loc.referenceFrom, '3.1');
+    assert.equal(loc.referenceTo, '3.5');
+  });
+
+  it('round-trips with snake_case keys', () => {
+    const loc = new Locality({ type: 'page', reference_from: '42' });
+    const json = loc.toJSON();
+    assert.equal(json.reference_from, '42');
+    assert.ok(loc.equals(Locality.fromJSON(json)));
   });
 });
 
@@ -123,13 +188,21 @@ describe('RelatedConcept', () => {
     assert.equal(rc.content, '3.1.1.1');
   });
 
-  it('defaults to related type', () => {
+  it('defaults to see type', () => {
     const rc = new RelatedConcept();
-    assert.equal(rc.type, 'related');
+    assert.equal(rc.type, 'see');
+  });
+
+  it('RELATIONSHIP_TYPES includes all 27+ types', () => {
+    assert.ok(RELATIONSHIP_TYPES.includes('broader_generic'));
+    assert.ok(RELATIONSHIP_TYPES.includes('close_match'));
+    assert.ok(RELATIONSHIP_TYPES.includes('sequentially_related'));
+    assert.ok(RELATIONSHIP_TYPES.includes('false_friend'));
+    assert.ok(RELATIONSHIP_TYPES.includes('abbreviated_form_for'));
+    assert.ok(RELATIONSHIP_TYPES.length >= 27);
   });
 
   it('RELATIONSHIP_TYPES is frozen', () => {
-    assert.ok(RELATIONSHIP_TYPES.includes('supersedes'));
     assert.throws(() => RELATIONSHIP_TYPES.push('x'));
   });
 });
@@ -153,15 +226,21 @@ describe('DetailedDefinition', () => {
 // --- NonVerbRep ---
 
 describe('NonVerbRep', () => {
-  it('stores image and sources', () => {
-    const n = new NonVerbRep({ image: 'diagram.png', formula: 'E=mc^2' });
-    assert.equal(n.image, 'diagram.png');
-    assert.equal(n.formula, 'E=mc^2');
-    assert.equal(n.table, null);
+  it('stores type, ref, and text', () => {
+    const n = new NonVerbRep({ type: 'image', ref: 'diagram.png', text: 'A diagram' });
+    assert.equal(n.type, 'image');
+    assert.equal(n.ref, 'diagram.png');
+    assert.equal(n.text, 'A diagram');
+  });
+
+  it('stores formula type', () => {
+    const n = new NonVerbRep({ type: 'formula', ref: 'E=mc^2' });
+    assert.equal(n.type, 'formula');
+    assert.equal(n.ref, 'E=mc^2');
   });
 
   it('round-trips', () => {
-    const n = new NonVerbRep({ image: 'x.png', sources: [{ ref: 'S' }] });
+    const n = new NonVerbRep({ type: 'image', ref: 'x.png', sources: [{ ref: 'S' }] });
     assert.ok(n.equals(NonVerbRep.fromJSON(n.toJSON())));
   });
 });

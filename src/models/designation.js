@@ -1,4 +1,8 @@
 import { GlossaristModel } from './base.js';
+import { ConceptSource } from './concept-source.js';
+import { Pronunciation } from './pronunciation.js';
+import { GrammarInfo } from './grammar-info.js';
+import { RelatedConcept } from './related-concept.js';
 
 export class Designation extends GlossaristModel {
   static _registry = new Map();
@@ -18,11 +22,41 @@ export class Designation extends GlossaristModel {
     this.designation = data.designation ?? '';
     this.type = data.type ?? 'expression';
     this.normativeStatus = data.normative_status ?? null;
+    this.absent = data.absent ?? null;
+    this.fieldOfApplication = data.field_of_application ?? null;
+    this.usageInfo = data.usage_info ?? null;
+    this.geographicalArea = data.geographical_area ?? null;
+    this.language = data.language ?? null;
+    this.script = data.script ?? null;
+    this.system = data.system ?? null;
+    this.international = data.international ?? null;
+    this.termType = data.term_type ?? null;
+    this.pronunciations = (data.pronunciation ?? []).map(
+      p => p instanceof Pronunciation ? p : new Pronunciation(p)
+    );
+    this.sources = (data.sources ?? []).map(
+      s => s instanceof ConceptSource ? s : new ConceptSource(s)
+    );
+    this.related = (data.related ?? []).map(
+      r => r instanceof RelatedConcept ? r : new RelatedConcept(r)
+    );
   }
 
   toJSON() {
     const obj = { type: this.type, designation: this.designation };
     if (this.normativeStatus != null) obj.normative_status = this.normativeStatus;
+    if (this.absent != null) obj.absent = this.absent;
+    if (this.fieldOfApplication != null) obj.field_of_application = this.fieldOfApplication;
+    if (this.usageInfo != null) obj.usage_info = this.usageInfo;
+    if (this.geographicalArea != null) obj.geographical_area = this.geographicalArea;
+    if (this.language != null) obj.language = this.language;
+    if (this.script != null) obj.script = this.script;
+    if (this.system != null) obj.system = this.system;
+    if (this.international != null) obj.international = this.international;
+    if (this.termType != null) obj.term_type = this.termType;
+    if (this.pronunciations.length > 0) obj.pronunciation = this.pronunciations.map(p => p.toJSON());
+    if (this.sources.length > 0) obj.sources = this.sources.map(s => s.toJSON());
+    if (this.related.length > 0) obj.related = this.related.map(r => r.toJSON());
     return obj;
   }
 
@@ -34,18 +68,16 @@ export class Designation extends GlossaristModel {
 export class Expression extends Designation {
   constructor(data = {}) {
     super(data);
-    this.gender = data.gender ?? null;
-    this.plurality = data.plurality ?? null;
-    this.partOfSpeech = data.part_of_speech ?? null;
-    this.geographicalArea = data.geographical_area ?? null;
+    this.prefix = data.prefix ?? null;
+    this.grammarInfo = (data.grammar_info ?? []).map(
+      g => g instanceof GrammarInfo ? g : new GrammarInfo(g)
+    );
   }
 
   toJSON() {
     const obj = super.toJSON();
-    if (this.gender != null) obj.gender = this.gender;
-    if (this.plurality != null) obj.plurality = this.plurality;
-    if (this.partOfSpeech != null) obj.part_of_speech = this.partOfSpeech;
-    if (this.geographicalArea != null) obj.geographical_area = this.geographicalArea;
+    if (this.prefix != null) obj.prefix = this.prefix;
+    if (this.grammarInfo.length > 0) obj.grammar_info = this.grammarInfo.map(g => g.toJSON());
     return obj;
   }
 
@@ -54,37 +86,60 @@ export class Expression extends Designation {
 
 Designation.register('expression', Expression);
 
-export class Abbreviation extends Designation {
+export class Abbreviation extends Expression {
+  constructor(data = {}) {
+    super(data);
+    this.acronym = data.acronym ?? false;
+    this.initialism = data.initialism ?? false;
+    this.truncation = data.truncation ?? false;
+  }
+
+  toJSON() {
+    const obj = super.toJSON();
+    if (this.acronym) obj.acronym = true;
+    if (this.initialism) obj.initialism = true;
+    if (this.truncation) obj.truncation = true;
+    return obj;
+  }
+
   static fromJSON(data) { return new Abbreviation(data); }
 }
 
 Designation.register('abbreviation', Abbreviation);
 
 export class Symbol extends Designation {
-  constructor(data = {}) {
-    super(data);
-    this.international = data.international ?? null;
-  }
-
-  toJSON() {
-    const obj = super.toJSON();
-    if (this.international != null) obj.international = this.international;
-    return obj;
-  }
-
   static fromJSON(data) { return new Symbol(data); }
 }
 
 Designation.register('symbol', Symbol);
 
-export class GraphicalSymbol extends Designation {
+export class LetterSymbol extends Symbol {
   constructor(data = {}) {
     super(data);
+    this.text = data.text ?? null;
+  }
+
+  toJSON() {
+    const obj = super.toJSON();
+    if (this.text != null) obj.text = this.text;
+    return obj;
+  }
+
+  static fromJSON(data) { return new LetterSymbol(data); }
+}
+
+Designation.register('letter_symbol', LetterSymbol);
+
+export class GraphicalSymbol extends Symbol {
+  constructor(data = {}) {
+    super(data);
+    this.text = data.text ?? null;
     this.image = data.image ?? null;
   }
 
   toJSON() {
     const obj = super.toJSON();
+    if (this.text != null) obj.text = this.text;
     if (this.image != null) obj.image = this.image;
     return obj;
   }

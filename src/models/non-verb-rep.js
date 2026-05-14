@@ -1,22 +1,22 @@
 import { GlossaristModel } from './base.js';
-import { Citation } from './citation.js';
+import { ConceptSource } from './concept-source.js';
 
 export class NonVerbRep extends GlossaristModel {
   constructor(data = {}) {
     super();
-    this.image = data.image ?? null;
-    this.table = data.table ?? null;
-    this.formula = data.formula ?? null;
+    this.type = data.type ?? null;
+    this.ref = data.ref ?? null;
+    this.text = data.text ?? null;
     this.sources = (data.sources ?? []).map(
-      s => s instanceof Citation ? s : new Citation(s)
+      s => s instanceof ConceptSource ? s : new ConceptSource(s)
     );
   }
 
   toJSON() {
     const obj = {};
-    if (this.image != null) obj.image = this.image;
-    if (this.table != null) obj.table = this.table;
-    if (this.formula != null) obj.formula = this.formula;
+    if (this.type != null) obj.type = this.type;
+    if (this.ref != null) obj.ref = this.ref;
+    if (this.text != null) obj.text = this.text;
     if (this.sources.length > 0) obj.sources = this.sources.map(s => s.toJSON());
     return obj;
   }

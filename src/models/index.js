@@ -10,7 +10,7 @@ export { ConceptDate, DATE_TYPES } from './concept-date.js';
 export { DetailedDefinition } from './detailed-definition.js';
 export { NonVerbRep } from './non-verb-rep.js';
 export { Pronunciation } from './pronunciation.js';
-export { GrammarInfo } from './grammar-info.js';
+export { GrammarInfo, GRAMMAR_GENDERS, GRAMMAR_NUMBERS, GRAMMAR_PARTS_OF_SPEECH } from './grammar-info.js';
 export { Locality } from './locality.js';
 export { GcrMetadata } from './gcr-metadata.js';
 export { GcrStatistics } from './gcr-statistics.js';

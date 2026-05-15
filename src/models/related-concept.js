@@ -1,7 +1,7 @@
 import { GlossaristModel } from './base.js';
 
 export const RELATIONSHIP_TYPES = Object.freeze([
-  // Lifecycle
+  // Lifecycle (ISO 10241-1)
   'deprecates', 'supersedes', 'superseded_by',
   // Hierarchical (SKOS)
   'broader', 'narrower',
@@ -13,13 +13,13 @@ export const RELATIONSHIP_TYPES = Object.freeze([
   'broader_instantial', 'narrower_instantial',
   // SKOS mapping
   'equivalent', 'close_match', 'broad_match', 'narrow_match', 'related_match',
-  // Associative (SKOS)
+  // Associative (ISO 10241-1 / ISO 25964)
   'see', 'related_concept', 'related_concept_broader', 'related_concept_narrower',
-  // Comparative
+  // Comparative (ISO 10241-1)
   'compare', 'contrast',
-  // Spatiotemporal
-  'sequentially_related', 'spatially_related', 'temporally_related',
-  // Lexical
+  // Spatiotemporal (ISO 25964 / TBX)
+  'sequentially_related_concept', 'spatially_related_concept', 'temporally_related_concept',
+  // Lexical (ISO 12620 / TBX)
   'homograph', 'false_friend',
   // Designation-level
   'abbreviated_form_for', 'short_form_for',

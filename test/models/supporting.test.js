@@ -83,6 +83,13 @@ describe('GrammarInfo', () => {
     assert.equal(gi.verb, false);
   });
 
+  it('stores part_of_speech', () => {
+    const gi = new GrammarInfo({ part_of_speech: 'noun' });
+    assert.equal(gi.partOfSpeech, 'noun');
+    const json = gi.toJSON();
+    assert.equal(json.part_of_speech, 'noun');
+  });
+
   it('round-trips', () => {
     const gi = new GrammarInfo({ gender: 'f', verb: true });
     const json = gi.toJSON();
@@ -196,7 +203,7 @@ describe('RelatedConcept', () => {
   it('RELATIONSHIP_TYPES includes all 27+ types', () => {
     assert.ok(RELATIONSHIP_TYPES.includes('broader_generic'));
     assert.ok(RELATIONSHIP_TYPES.includes('close_match'));
-    assert.ok(RELATIONSHIP_TYPES.includes('sequentially_related'));
+    assert.ok(RELATIONSHIP_TYPES.includes('sequentially_related_concept'));
     assert.ok(RELATIONSHIP_TYPES.includes('false_friend'));
     assert.ok(RELATIONSHIP_TYPES.includes('abbreviated_form_for'));
     assert.ok(RELATIONSHIP_TYPES.length >= 27);

@@ -308,8 +308,10 @@ import 'glossarist/validators'; // validation framework
 
 ```
 Public API (index.js)
-├── Domain models     → Concept, LocalizedConcept, Designation (Expression, Symbol, ...),
-│                       Citation, ConceptSource, RelatedConcept, DetailedDefinition, NonVerbRep
+├── Domain models     → Concept, LocalizedConcept, Designation (Expression, Abbreviation, Symbol,
+│                       LetterSymbol, GraphicalSymbol), GrammarInfo, Pronunciation, Locality,
+│                       Citation, ConceptSource, RelatedConcept, ConceptReference, ConceptDate,
+│                       DetailedDefinition, NonVerbRep
 ├── Parsing           → ConceptParser (canonical + managed format detection)
 ├── Serialization     → ConceptSerializer (canonical + managed YAML output)
 ├── I/O               → loadGcr, readConcepts, createGcr, writeConcepts

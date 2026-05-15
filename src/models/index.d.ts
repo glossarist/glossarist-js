@@ -8,6 +8,7 @@ export class GlossaristModel {
 export class Concept extends GlossaristModel {
   readonly id: string;
   readonly term: string | null;
+  readonly uri: string | null;
   readonly termid: string;
   readonly languages: string[];
   readonly localizations: Record<string, any>;
@@ -28,14 +29,23 @@ export class Concept extends GlossaristModel {
 
 export class LocalizedConcept extends GlossaristModel {
   readonly languageCode: string | null;
+  readonly script: string | null;
+  readonly system: string | null;
+  readonly entryStatus: string | null;
+  readonly classification: string | null;
+  readonly reviewType: string | null;
+  readonly domain: string | null;
+  readonly release: string | null;
+  readonly lineageSourceSimilarity: number | null;
   readonly terms: Designation[];
   readonly definitions: DetailedDefinition[];
   readonly definition: DetailedDefinition[];
-  readonly notes: { content: string }[];
-  readonly examples: { content: string }[];
+  readonly notes: DetailedDefinition[];
+  readonly examples: DetailedDefinition[];
   readonly sources: ConceptSource[];
-  readonly entryStatus: string | null;
-  readonly domain: string | null;
+  readonly dates: ConceptDate[];
+  readonly nonVerbalRep: NonVerbRep[];
+  readonly related: RelatedConcept[];
   readonly primaryDesignation: string | null;
   readonly primaryDefinition: string | null;
   static fromJSON(data: Record<string, unknown>): LocalizedConcept;
@@ -45,33 +55,86 @@ export class Designation extends GlossaristModel {
   readonly designation: string;
   readonly type: string;
   readonly normativeStatus: string | null;
+  readonly absent: boolean | null;
+  readonly fieldOfApplication: string | null;
+  readonly usageInfo: string | null;
+  readonly geographicalArea: string | null;
+  readonly language: string | null;
+  readonly script: string | null;
+  readonly system: string | null;
+  readonly international: boolean | null;
+  readonly termType: string | null;
+  readonly pronunciations: Pronunciation[];
+  readonly sources: ConceptSource[];
+  readonly related: RelatedConcept[];
   static register(type: string, cls: typeof Designation): void;
   static fromData(data: Record<string, unknown>): Designation;
   static fromJSON(data: Record<string, unknown>): Designation;
 }
 
 export class Expression extends Designation {
-  readonly gender: string | null;
-  readonly plurality: string | null;
-  readonly partOfSpeech: string | null;
-  readonly geographicalArea: string | null;
+  readonly prefix: string | null;
+  readonly grammarInfo: GrammarInfo[];
 }
 
-export class Abbreviation extends Designation {}
-export class Symbol extends Designation {
-  readonly international: string | null;
+export class Abbreviation extends Expression {
+  readonly acronym: boolean;
+  readonly initialism: boolean;
+  readonly truncation: boolean;
 }
-export class GraphicalSymbol extends Designation {
+
+export class Symbol extends Designation {}
+
+export class LetterSymbol extends Symbol {
+  readonly text: string | null;
+}
+
+export class GraphicalSymbol extends Symbol {
+  readonly text: string | null;
   readonly image: string | null;
 }
 
+export const GRAMMAR_GENDERS: readonly string[];
+export const GRAMMAR_NUMBERS: readonly string[];
+export const GRAMMAR_PARTS_OF_SPEECH: readonly string[];
+
+export class GrammarInfo extends GlossaristModel {
+  readonly gender: string | null;
+  readonly number: string | null;
+  readonly partOfSpeech: string | null;
+  readonly noun: boolean;
+  readonly verb: boolean;
+  readonly adj: boolean;
+  readonly adverb: boolean;
+  readonly preposition: boolean;
+  readonly participle: boolean;
+}
+
+export class Pronunciation extends GlossaristModel {
+  readonly content: string | null;
+  readonly language: string | null;
+  readonly script: string | null;
+  readonly country: string | null;
+  readonly system: string | null;
+}
+
+export class Locality extends GlossaristModel {
+  readonly type: string | null;
+  readonly referenceFrom: string | null;
+  readonly referenceTo: string | null;
+}
+
 export class Citation extends GlossaristModel {
+  readonly text: string | null;
   readonly source: string | Record<string, unknown> | null;
   readonly ref: string | null;
   readonly id: string | null;
   readonly version: string | null;
   readonly clause: string | null;
   readonly link: string | null;
+  readonly original: string | null;
+  readonly locality: Locality | null;
+  readonly customLocality: unknown;
   readonly isStructured: boolean;
   toString(): string;
 }
@@ -87,7 +150,7 @@ export const RELATIONSHIP_TYPES: readonly string[];
 export class RelatedConcept extends GlossaristModel {
   readonly type: string;
   readonly content: string | null;
-  readonly ref: Citation | null;
+  readonly ref: unknown;
 }
 
 export class ConceptReference extends GlossaristModel {
@@ -110,14 +173,14 @@ export class ConceptDate extends GlossaristModel {
 
 export class DetailedDefinition extends GlossaristModel {
   readonly content: string;
-  readonly sources: Citation[];
+  readonly sources: ConceptSource[];
 }
 
 export class NonVerbRep extends GlossaristModel {
-  readonly image: string | null;
-  readonly table: string | null;
-  readonly formula: string | null;
-  readonly sources: Citation[];
+  readonly type: string | null;
+  readonly ref: string | null;
+  readonly text: string | null;
+  readonly sources: ConceptSource[];
 }
 
 export class GcrStatistics extends GlossaristModel {

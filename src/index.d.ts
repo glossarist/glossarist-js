@@ -3,7 +3,7 @@ export {
   GlossaristModel,
   Concept, LocalizedConcept,
   Designation, Expression, Abbreviation, Symbol, GraphicalSymbol,
-  Citation, ConceptSource, RelatedConcept, ConceptDate,
+  Citation, ConceptRef, ConceptSource, RelatedConcept, ConceptDate,
   DetailedDefinition, NonVerbRep,
   GcrMetadata, GcrStatistics,
   RELATIONSHIP_TYPES, DATE_TYPES,

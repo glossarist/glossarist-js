@@ -52,7 +52,8 @@ describe('ConceptSerializer — managed round-trip', () => {
     '      designation: entity',
     '  sources:',
     '    - origin:',
-    '        ref: ISO/TS 14812:2022',
+    '        ref:',
+    '          source: ISO/TS 14812:2022',
     '      type: authoritative',
     '  language_code: eng',
     '  entry_status: valid',
@@ -66,7 +67,7 @@ describe('ConceptSerializer — managed round-trip', () => {
     assert.equal(reparsed.id, '3.1.1.1');
     assert.equal(reparsed.primaryDesignation('eng'), 'entity');
     assert.equal(reparsed.localization('eng').sources[0].type, 'authoritative');
-    assert.equal(reparsed.localization('eng').sources[0].origin.ref, 'ISO/TS 14812:2022');
+    assert.equal(reparsed.localization('eng').sources[0].origin.ref.source, 'ISO/TS 14812:2022');
   });
 
   it('produces multi-document YAML', () => {

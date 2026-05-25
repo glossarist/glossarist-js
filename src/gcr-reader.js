@@ -26,7 +26,7 @@ const BASE64_RE = /^[A-Za-z0-9+/]{100,}={0,2}$/;
 /**
  * @typedef {Object} Source
  * @property {string} type - e.g. 'authoritative', 'adapted'
- * @property {{ ref: string }} [origin] - reference to the source standard
+ * @property {{ ref: { source: string, id?: string, version?: string } }} [origin] - reference to the source standard
  */
 
 /**

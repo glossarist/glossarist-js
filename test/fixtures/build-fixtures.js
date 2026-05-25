@@ -19,7 +19,7 @@ async function buildCanonicalGcr() {
     'languages:',
     '  - eng',
     '  - fra',
-    'schema_version: "1"',
+    'schema_version: "3"',
     'glossarist_version: 2.5.2',
     'created_at: 2026-01-01T00:00:00Z',
     'statistics:',
@@ -97,7 +97,7 @@ async function buildManagedGcr() {
     'languages:',
     '  - eng',
     '  - fra',
-    'schema_version: "1"',
+    'schema_version: "3"',
     'glossarist_version: 2.5.2',
     'created_at: 2026-01-01T00:00:00Z',
     'statistics:',
@@ -108,7 +108,7 @@ async function buildManagedGcr() {
   ].join('\n'));
 
   zip.file('register.yaml', [
-    'schema_version: "1"',
+    'schema_version: "3"',
     'shortname: test-managed',
   ].join('\n'));
 
@@ -136,7 +136,8 @@ async function buildManagedGcr() {
     '      designation: entity',
     '  sources:',
     '    - origin:',
-    '        ref: ISO/TS 14812:2022',
+    '        ref:',
+    '          source: ISO/TS 14812:2022',
     '      type: authoritative',
     '  language_code: eng',
     '  entry_status: valid',
@@ -199,7 +200,7 @@ async function buildCompiledGcr() {
     'concept_count: 2',
     'languages:',
     '  - eng',
-    'schema_version: "1"',
+    'schema_version: "3"',
     'glossarist_version: 2.5.2',
     'created_at: 2026-01-01T00:00:00Z',
     'compiled_formats:',
@@ -314,7 +315,7 @@ async function buildAssetsGcr() {
     'concept_count: 1',
     'languages:',
     '  - eng',
-    'schema_version: "1"',
+    'schema_version: "3"',
     'glossarist_version: 2.6.1',
     'created_at: 2026-01-01T00:00:00Z',
   ].join('\n'));

@@ -19,6 +19,13 @@ export class LocalizedConcept extends GlossaristModel {
     this.release = data.release ?? null;
     this.lineageSourceSimilarity = data.lineage_source_similarity ?? data.lineageSourceSimilarity ?? null;
 
+    this.reviewDate = data.review_date ?? data.reviewDate ?? null;
+    this.reviewDecisionDate = data.review_decision_date ?? data.reviewDecisionDate ?? null;
+    this.reviewDecisionEvent = data.review_decision_event ?? data.reviewDecisionEvent ?? null;
+    this.reviewStatus = data.review_status ?? data.reviewStatus ?? null;
+    this.reviewDecision = data.review_decision ?? data.reviewDecision ?? null;
+    this.reviewDecisionNotes = data.review_decision_notes ?? data.reviewDecisionNotes ?? null;
+
     this._rawTerms = data.terms ?? [];
     this._rawDefinition = data.definition ?? [];
     this._rawSources = data.sources ?? [];
@@ -131,6 +138,13 @@ export class LocalizedConcept extends GlossaristModel {
     if (this.domain) obj.domain = this.domain;
     if (this.release) obj.release = this.release;
     if (this.lineageSourceSimilarity != null) obj.lineage_source_similarity = this.lineageSourceSimilarity;
+
+    if (this.reviewDate) obj.review_date = this.reviewDate;
+    if (this.reviewDecisionDate) obj.review_decision_date = this.reviewDecisionDate;
+    if (this.reviewDecisionEvent) obj.review_decision_event = this.reviewDecisionEvent;
+    if (this.reviewStatus) obj.review_status = this.reviewStatus;
+    if (this.reviewDecision) obj.review_decision = this.reviewDecision;
+    if (this.reviewDecisionNotes) obj.review_decision_notes = this.reviewDecisionNotes;
 
     const terms = this._terms ?? this._rawTerms;
     if (terms.length > 0) {

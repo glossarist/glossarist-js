@@ -1,5 +1,7 @@
 import yaml from 'js-yaml';
 import { Concept } from './models/concept.js';
+import { ConceptRef } from './models/concept-ref.js';
+import { RelatedConcept } from './models/related-concept.js';
 import { InvalidInputError, YamlParseError } from './errors.js';
 
 const STRUCTURAL_KEYS = new Set(['termid', 'term']);
@@ -70,11 +72,34 @@ export class ConceptParser {
       id: String(mc.data.identifier),
       term: null,
       localizations,
+      related: _normalizeRelated(mc.related ?? mc.data?.related),
       domains: mc.data.domains,
       groups: mc.data.groups,
+      dates: mc.dates ?? mc.data?.dates,
+      sources: mc.sources ?? mc.data?.sources,
+      status: mc.status,
+      schemaVersion: mc.schema_version,
       raw: mc,
     });
   }
+}
+
+function _normalizeRelated(arr) {
+  if (!arr || !Array.isArray(arr)) return [];
+  return arr.map(r => {
+    if (r instanceof RelatedConcept) return r;
+    const data = { ...r };
+    if (data.ref) {
+      if (typeof data.ref !== 'object' || data.ref === null) {
+        throw new InvalidInputError(
+          `RelatedConcept.ref must be an object { source, id }, got: ${typeof data.ref}`,
+          'object',
+        );
+      }
+      data.ref = new ConceptRef(data.ref);
+    }
+    return new RelatedConcept(data);
+  });
 }
 
 export const conceptParser = new ConceptParser();

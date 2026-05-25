@@ -43,6 +43,18 @@ export class ConceptSerializer {
       mainDoc.data.domains = concept.domains.map(d => d.toJSON());
     }
 
+    if (concept.relatedConcepts.length > 0) {
+      mainDoc.related = concept.relatedConcepts.map(rc => rc.toJSON());
+    }
+    if (concept.sources.length > 0) {
+      mainDoc.sources = concept.sources.map(s => s.toJSON());
+    }
+    if (concept.dates.length > 0) {
+      mainDoc.dates = concept.dates.map(d => d.toJSON());
+    }
+    if (concept.status) mainDoc.status = concept.status;
+    if (concept.schemaVersion) mainDoc.schema_version = concept.schemaVersion;
+
     const parts = [
       '---\n' + yaml.dump(mainDoc, DUMP_OPTS),
       ...langDocs.map(d => '---\n' + yaml.dump(d, DUMP_OPTS)),

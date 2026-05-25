@@ -1,4 +1,5 @@
 import { GlossaristModel } from './base.js';
+import { ConceptRef } from './concept-ref.js';
 
 export const RELATIONSHIP_TYPES = Object.freeze([
   // Lifecycle (ISO 10241-1)
@@ -30,13 +31,15 @@ export class RelatedConcept extends GlossaristModel {
     super();
     this.type = data.type ?? 'see';
     this.content = data.content ?? null;
-    this.ref = data.ref ?? null;
+    this.ref = data.ref
+      ? (data.ref instanceof ConceptRef ? data.ref : new ConceptRef(data.ref))
+      : null;
   }
 
   toJSON() {
     const obj = { type: this.type };
     if (this.content != null) obj.content = this.content;
-    if (this.ref != null) obj.ref = this.ref;
+    if (this.ref != null) obj.ref = this.ref.toJSON();
     return obj;
   }
 

@@ -84,7 +84,8 @@ describe('ConceptParser', () => {
         '    - designation: entity',
         '  sources:',
         '    - origin:',
-        '        ref: ISO/TS 14812:2022',
+        '        ref:',
+        '          source: ISO/TS 14812:2022',
         '      type: authoritative',
         '  language_code: eng',
         '  entry_status: valid',
@@ -100,7 +101,7 @@ describe('ConceptParser', () => {
       assert.equal(concept.id, '3.1.1.1');
       assert.equal(concept.languages.length, 2);
       assert.equal(concept.localization('eng').entryStatus, 'valid');
-      assert.equal(concept.localization('eng').sources[0].origin.toString(), 'ISO/TS 14812:2022');
+      assert.equal(concept.localization('eng').sources[0].origin.ref.source, 'ISO/TS 14812:2022');
     });
 
     it('skips docs without language_code', () => {

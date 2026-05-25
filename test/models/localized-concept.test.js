@@ -41,10 +41,11 @@ describe('LocalizedConcept', () => {
   it('parses sources lazily into ConceptSource instances', () => {
     const lc = new LocalizedConcept({
       language_code: 'eng',
-      sources: [{ type: 'authoritative', origin: { ref: 'ISO 9000:2015' } }],
+      sources: [{ type: 'authoritative', origin: { ref: { source: 'ISO', id: '9000:2015' } } }],
     });
     assert.equal(lc.sources[0].type, 'authoritative');
-    assert.equal(lc.sources[0].origin.toString(), 'ISO 9000:2015');
+    assert.equal(lc.sources[0].origin.ref.source, 'ISO');
+    assert.equal(lc.sources[0].origin.ref.id, '9000:2015');
   });
 
   it('round-trips via toJSON/fromJSON', () => {

@@ -18,6 +18,7 @@ export class Concept extends GlossaristModel {
   readonly dates: ConceptDate[];
   readonly sources: ConceptSource[];
   readonly status: string | null;
+  readonly schemaVersion: string | null;
 
   localization(lang: string): LocalizedConcept | undefined;
   primaryDesignation(lang: string): string | null;
@@ -37,6 +38,12 @@ export class LocalizedConcept extends GlossaristModel {
   readonly domain: string | null;
   readonly release: string | null;
   readonly lineageSourceSimilarity: number | null;
+  readonly reviewDate: string | null;
+  readonly reviewDecisionDate: string | null;
+  readonly reviewDecisionEvent: string | null;
+  readonly reviewStatus: string | null;
+  readonly reviewDecision: string | null;
+  readonly reviewDecisionNotes: string | null;
   readonly terms: Designation[];
   readonly definitions: DetailedDefinition[];
   readonly definition: DetailedDefinition[];
@@ -125,18 +132,30 @@ export class Locality extends GlossaristModel {
 }
 
 export class Citation extends GlossaristModel {
-  readonly text: string | null;
-  readonly source: string | Record<string, unknown> | null;
-  readonly ref: string | null;
-  readonly id: string | null;
-  readonly version: string | null;
-  readonly clause: string | null;
+  readonly ref: Citation.Ref | null;
+  readonly locality: Locality | null;
   readonly link: string | null;
   readonly original: string | null;
-  readonly locality: Locality | null;
   readonly customLocality: unknown;
-  readonly isStructured: boolean;
   toString(): string;
+  static fromJSON(data: Record<string, unknown>): Citation;
+}
+
+export namespace Citation {
+  class Ref extends GlossaristModel {
+    readonly source: string | null;
+    readonly id: string | null;
+    readonly version: string | null;
+    toString(): string;
+    static fromJSON(data: Record<string, unknown>): Ref;
+  }
+}
+
+export class ConceptRef extends GlossaristModel {
+  readonly source: string | null;
+  readonly id: string | null;
+  toString(): string;
+  static fromJSON(data: Record<string, unknown>): ConceptRef;
 }
 
 export class ConceptSource extends GlossaristModel {
@@ -150,7 +169,7 @@ export const RELATIONSHIP_TYPES: readonly string[];
 export class RelatedConcept extends GlossaristModel {
   readonly type: string;
   readonly content: string | null;
-  readonly ref: unknown;
+  readonly ref: ConceptRef | null;
 }
 
 export class ConceptReference extends GlossaristModel {

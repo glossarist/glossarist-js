@@ -19,6 +19,7 @@ export class Concept extends GlossaristModel {
     this.dates = _mapInstances(data.dates ?? [], ConceptDate);
     this.sources = _mapInstances(data.sources ?? [], ConceptSource);
     this.status = data.status ?? null;
+    this.schemaVersion = data.schemaVersion ?? data.schema_version ?? '3';
     this.raw = data.raw ?? null;
   }
 
@@ -98,6 +99,7 @@ export class Concept extends GlossaristModel {
       obj.sources = this.sources.map(s => s.toJSON());
     }
     if (this.status != null) obj.status = this.status;
+    obj.schema_version = this.schemaVersion;
     return obj;
   }
 

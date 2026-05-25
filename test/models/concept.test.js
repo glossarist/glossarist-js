@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { Concept } from '../../src/models/concept.js';
+import { Citation } from '../../src/models/citation.js';
 import { ConceptReference } from '../../src/models/concept-reference.js';
 import { LocalizedConcept } from '../../src/models/localized-concept.js';
 import { parseConceptYaml } from '../../src/gcr-reader.js';
@@ -145,11 +146,13 @@ describe('LocalizedConcept model', () => {
   it('parses sources as ConceptSource instances', () => {
     const lc = new LocalizedConcept({
       language_code: 'eng',
-      sources: [{ type: 'authoritative', origin: { ref: 'ISO 9000' } }],
+      sources: [{ type: 'authoritative', origin: { ref: { source: 'ISO', id: '9000' } } }],
     });
     assert.equal(lc.sources.length, 1);
     assert.equal(lc.sources[0].type, 'authoritative');
-    assert.equal(lc.sources[0].origin.ref, 'ISO 9000');
+    assert.ok(lc.sources[0].origin.ref instanceof Citation.Ref);
+    assert.equal(lc.sources[0].origin.ref.source, 'ISO');
+    assert.equal(lc.sources[0].origin.ref.id, '9000');
   });
 
   it('toJSON preserves data for round-trip', () => {

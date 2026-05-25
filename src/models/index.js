@@ -3,6 +3,7 @@ export { Concept } from './concept.js';
 export { LocalizedConcept } from './localized-concept.js';
 export { Designation, Expression, Abbreviation, Symbol, LetterSymbol, GraphicalSymbol } from './designation.js';
 export { Citation } from './citation.js';
+export { ConceptRef } from './concept-ref.js';
 export { ConceptSource } from './concept-source.js';
 export { RelatedConcept, RELATIONSHIP_TYPES } from './related-concept.js';
 export { ConceptReference } from './concept-reference.js';

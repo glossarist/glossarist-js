@@ -1,3 +1,5 @@
+import { ConceptRef } from './models/concept-ref.js';
+
 export class Reference {
   constructor(type, target, relationship, source) {
     this.type = type;
@@ -7,12 +9,20 @@ export class Reference {
   }
 }
 
+function refTarget(rc) {
+  if (rc.content) return rc.content;
+  if (rc.ref instanceof ConceptRef) {
+    return rc.ref.id ?? rc.ref.source ?? '';
+  }
+  return '';
+}
+
 export class ReferenceResolver {
   extractReferences(concept) {
     const refs = [];
 
     for (const rc of concept.relatedConcepts) {
-      const target = rc.content ?? rc.ref?.toString() ?? '';
+      const target = refTarget(rc);
       if (target) {
         refs.push(new Reference('concept', target, rc.type, 'relatedConcepts'));
       }

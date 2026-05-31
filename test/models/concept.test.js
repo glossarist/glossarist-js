@@ -315,3 +315,43 @@ describe('Concept domains', () => {
     assert.equal(c2.domains[0].conceptId, 'area-103');
   });
 });
+
+describe('Concept tags', () => {
+  it('stores tags from constructor data', () => {
+    const c = new Concept({
+      id: '103-01-01',
+      tags: ['iec', 'electromagnetism'],
+    });
+    assert.deepEqual(c.tags, ['iec', 'electromagnetism']);
+  });
+
+  it('includes tags in toJSON when present', () => {
+    const c = new Concept({
+      id: '103-01-01',
+      tags: ['iec', 'electromagnetism'],
+    });
+    const json = c.toJSON();
+    assert.deepEqual(json.tags, ['iec', 'electromagnetism']);
+  });
+
+  it('omits tags from toJSON when empty', () => {
+    const c = new Concept({ id: '103-01-01' });
+    const json = c.toJSON();
+    assert.equal(json.tags, undefined);
+  });
+
+  it('round-trips through fromJSON preserving tags', () => {
+    const c = new Concept({
+      id: '103-01-01',
+      tags: ['iec', 'fundamental'],
+    });
+    const json = c.toJSON();
+    const c2 = Concept.fromJSON(json);
+    assert.deepEqual(c2.tags, ['iec', 'fundamental']);
+  });
+
+  it('defaults tags to empty array', () => {
+    const c = new Concept({ id: '103-01-01' });
+    assert.deepEqual(c.tags, []);
+  });
+});

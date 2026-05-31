@@ -16,6 +16,7 @@ export class Concept extends GlossaristModel {
 
     this.relatedConcepts = _mapInstances(data.relatedConcepts ?? data.related ?? data.related_concepts ?? [], RelatedConcept);
     this.domains = _normalizeDomains(data.domains, data.groups);
+    this.tags = Array.isArray(data.tags) ? [...data.tags] : [];
     this.dates = _mapInstances(data.dates ?? [], ConceptDate);
     this.sources = _mapInstances(data.sources ?? [], ConceptSource);
     this.status = data.status ?? null;
@@ -91,6 +92,9 @@ export class Concept extends GlossaristModel {
     }
     if (this.domains.length > 0) {
       obj.domains = this.domains.map(d => d.toJSON());
+    }
+    if (this.tags.length > 0) {
+      obj.tags = [...this.tags];
     }
     if (this.dates.length > 0) {
       obj.dates = this.dates.map(d => d.toJSON());

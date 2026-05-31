@@ -15,6 +15,7 @@ export class Concept extends GlossaristModel {
   readonly raw: Record<string, unknown> | null;
   readonly relatedConcepts: RelatedConcept[];
   readonly domains: ConceptReference[];
+  readonly tags: string[];
   readonly dates: ConceptDate[];
   readonly sources: ConceptSource[];
   readonly status: string | null;

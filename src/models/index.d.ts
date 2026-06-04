@@ -1,3 +1,42 @@
+export const ORDERING_METHODS: readonly string[];
+export class Section extends GlossaristModel {
+  readonly id: string | null;
+  readonly names: Record<string, string>;
+  readonly ordering: string | null;
+  readonly children: Section[];
+  name(lang: string): string | null;
+  descendantById(id: string): Section | null;
+  static fromJSON(data: Record<string, unknown>): Section;
+}
+
+export const REGISTER_STATUSES: readonly string[];
+export class Register extends GlossaristModel {
+  readonly schemaVersion: string;
+  readonly id: string | null;
+  readonly ref: string | null;
+  readonly refAliases: string[];
+  readonly year: number | null;
+  readonly urn: string | null;
+  readonly urnAliases: string[];
+  readonly status: string | null;
+  readonly supersedes: string | null;
+  readonly owner: string | null;
+  readonly sourceRepo: string | null;
+  readonly tags: string[];
+  readonly languages: string[];
+  readonly languageOrder: string[];
+  readonly ordering: string | null;
+  readonly logo: { path?: string; alt?: string } | null;
+  readonly description: Record<string, string>;
+  readonly about: Record<string, string>;
+  readonly provenance: Record<string, unknown>[];
+  readonly contributors: Record<string, unknown>[];
+  readonly sections: Section[];
+  sectionById(id: string): Section | null;
+  sectionName(sectionId: string, lang: string): string | null;
+  static fromJSON(data: Record<string, unknown>): Register;
+}
+
 export class GlossaristModel {
   toJSON(): Record<string, unknown>;
   static fromJSON(data: Record<string, unknown>): GlossaristModel;

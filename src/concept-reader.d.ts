@@ -1,4 +1,4 @@
-import type { Concept } from './models/index';
+import type { Concept, Register } from './models/index';
 
 /** Read all concept YAML files from a directory. */
 export function readConcepts(dir: string): Concept[];
@@ -10,4 +10,4 @@ export function readConcept(dir: string, id: string): Concept | null;
 export function listConceptIds(dir: string, prefix?: string): string[];
 
 /** Read register.yaml from a dataset directory (if present). */
-export function readRegister(dir: string): Record<string, unknown> | null;
+export function readRegister(dir: string): Register | null;

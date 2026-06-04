@@ -4,6 +4,7 @@ import yaml from 'js-yaml';
 import { conceptParser } from './concept-parser.js';
 import { naturalSort } from './sort.js';
 import { InvalidInputError } from './errors.js';
+import { Register } from './models/register.js';
 
 function assertDir(dir, fnName) {
   if (typeof dir !== 'string' || dir.trim() === '') {
@@ -91,5 +92,6 @@ export function readRegister(dir) {
   assertDir(dir, 'readRegister');
   const p = path.join(dir, 'register.yaml');
   if (!fs.existsSync(p)) return null;
-  return yaml.load(fs.readFileSync(p, 'utf8'));
+  const raw = yaml.load(fs.readFileSync(p, 'utf8'));
+  return Register.fromJSON(raw);
 }

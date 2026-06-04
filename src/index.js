@@ -28,6 +28,8 @@ export {
 
 export {
   GlossaristModel,
+  Register, Section,
+  REGISTER_STATUSES, ORDERING_METHODS,
   Concept, LocalizedConcept,
   Designation, Expression, Abbreviation, Symbol, GraphicalSymbol,
   Citation, ConceptRef, ConceptSource, RelatedConcept, ConceptReference, ConceptDate,

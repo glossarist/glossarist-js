@@ -3,7 +3,9 @@ import { ConceptRef } from './concept-ref.js';
 
 export const RELATIONSHIP_TYPES = Object.freeze([
   // Lifecycle (ISO 10241-1)
-  'deprecates', 'supersedes', 'superseded_by',
+  'deprecates', 'deprecated_by', 'supersedes', 'superseded_by',
+  'replaces', 'replaced_by', 'invalidates', 'invalidated_by',
+  'retires', 'retired_by',
   // Hierarchical (SKOS)
   'broader', 'narrower',
   // ISO 25964 generic
@@ -12,14 +14,21 @@ export const RELATIONSHIP_TYPES = Object.freeze([
   'broader_partitive', 'narrower_partitive',
   // ISO 25964 instantial
   'broader_instantial', 'narrower_instantial',
+  // ISO 19135 concept-to-concept
+  'has_concept', 'is_concept_of', 'instance_of', 'has_instance',
+  'has_definition', 'definition_of', 'has_part', 'is_part_of',
+  'inherits', 'inherited_by',
+  // ISO 19135 versioning
+  'has_version', 'version_of', 'current_version', 'current_version_of',
   // SKOS mapping
   'equivalent', 'close_match', 'broad_match', 'narrow_match', 'related_match',
   // Associative (ISO 10241-1 / ISO 25964)
   'see', 'related_concept', 'related_concept_broader', 'related_concept_narrower',
+  'references',
   // Comparative (ISO 10241-1)
   'compare', 'contrast',
   // Spatiotemporal (ISO 25964 / TBX)
-  'sequentially_related_concept', 'spatially_related_concept', 'temporally_related_concept',
+  'sequentially_related', 'spatially_related', 'temporally_related',
   // Lexical (ISO 12620 / TBX)
   'homograph', 'false_friend',
   // Designation-level

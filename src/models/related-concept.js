@@ -28,7 +28,7 @@ export const RELATIONSHIP_TYPES = Object.freeze([
   // Comparative (ISO 10241-1)
   'compare', 'contrast',
   // Spatiotemporal (ISO 25964 / TBX)
-  'sequentially_related', 'spatially_related', 'temporally_related',
+  'sequentially_related_concept', 'spatially_related_concept', 'temporally_related_concept',
   // Lexical (ISO 12620 / TBX)
   'homograph', 'false_friend',
   // Designation-level

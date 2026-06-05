@@ -1,6 +1,6 @@
 {
   "name": "glossarist",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "JavaScript SDK for Glossarist GCR packages \u2014 read, write, validate, and manage terminology concepts",
   "type": "module",
   "main": "src/index.js",

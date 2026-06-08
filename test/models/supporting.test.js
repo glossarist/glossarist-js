@@ -276,7 +276,7 @@ describe('RelatedConcept', () => {
   it('RELATIONSHIP_TYPES includes all concept-level types', () => {
     assert.ok(RELATIONSHIP_TYPES.includes('broader_generic'));
     assert.ok(RELATIONSHIP_TYPES.includes('close_match'));
-    assert.ok(RELATIONSHIP_TYPES.includes('sequentially_related'));
+    assert.ok(RELATIONSHIP_TYPES.includes('sequentially_related_concept'));
     assert.ok(RELATIONSHIP_TYPES.includes('false_friend'));
     assert.ok(!RELATIONSHIP_TYPES.includes('abbreviated_form_for'));
     assert.ok(RELATIONSHIP_TYPES.length >= 25);

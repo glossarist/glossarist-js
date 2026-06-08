@@ -3,6 +3,7 @@ import { ConceptSource } from './concept-source.js';
 import { Pronunciation } from './pronunciation.js';
 import { GrammarInfo } from './grammar-info.js';
 import { RelatedConcept } from './related-concept.js';
+import { DesignationRelationship, DESIGNATION_RELATIONSHIP_TYPES } from './designation-relationship.js';
 
 export class Designation extends GlossaristModel {
   static _registry = new Map();
@@ -38,7 +39,11 @@ export class Designation extends GlossaristModel {
       s => s instanceof ConceptSource ? s : new ConceptSource(s)
     );
     this.related = (data.related ?? []).map(
-      r => r instanceof RelatedConcept ? r : new RelatedConcept(r)
+      r => (r instanceof DesignationRelationship || r instanceof RelatedConcept)
+        ? r
+        : DESIGNATION_RELATIONSHIP_TYPES.includes(r.type)
+          ? DesignationRelationship.fromJSON(r)
+          : RelatedConcept.fromJSON(r)
     );
   }
 

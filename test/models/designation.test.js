@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   Designation, Expression, Abbreviation, Symbol, LetterSymbol, GraphicalSymbol,
 } from '../../src/models/designation.js';
+import { RelatedConcept } from '../../src/models/related-concept.js';
+import { DesignationRelationship } from '../../src/models/designation-relationship.js';
 
 describe('Designation registry', () => {
   it('creates Expression for expression type', () => {
@@ -116,6 +118,67 @@ describe('Designation toJSON', () => {
     });
     assert.equal(d.pronunciations.length, 1);
     assert.equal(d.toJSON().pronunciation[0].content, 'IPA:tɛst');
+  });
+});
+
+describe('Designation.related dispatch', () => {
+  it('creates DesignationRelationship for abbreviated_form_for', () => {
+    const d = new Designation({
+      designation: 'LED',
+      related: [{ type: 'abbreviated_form_for', target: 'Light Emitting Diode' }],
+    });
+    assert.equal(d.related.length, 1);
+    assert.ok(d.related[0] instanceof DesignationRelationship);
+    assert.equal(d.related[0].type, 'abbreviated_form_for');
+    assert.equal(d.related[0].target, 'Light Emitting Diode');
+  });
+
+  it('creates DesignationRelationship for short_form_for', () => {
+    const d = new Designation({
+      designation: 'NASA',
+      related: [{ type: 'short_form_for', content: 'full form', target: 'National Aeronautics and Space Administration' }],
+    });
+    assert.ok(d.related[0] instanceof DesignationRelationship);
+    assert.equal(d.related[0].target, 'National Aeronautics and Space Administration');
+  });
+
+  it('creates RelatedConcept for non-designation types', () => {
+    const d = new Designation({
+      designation: 'test',
+      related: [{ type: 'see', ref: { source: 'IEV', id: '103' } }],
+    });
+    assert.ok(d.related[0] instanceof RelatedConcept);
+    assert.equal(d.related[0].type, 'see');
+    assert.equal(d.related[0].ref.source, 'IEV');
+  });
+
+  it('round-trips mixed related types', () => {
+    const d = new Designation({
+      designation: 'LED',
+      related: [
+        { type: 'abbreviated_form_for', target: 'Light Emitting Diode' },
+        { type: 'see', ref: { source: 'IEV', id: '103' } },
+      ],
+    });
+    const json = d.toJSON();
+    assert.equal(json.related.length, 2);
+    assert.equal(json.related[0].type, 'abbreviated_form_for');
+    assert.equal(json.related[0].target, 'Light Emitting Diode');
+    assert.equal(json.related[1].type, 'see');
+    assert.equal(json.related[1].ref.source, 'IEV');
+  });
+
+  it('preserves DesignationRelationship through fromJSON round-trip', () => {
+    const d = Designation.fromJSON({
+      type: 'expression',
+      designation: 'LED',
+      related: [{ type: 'abbreviated_form_for', target: 'Light Emitting Diode' }],
+    });
+    assert.ok(d.related[0] instanceof DesignationRelationship);
+    const json = d.toJSON();
+    const d2 = Designation.fromJSON(json);
+    assert.ok(d2.related[0] instanceof DesignationRelationship);
+    assert.ok(d.equals(d2));
   });
 });
 

@@ -4,6 +4,7 @@ export { ValidationResult } from './validation-result.js';
 export { ConceptValidator, LanguageCodeRule, DesignationTypeRule, EntryStatusRule } from './concept-validator.js';
 export { RegisterValidator } from './register-validator.js';
 export { GcrValidator } from './gcr-validator.js';
+export { RelationshipTypeRule } from './relationship-type-rule.js';
 export {
   RefShapeRule,
   LocalityCompletenessRule,
@@ -17,6 +18,7 @@ export {
 import { ConceptValidator, LanguageCodeRule, DesignationTypeRule, EntryStatusRule } from './concept-validator.js';
 import { RegisterValidator } from './register-validator.js';
 import { GcrValidator } from './gcr-validator.js';
+import { RelationshipTypeRule } from './relationship-type-rule.js';
 import {
   RefShapeRule,
   LocalityCompletenessRule,
@@ -37,7 +39,8 @@ const _default = new ConceptValidator()
   .addRule(new SchemaVersionRule())
   .addRule(new DomainRefRule())
   .addRule(new UuidFormatRule())
-  .addRule(new SourceUrnFormatRule());
+  .addRule(new SourceUrnFormatRule())
+  .addRule(new RelationshipTypeRule());
 
 export function validateConcept(concept) {
   return _default.validate(concept);

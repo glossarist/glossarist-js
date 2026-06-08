@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { LocalizedConcept } from '../../src/models/localized-concept.js';
+import { DetailedDefinition } from '../../src/models/detailed-definition.js';
 import { Expression } from '../../src/models/designation.js';
 
 describe('LocalizedConcept', () => {
@@ -82,5 +83,52 @@ describe('LocalizedConcept', () => {
     const first = lc.terms;
     const second = lc.terms;
     assert.strictEqual(first, second);
+  });
+
+  it('parses annotations lazily into DetailedDefinition instances', () => {
+    const lc = new LocalizedConcept({
+      language_code: 'eng',
+      annotations: [
+        { content: 'An annotation.' },
+        { content: 'Another annotation.', sources: [{ ref: { source: 'ISO', id: '9000' } }] },
+      ],
+    });
+    assert.equal(lc.annotations.length, 2);
+    assert.ok(lc.annotations[0] instanceof DetailedDefinition);
+    assert.equal(lc.annotations[0].content, 'An annotation.');
+    assert.equal(lc.annotations[1].sources.length, 1);
+  });
+
+  it('annotations default to empty array', () => {
+    const lc = new LocalizedConcept({ language_code: 'eng' });
+    assert.deepEqual(lc.annotations, []);
+  });
+
+  it('annotations round-trip via toJSON/fromJSON', () => {
+    const lc = new LocalizedConcept({
+      language_code: 'eng',
+      terms: [{ type: 'expression', designation: 'test' }],
+      annotations: [{ content: 'Note on usage.' }],
+    });
+    const json = lc.toJSON();
+    assert.equal(json.annotations[0].content, 'Note on usage.');
+    const restored = LocalizedConcept.fromJSON(json);
+    assert.ok(lc.equals(restored));
+    assert.equal(restored.annotations[0].content, 'Note on usage.');
+  });
+
+  it('caches parsed annotations across multiple accesses', () => {
+    const lc = new LocalizedConcept({
+      language_code: 'eng',
+      annotations: [{ content: 'cached annotation' }],
+    });
+    const first = lc.annotations;
+    const second = lc.annotations;
+    assert.strictEqual(first, second);
+  });
+
+  it('omits annotations from toJSON when empty', () => {
+    const lc = new LocalizedConcept({ language_code: 'eng' });
+    assert.equal(lc.toJSON().annotations, undefined);
   });
 });

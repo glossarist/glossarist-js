@@ -211,5 +211,19 @@ describe('ConceptParser', () => {
         assert.ok(err.message.includes('my-concept.yaml') || err.context === 'my-concept.yaml');
       }
     });
+
+    it('throws InvalidInputError for non-object ref in related', () => {
+      const raw = [
+        '---',
+        'data:',
+        '  identifier: 3.1.1.1',
+        '  localized_concepts: {}',
+        'related:',
+        '  - type: see',
+        '    ref: "not-an-object"',
+        'id: uuid-main',
+      ].join('\n');
+      assert.throws(() => conceptParser.parse(raw), InvalidInputError);
+    });
   });
 });

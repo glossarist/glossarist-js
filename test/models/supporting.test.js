@@ -104,6 +104,30 @@ describe('ConceptRef', () => {
     assert.equal(cr.id, null);
     assert.equal(cr.toString(), 'IEV');
   });
+
+  it('stores text', () => {
+    const cr = new ConceptRef({ source: 'IEV', id: '103-01-02', text: 'see also' });
+    assert.equal(cr.text, 'see also');
+    assert.equal(cr.toString(), 'IEV 103-01-02 (see also)');
+  });
+
+  it('round-trips with text', () => {
+    const cr = new ConceptRef({ source: 'ISO', id: '9000', text: 'quality management' });
+    const json = cr.toJSON();
+    assert.equal(json.text, 'quality management');
+    const cr2 = ConceptRef.fromJSON(json);
+    assert.ok(cr.equals(cr2));
+  });
+
+  it('toString with text and no source/id', () => {
+    const cr = new ConceptRef({ text: 'explanatory note' });
+    assert.equal(cr.toString(), 'explanatory note');
+  });
+
+  it('omits text from toJSON when null', () => {
+    const cr = new ConceptRef({ source: 'IEV', id: '103' });
+    assert.equal(cr.toJSON().text, undefined);
+  });
 });
 
 // --- GrammarInfo ---
@@ -249,13 +273,13 @@ describe('RelatedConcept', () => {
     assert.deepEqual(json.ref, { source: 'ISO', id: '9000' });
   });
 
-  it('RELATIONSHIP_TYPES includes all 27+ types', () => {
+  it('RELATIONSHIP_TYPES includes all concept-level types', () => {
     assert.ok(RELATIONSHIP_TYPES.includes('broader_generic'));
     assert.ok(RELATIONSHIP_TYPES.includes('close_match'));
-    assert.ok(RELATIONSHIP_TYPES.includes('sequentially_related_concept'));
+    assert.ok(RELATIONSHIP_TYPES.includes('sequentially_related'));
     assert.ok(RELATIONSHIP_TYPES.includes('false_friend'));
-    assert.ok(RELATIONSHIP_TYPES.includes('abbreviated_form_for'));
-    assert.ok(RELATIONSHIP_TYPES.length >= 27);
+    assert.ok(!RELATIONSHIP_TYPES.includes('abbreviated_form_for'));
+    assert.ok(RELATIONSHIP_TYPES.length >= 25);
   });
 
   it('RELATIONSHIP_TYPES is frozen', () => {

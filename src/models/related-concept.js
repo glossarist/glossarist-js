@@ -31,8 +31,6 @@ export const RELATIONSHIP_TYPES = Object.freeze([
   'sequentially_related_concept', 'spatially_related_concept', 'temporally_related_concept',
   // Lexical (ISO 12620 / TBX)
   'homograph', 'false_friend',
-  // Designation-level
-  'abbreviated_form_for', 'short_form_for',
 ]);
 
 export class RelatedConcept extends GlossaristModel {

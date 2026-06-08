@@ -63,6 +63,27 @@ describe('Section', () => {
     assert.equal(s.descendantById('999'), null);
   });
 
+  it('descendantById finds deeply nested sections (3+ levels)', () => {
+    const s = new Section({
+      id: 'root',
+      names: { eng: 'Root' },
+      children: [{
+        id: 'level-1',
+        names: { eng: 'Level 1' },
+        children: [{
+          id: 'level-2',
+          names: { eng: 'Level 2' },
+          children: [
+            { id: 'level-3', names: { eng: 'Level 3' } },
+          ],
+        }],
+      }],
+    });
+    assert.equal(s.descendantById('level-3').name('eng'), 'Level 3');
+    assert.equal(s.descendantById('level-1').name('eng'), 'Level 1');
+    assert.equal(s.descendantById('nonexistent'), null);
+  });
+
   it('round-trips hierarchical sections via toJSON/fromJSON', () => {
     const s = new Section({
       id: '102',

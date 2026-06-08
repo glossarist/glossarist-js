@@ -32,8 +32,8 @@ export {
   REGISTER_STATUSES, ORDERING_METHODS,
   Concept, LocalizedConcept,
   Designation, Expression, Abbreviation, Symbol, GraphicalSymbol,
-  Citation, ConceptRef, ConceptSource, RelatedConcept, ConceptReference, ConceptDate,
+  Citation, ConceptRef, ConceptSource, RelatedConcept, DesignationRelationship, ConceptReference, ConceptDate,
   DetailedDefinition, NonVerbRep,
   GcrMetadata, GcrStatistics,
-  RELATIONSHIP_TYPES, DATE_TYPES,
+  RELATIONSHIP_TYPES, DESIGNATION_RELATIONSHIP_TYPES, DATE_TYPES,
 } from './models/index.js';

@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { ConceptCollection } from '../src/concept-collection.js';
+import { Concept } from '../src/models/concept.js';
+import { LocalizedConcept } from '../src/models/localized-concept.js';
 import { parseConceptYaml } from '../src/gcr-reader.js';
 
 function makeCollection() {
@@ -111,6 +113,49 @@ describe('ConceptCollection', () => {
     assert.equal(result[0].id, '3.1.1.1');
   });
 
+  it('search finds by note text', () => {
+    const c = parseConceptYaml([
+      'termid: "100"',
+      'eng:',
+      '  terms:',
+      '    - designation: test',
+      '  notes:',
+      '    - content: Important safety note about handling.',
+    ].join('\n'));
+    const cc = new ConceptCollection([c]);
+    const result = cc.search('safety');
+    assert.equal(result.length, 1);
+    assert.equal(result[0].id, '100');
+  });
+
+  it('search finds by example text', () => {
+    const c = parseConceptYaml([
+      'termid: "200"',
+      'eng:',
+      '  terms:',
+      '    - designation: demo',
+      '  examples:',
+      '    - content: Usage example in automotive context.',
+    ].join('\n'));
+    const cc = new ConceptCollection([c]);
+    const result = cc.search('automotive');
+    assert.equal(result.length, 1);
+    assert.equal(result[0].id, '200');
+  });
+
+  it('search finds by annotation text', () => {
+    const lc = new LocalizedConcept({
+      language_code: 'eng',
+      terms: [{ type: 'expression', designation: 'term' }],
+      annotations: [{ content: 'Deprecated in favour of newer usage.' }],
+    });
+    const c = new Concept({ id: '300', localizations: { eng: lc.toJSON() } });
+    const cc = new ConceptCollection([c]);
+    const result = cc.search('deprecated');
+    assert.equal(result.length, 1);
+    assert.equal(result[0].id, '300');
+  });
+
   it('allLanguages collects unique language codes', () => {
     const cc = makeCollection();
     assert.deepEqual(cc.allLanguages(), ['eng', 'fra']);
@@ -126,5 +171,28 @@ describe('ConceptCollection', () => {
   it('slice returns ConceptCollection', () => {
     const cc = makeCollection();
     assert.ok(cc.slice(0, 1) instanceof ConceptCollection);
+  });
+
+  it('supports numeric index access via Proxy', () => {
+    const cc = makeCollection();
+    assert.equal(cc[0].id, '3.1.1.1');
+    assert.equal(cc[1].id, '3.1.1.2');
+    assert.equal(cc[2].id, '3.1.2.1');
+    assert.equal(cc[999], undefined);
+  });
+
+  it('supports numeric index set via Proxy', () => {
+    const cc = makeCollection();
+    const replacement = parseConceptYaml('termid: "9.9.9"\neng:\n  terms:\n    - designation: replaced');
+    cc[1] = replacement;
+    assert.equal(cc[1].id, '9.9.9');
+    assert.equal(cc.length, 3);
+  });
+
+  it('supports "in" operator for numeric indices', () => {
+    const cc = makeCollection();
+    assert.equal(0 in cc, true);
+    assert.equal(2 in cc, true);
+    assert.equal(3 in cc, false);
   });
 });

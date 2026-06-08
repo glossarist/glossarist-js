@@ -106,4 +106,25 @@ describe('ManagedConceptCollection', () => {
       .remove('001');
     assert.ok(result instanceof ManagedConceptCollection);
   });
+
+  it('setBibliography stores YAML string', () => {
+    const mcc = new ManagedConceptCollection();
+    const yaml = 'references:\n  - id: ISO-9000\n    title: Quality management';
+    mcc.setBibliography(yaml);
+    assert.equal(mcc.bibliography, yaml);
+  });
+
+  it('setImages stores Map of image files', () => {
+    const mcc = new ManagedConceptCollection();
+    const images = new Map([['images/diagram.png', new Uint8Array([1, 2, 3])]]);
+    mcc.setImages(images);
+    assert.equal(mcc.images.get('images/diagram.png')[0], 1);
+  });
+
+  it('setImages converts plain object to Map', () => {
+    const mcc = new ManagedConceptCollection();
+    mcc.setImages({ 'logo.png': new Uint8Array([0]) });
+    assert.ok(mcc.images instanceof Map);
+    assert.ok(mcc.images.has('logo.png'));
+  });
 });

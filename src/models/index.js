@@ -8,6 +8,7 @@ export { Citation } from './citation.js';
 export { ConceptRef } from './concept-ref.js';
 export { ConceptSource } from './concept-source.js';
 export { RelatedConcept, RELATIONSHIP_TYPES } from './related-concept.js';
+export { DesignationRelationship, DESIGNATION_RELATIONSHIP_TYPES } from './designation-relationship.js';
 export { ConceptReference } from './concept-reference.js';
 export { ConceptDate, DATE_TYPES } from './concept-date.js';
 export { DetailedDefinition } from './detailed-definition.js';

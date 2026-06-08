@@ -1,6 +1,5 @@
 import yaml from 'js-yaml';
 import { Concept } from './models/concept.js';
-import { ConceptRef } from './models/concept-ref.js';
 import { RelatedConcept } from './models/related-concept.js';
 import { InvalidInputError, YamlParseError } from './errors.js';
 
@@ -88,17 +87,13 @@ function _normalizeRelated(arr) {
   if (!arr || !Array.isArray(arr)) return [];
   return arr.map(r => {
     if (r instanceof RelatedConcept) return r;
-    const data = { ...r };
-    if (data.ref) {
-      if (typeof data.ref !== 'object' || data.ref === null) {
-        throw new InvalidInputError(
-          `RelatedConcept.ref must be an object { source, id }, got: ${typeof data.ref}`,
-          'object',
-        );
-      }
-      data.ref = new ConceptRef(data.ref);
+    if (r.ref != null && typeof r.ref !== 'object') {
+      throw new InvalidInputError(
+        `RelatedConcept.ref must be an object { source, id }, got: ${typeof r.ref}`,
+        'object',
+      );
     }
-    return new RelatedConcept(data);
+    return new RelatedConcept(r);
   });
 }
 

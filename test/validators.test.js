@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateConcept, validateRegister, createConceptValidator, ValidationError } from '../src/validators/index.js';
 import { parseConceptYaml } from '../src/gcr-reader.js';
+import { RelationshipTypeRule } from '../src/validators/relationship-type-rule.js';
 
 describe('validateConcept', () => {
   it('validates a well-formed concept', () => {
@@ -95,5 +96,92 @@ describe('ValidationError', () => {
   it('toString formats correctly', () => {
     const e = new ValidationError('path.to.field', 'bad value', 'warning');
     assert.equal(e.toString(), '[WARNING] path.to.field: bad value');
+  });
+});
+
+describe('RelationshipTypeRule', () => {
+  it('passes for known relationship types', () => {
+    const rule = new RelationshipTypeRule();
+    const result = rule.validate({
+      id: '001',
+      related: [
+        { type: 'broader', ref: { source: 'IEV', id: '103' } },
+        { type: 'supersedes', content: 'old concept' },
+      ],
+      localizations: {
+        eng: {
+          related: [{ type: 'see', ref: { source: 'IEV', id: '100' } }],
+        },
+      },
+    }, '');
+    assert.equal(result.length, 0);
+  });
+
+  it('warns on unknown relationship type at concept level', () => {
+    const rule = new RelationshipTypeRule();
+    const result = rule.validate({
+      id: '001',
+      related: [{ type: 'banana' }],
+      localizations: {},
+    }, '');
+    assert.equal(result.length, 1);
+    assert.equal(result[0].severity, 'warning');
+    assert.ok(result[0].message.includes('banana'));
+  });
+
+  it('warns on unknown relationship type at localization level', () => {
+    const rule = new RelationshipTypeRule();
+    const result = rule.validate({
+      id: '001',
+      localizations: {
+        eng: { related: [{ type: 'mystery_type' }] },
+      },
+    }, '');
+    assert.equal(result.length, 1);
+    assert.ok(result[0].path.includes('localizations.eng'));
+  });
+
+  it('is included in validateConcept', () => {
+    const result = validateConcept({
+      id: '001',
+      related: [{ type: 'unknown_rel' }],
+      localizations: { eng: { terms: [{ type: 'expression', designation: 'x' }] } },
+    });
+    assert.ok(result.warnings.some(w => w.message.includes('unknown_rel')));
+  });
+
+  it('accepts designation types in terms[].related', () => {
+    const rule = new RelationshipTypeRule();
+    const result = rule.validate({
+      id: '001',
+      localizations: {
+        eng: {
+          terms: [{
+            type: 'expression',
+            designation: 'LED',
+            related: [{ type: 'abbreviated_form_for', target: 'Light Emitting Diode' }],
+          }],
+        },
+      },
+    }, '');
+    assert.equal(result.length, 0);
+  });
+
+  it('warns on unknown type in terms[].related', () => {
+    const rule = new RelationshipTypeRule();
+    const result = rule.validate({
+      id: '001',
+      localizations: {
+        eng: {
+          terms: [{
+            type: 'expression',
+            designation: 'test',
+            related: [{ type: 'broader' }],
+          }],
+        },
+      },
+    }, '');
+    assert.equal(result.length, 1);
+    assert.ok(result[0].path.includes('terms[0].related'));
   });
 });

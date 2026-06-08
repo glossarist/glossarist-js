@@ -88,6 +88,7 @@ export class LocalizedConcept extends GlossaristModel {
   readonly definitions: DetailedDefinition[];
   readonly definition: DetailedDefinition[];
   readonly notes: DetailedDefinition[];
+  readonly annotations: DetailedDefinition[];
   readonly examples: DetailedDefinition[];
   readonly sources: ConceptSource[];
   readonly dates: ConceptDate[];
@@ -113,7 +114,7 @@ export class Designation extends GlossaristModel {
   readonly termType: string | null;
   readonly pronunciations: Pronunciation[];
   readonly sources: ConceptSource[];
-  readonly related: RelatedConcept[];
+  readonly related: (RelatedConcept | DesignationRelationship)[];
   static register(type: string, cls: typeof Designation): void;
   static fromData(data: Record<string, unknown>): Designation;
   static fromJSON(data: Record<string, unknown>): Designation;
@@ -194,6 +195,7 @@ export namespace Citation {
 export class ConceptRef extends GlossaristModel {
   readonly source: string | null;
   readonly id: string | null;
+  readonly text: string | null;
   toString(): string;
   static fromJSON(data: Record<string, unknown>): ConceptRef;
 }
@@ -210,6 +212,14 @@ export class RelatedConcept extends GlossaristModel {
   readonly type: string;
   readonly content: string | null;
   readonly ref: ConceptRef | null;
+}
+
+export const DESIGNATION_RELATIONSHIP_TYPES: readonly string[];
+export class DesignationRelationship extends GlossaristModel {
+  readonly type: string | null;
+  readonly content: string | null;
+  readonly target: string | null;
+  static fromJSON(data: Record<string, unknown>): DesignationRelationship;
 }
 
 export class ConceptReference extends GlossaristModel {

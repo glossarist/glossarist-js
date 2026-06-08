@@ -117,6 +117,20 @@ describe('Concept model', () => {
     assert.ok(c.equals(c2));
     assert.notEqual(c, c2);
   });
+
+  it('toJSON preserves annotations through Concept round-trip', () => {
+    const lc = new LocalizedConcept({
+      language_code: 'eng',
+      terms: [{ type: 'expression', designation: 'annotated' }],
+      definition: [{ content: 'A concept with annotations.' }],
+      annotations: [{ content: 'Usage note.' }],
+    });
+    const c = new Concept({ id: 'ann-001', localizations: { eng: lc.toJSON() } });
+    const json = c.toJSON();
+    assert.equal(json.localizations.eng.annotations[0].content, 'Usage note.');
+    const c2 = Concept.fromJSON(json);
+    assert.equal(c2.localization('eng').annotations[0].content, 'Usage note.');
+  });
 });
 
 describe('LocalizedConcept model', () => {

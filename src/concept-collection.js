@@ -62,12 +62,20 @@ export class ConceptCollection {
         for (const t of lc.terms) {
           if ((t.designation ?? '').toLowerCase().includes(q)) return true;
         }
-        for (const d of lc.definitions) {
-          if ((d.content ?? '').toLowerCase().includes(q)) return true;
-        }
+        if (this._searchDefs(lc.definitions, q)) return true;
+        if (this._searchDefs(lc.notes, q)) return true;
+        if (this._searchDefs(lc.examples, q)) return true;
+        if (this._searchDefs(lc.annotations, q)) return true;
       }
       return false;
     }));
+  }
+
+  _searchDefs(arr, q) {
+    for (const d of arr) {
+      if ((d.content ?? '').toLowerCase().includes(q)) return true;
+    }
+    return false;
   }
 
   allLanguages() {

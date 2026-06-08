@@ -6,6 +6,10 @@ import { ConceptDate } from './concept-date.js';
 import { NonVerbRep } from './non-verb-rep.js';
 import { RelatedConcept } from './related-concept.js';
 
+function wrapAs(Cls) {
+  return item => item instanceof Cls ? item : new Cls(item);
+}
+
 export class LocalizedConcept extends GlossaristModel {
   constructor(data = {}) {
     super();
@@ -30,6 +34,7 @@ export class LocalizedConcept extends GlossaristModel {
     this._rawDefinition = data.definition ?? [];
     this._rawSources = data.sources ?? [];
     this._rawNotes = data.notes ?? [];
+    this._rawAnnotations = data.annotations ?? [];
     this._rawExamples = data.examples ?? [];
     this._rawDates = data.dates ?? [];
     this._rawNonVerbal = data.non_verbal_rep ?? data.non_verb ?? [];
@@ -39,6 +44,7 @@ export class LocalizedConcept extends GlossaristModel {
     this._definitions = null;
     this._sources = null;
     this._notes = null;
+    this._annotations = null;
     this._examples = null;
     this._dates = null;
     this._nonVerbal = null;
@@ -46,19 +52,11 @@ export class LocalizedConcept extends GlossaristModel {
   }
 
   get terms() {
-    if (this._terms === null) {
-      this._terms = this._rawTerms.map(t => Designation.fromData(t));
-    }
-    return this._terms;
+    return this._lazy('_terms', '_rawTerms', t => Designation.fromData(t));
   }
 
   get definitions() {
-    if (this._definitions === null) {
-      this._definitions = this._rawDefinition.map(
-        d => d instanceof DetailedDefinition ? d : new DetailedDefinition(d)
-      );
-    }
-    return this._definitions;
+    return this._lazy('_definitions', '_rawDefinition', wrapAs(DetailedDefinition));
   }
 
   get definition() {
@@ -66,57 +64,31 @@ export class LocalizedConcept extends GlossaristModel {
   }
 
   get sources() {
-    if (this._sources === null) {
-      this._sources = this._rawSources.map(
-        s => s instanceof ConceptSource ? s : new ConceptSource(s)
-      );
-    }
-    return this._sources;
+    return this._lazy('_sources', '_rawSources', wrapAs(ConceptSource));
   }
 
   get notes() {
-    if (this._notes === null) {
-      this._notes = this._rawNotes.map(
-        n => n instanceof DetailedDefinition ? n : new DetailedDefinition(n)
-      );
-    }
-    return this._notes;
+    return this._lazy('_notes', '_rawNotes', wrapAs(DetailedDefinition));
+  }
+
+  get annotations() {
+    return this._lazy('_annotations', '_rawAnnotations', wrapAs(DetailedDefinition));
   }
 
   get examples() {
-    if (this._examples === null) {
-      this._examples = this._rawExamples.map(
-        e => e instanceof DetailedDefinition ? e : new DetailedDefinition(e)
-      );
-    }
-    return this._examples;
+    return this._lazy('_examples', '_rawExamples', wrapAs(DetailedDefinition));
   }
 
   get dates() {
-    if (this._dates === null) {
-      this._dates = this._rawDates.map(
-        d => d instanceof ConceptDate ? d : new ConceptDate(d)
-      );
-    }
-    return this._dates;
+    return this._lazy('_dates', '_rawDates', wrapAs(ConceptDate));
   }
 
   get nonVerbalRep() {
-    if (this._nonVerbal === null) {
-      this._nonVerbal = this._rawNonVerbal.map(
-        n => n instanceof NonVerbRep ? n : new NonVerbRep(n)
-      );
-    }
-    return this._nonVerbal;
+    return this._lazy('_nonVerbal', '_rawNonVerbal', wrapAs(NonVerbRep));
   }
 
   get related() {
-    if (this._related === null) {
-      this._related = this._rawRelated.map(
-        r => r instanceof RelatedConcept ? r : new RelatedConcept(r)
-      );
-    }
-    return this._related;
+    return this._lazy('_related', '_rawRelated', wrapAs(RelatedConcept));
   }
 
   get primaryDesignation() {
@@ -146,47 +118,31 @@ export class LocalizedConcept extends GlossaristModel {
     if (this.reviewDecision) obj.review_decision = this.reviewDecision;
     if (this.reviewDecisionNotes) obj.review_decision_notes = this.reviewDecisionNotes;
 
-    const terms = this._terms ?? this._rawTerms;
-    if (terms.length > 0) {
-      obj.terms = terms.map(t => (typeof t.toJSON === 'function') ? t.toJSON() : t);
-    }
-
-    const defs = this._definitions ?? (this._rawDefinition.length > 0 ? this._rawDefinition : []);
-    if (defs.length > 0) {
-      obj.definition = defs.map(d => (typeof d.toJSON === 'function') ? d.toJSON() : d);
-    }
-
-    const notes = this._notes ?? (this._rawNotes.length > 0 ? this._rawNotes : []);
-    if (notes.length > 0) {
-      obj.notes = notes.map(n => (typeof n.toJSON === 'function') ? n.toJSON() : n);
-    }
-
-    const examples = this._examples ?? (this._rawExamples.length > 0 ? this._rawExamples : []);
-    if (examples.length > 0) {
-      obj.examples = examples.map(e => (typeof e.toJSON === 'function') ? e.toJSON() : e);
-    }
-
-    const sources = this._sources ?? (this._rawSources.length > 0 ? this._rawSources : []);
-    if (sources.length > 0) {
-      obj.sources = sources.map(s => (typeof s.toJSON === 'function') ? s.toJSON() : s);
-    }
-
-    const dates = this._dates ?? (this._rawDates.length > 0 ? this._rawDates : []);
-    if (dates.length > 0) {
-      obj.dates = dates.map(d => (typeof d.toJSON === 'function') ? d.toJSON() : d);
-    }
-
-    const nonVerbal = this._nonVerbal ?? (this._rawNonVerbal.length > 0 ? this._rawNonVerbal : []);
-    if (nonVerbal.length > 0) {
-      obj.non_verbal_rep = nonVerbal.map(n => (typeof n.toJSON === 'function') ? n.toJSON() : n);
-    }
-
-    const related = this._related ?? (this._rawRelated.length > 0 ? this._rawRelated : []);
-    if (related.length > 0) {
-      obj.related = related.map(r => (typeof r.toJSON === 'function') ? r.toJSON() : r);
-    }
+    this._serialize(obj, 'terms', '_terms', '_rawTerms');
+    this._serialize(obj, 'definition', '_definitions', '_rawDefinition');
+    this._serialize(obj, 'notes', '_notes', '_rawNotes');
+    this._serialize(obj, 'annotations', '_annotations', '_rawAnnotations');
+    this._serialize(obj, 'examples', '_examples', '_rawExamples');
+    this._serialize(obj, 'sources', '_sources', '_rawSources');
+    this._serialize(obj, 'dates', '_dates', '_rawDates');
+    this._serialize(obj, 'non_verbal_rep', '_nonVerbal', '_rawNonVerbal');
+    this._serialize(obj, 'related', '_related', '_rawRelated');
 
     return obj;
+  }
+
+  _lazy(cacheKey, rawKey, wrapFn) {
+    if (this[cacheKey] === null) {
+      this[cacheKey] = this[rawKey].map(wrapFn);
+    }
+    return this[cacheKey];
+  }
+
+  _serialize(obj, jsonKey, cacheKey, rawKey) {
+    const items = this[cacheKey] ?? (this[rawKey].length > 0 ? this[rawKey] : []);
+    if (items.length > 0) {
+      obj[jsonKey] = items.map(i => (typeof i.toJSON === 'function') ? i.toJSON() : i);
+    }
   }
 
   static fromJSON(data) {

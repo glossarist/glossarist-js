@@ -1,7 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateConcept, validateRegister, createConceptValidator, ValidationError } from '../src/validators/index.js';
+import { validateConcept, validateRegister, createConceptValidator, ValidationError, ValidationResult } from '../src/validators/index.js';
 import { parseConceptYaml } from '../src/gcr-reader.js';
+import { Concept } from '../src/models/concept.js';
 import { RelationshipTypeRule } from '../src/validators/relationship-type-rule.js';
 
 describe('validateConcept', () => {
@@ -16,6 +17,7 @@ describe('validateConcept', () => {
       '    - content: A test.',
     ].join('\n'));
     const result = validateConcept(c);
+    assert.ok(result instanceof ValidationResult);
     assert.equal(result.valid, true);
     assert.equal(result.errors.length, 0);
   });
@@ -64,6 +66,7 @@ describe('validateConcept', () => {
 describe('validateRegister', () => {
   it('validates a well-formed register', () => {
     const result = validateRegister({ schema_version: '1', shortname: 'test' });
+    assert.ok(result instanceof ValidationResult);
     assert.equal(result.valid, true);
   });
 
@@ -85,7 +88,7 @@ describe('createConceptValidator', () => {
     v.addRule({
       name: 'test-rule',
       severity: 'error',
-      validate: () => { called = true; return []; },
+      validate: (_value, _path, _result) => { called = true; },
     });
     v.validate({ id: '001', localizations: {} });
     assert.equal(called, true);
@@ -97,12 +100,18 @@ describe('ValidationError', () => {
     const e = new ValidationError('path.to.field', 'bad value', 'warning');
     assert.equal(e.toString(), '[WARNING] path.to.field: bad value');
   });
+
+  it('toJSON produces plain object', () => {
+    const e = new ValidationError('path', 'msg', 'error');
+    assert.deepEqual(e.toJSON(), { path: 'path', message: 'msg', severity: 'error' });
+  });
 });
 
 describe('RelationshipTypeRule', () => {
   it('passes for known relationship types', () => {
     const rule = new RelationshipTypeRule();
-    const result = rule.validate({
+    const result = new ValidationResult();
+    const concept = new Concept({
       id: '001',
       related: [
         { type: 'broader', ref: { source: 'IEV', id: '103' } },
@@ -111,48 +120,56 @@ describe('RelationshipTypeRule', () => {
       localizations: {
         eng: {
           related: [{ type: 'see', ref: { source: 'IEV', id: '100' } }],
+          terms: [{ type: 'expression', designation: 'test' }],
         },
       },
-    }, '');
-    assert.equal(result.length, 0);
+    });
+    rule.validate(concept, '', result);
+    assert.equal(result.warnings.length, 0);
   });
 
   it('warns on unknown relationship type at concept level', () => {
     const rule = new RelationshipTypeRule();
-    const result = rule.validate({
+    const result = new ValidationResult();
+    const concept = new Concept({
       id: '001',
       related: [{ type: 'banana' }],
       localizations: {},
-    }, '');
-    assert.equal(result.length, 1);
-    assert.equal(result[0].severity, 'warning');
-    assert.ok(result[0].message.includes('banana'));
+    });
+    rule.validate(concept, '', result);
+    assert.equal(result.warnings.length, 1);
+    assert.equal(result.warnings[0].severity, 'warning');
+    assert.ok(result.warnings[0].message.includes('banana'));
   });
 
   it('warns on unknown relationship type at localization level', () => {
     const rule = new RelationshipTypeRule();
-    const result = rule.validate({
+    const result = new ValidationResult();
+    const concept = new Concept({
       id: '001',
       localizations: {
-        eng: { related: [{ type: 'mystery_type' }] },
+        eng: { related: [{ type: 'mystery_type' }], terms: [{ type: 'expression', designation: 'x' }] },
       },
-    }, '');
-    assert.equal(result.length, 1);
-    assert.ok(result[0].path.includes('localizations.eng'));
+    });
+    rule.validate(concept, '', result);
+    assert.equal(result.warnings.length, 1);
+    assert.ok(result.warnings[0].path.includes('localizations.eng'));
   });
 
   it('is included in validateConcept', () => {
-    const result = validateConcept({
+    const concept = new Concept({
       id: '001',
       related: [{ type: 'unknown_rel' }],
       localizations: { eng: { terms: [{ type: 'expression', designation: 'x' }] } },
     });
+    const result = validateConcept(concept);
     assert.ok(result.warnings.some(w => w.message.includes('unknown_rel')));
   });
 
   it('accepts designation types in terms[].related', () => {
     const rule = new RelationshipTypeRule();
-    const result = rule.validate({
+    const result = new ValidationResult();
+    const concept = new Concept({
       id: '001',
       localizations: {
         eng: {
@@ -163,13 +180,15 @@ describe('RelationshipTypeRule', () => {
           }],
         },
       },
-    }, '');
-    assert.equal(result.length, 0);
+    });
+    rule.validate(concept, '', result);
+    assert.equal(result.warnings.length, 0);
   });
 
   it('warns on unknown type in terms[].related', () => {
     const rule = new RelationshipTypeRule();
-    const result = rule.validate({
+    const result = new ValidationResult();
+    const concept = new Concept({
       id: '001',
       localizations: {
         eng: {
@@ -180,8 +199,9 @@ describe('RelationshipTypeRule', () => {
           }],
         },
       },
-    }, '');
-    assert.equal(result.length, 1);
-    assert.ok(result[0].path.includes('terms[0].related'));
+    });
+    rule.validate(concept, '', result);
+    assert.equal(result.warnings.length, 1);
+    assert.ok(result.warnings[0].path.includes('terms[0].related'));
   });
 });

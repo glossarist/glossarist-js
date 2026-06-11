@@ -1,8 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { referenceResolver, Reference } from '../src/reference-resolver.js';
+import { referenceResolver, Reference, ReferenceResolver } from '../src/reference-resolver.js';
 import { ConceptCollection } from '../src/concept-collection.js';
 import { parseConceptYaml } from '../src/gcr-reader.js';
+import { Concept } from '../src/models/concept.js';
+import { Citation } from '../src/models/citation.js';
+import { ConceptSource } from '../src/models/concept-source.js';
 
 describe('ReferenceResolver', () => {
   it('extracts embedded concept references from definitions', () => {
@@ -73,5 +76,304 @@ describe('Reference', () => {
     assert.equal(r.target, '3.1.1.1');
     assert.equal(r.relationship, 'supersedes');
     assert.equal(r.source, 'relatedConcepts');
+  });
+
+  it('stores citation, sourceId, and resolution from extras', () => {
+    const citation = new Citation({ ref: { source: 'ISO', id: '7301' } });
+    const r = new Reference('bibliography', 'inline', null, null, {
+      citation,
+      sourceId: 'inline',
+      resolution: { kind: 'resolved' },
+    });
+    assert.equal(r.citation, citation);
+    assert.equal(r.sourceId, 'inline');
+    assert.equal(r.resolution.kind, 'resolved');
+  });
+});
+
+describe('ReferenceResolver — cite-ref extraction', () => {
+  it('emits a Bibliography Reference with the resolved Citation', () => {
+    const source = new ConceptSource({
+      id: 'iso-7301-3-2',
+      origin: new Citation({
+        ref: { source: 'ISO', id: '7301', version: '2024' },
+        locality: { type: 'clause', reference_from: '3.2' },
+      }),
+    });
+    const concept = new Concept({
+      id: 'c1',
+      sources: [source],
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          definition: [{ content: 'See {{cite:iso-7301-3-2}} for details.' }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    const bibRefs = refs.filter(r => r.type === 'bibliography');
+    assert.equal(bibRefs.length, 1);
+    assert.equal(bibRefs[0].sourceId, 'iso-7301-3-2');
+    assert.equal(bibRefs[0].citation, source.origin);
+    assert.equal(bibRefs[0].resolution.kind, 'resolved');
+  });
+
+  it('emits an unresolved Reference when the key is not in any source', () => {
+    const concept = new Concept({
+      id: 'c1',
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          definition: [{ content: 'See {{cite:nonexistent}} for details.' }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    const bibRefs = refs.filter(r => r.type === 'bibliography');
+    assert.equal(bibRefs.length, 1);
+    assert.equal(bibRefs[0].resolution.kind, 'unresolved');
+    assert.equal(bibRefs[0].resolution.reason, 'no-source');
+    assert.equal(bibRefs[0].sourceId, 'nonexistent');
+  });
+
+  it('uses the inline label as the target display text', () => {
+    const source = new ConceptSource({
+      id: 'iso-7301-3-2',
+      origin: new Citation({ ref: { source: 'ISO', id: '7301', version: '2024' } }),
+    });
+    const concept = new Concept({
+      id: 'c1',
+      sources: [source],
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          definition: [{ content: 'See {{cite:iso-7301-3-2,custom label}}.' }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    const bibRefs = refs.filter(r => r.type === 'bibliography');
+    assert.equal(bibRefs[0].target, 'custom label');
+  });
+
+  it('emits a Concept Reference for a numeric mention (existing behavior preserved)', () => {
+    const concept = new Concept({
+      id: 'c1',
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          definition: [{ content: 'See {{3.1.1.1}} for details.' }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    const conceptRefs = refs.filter(r => r.type === 'concept');
+    assert.equal(conceptRefs.length, 1);
+    assert.equal(conceptRefs[0].target, '3.1.1.1');
+  });
+
+  it('walks examples and annotations text in addition to definitions and notes', () => {
+    const source = new ConceptSource({
+      id: 'a',
+      origin: new Citation({ ref: { source: 'X' } }),
+    });
+    const concept = new Concept({
+      id: 'c1',
+      sources: [source],
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          definition: [{ content: 'See {{cite:a}} in def.' }],
+          examples: [{ content: 'Example mentions {{cite:a}}.' }],
+          annotations: [{ content: 'Annotation cites {{cite:a}}.' }],
+          notes: [{ content: 'Note references {{cite:a}}.' }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    const bibRefs = refs.filter(r => r.type === 'bibliography');
+    assert.equal(bibRefs.length, 4);
+  });
+
+  it('does not emit a Reference for an unresolved (non-cite, non-numeric) mention', () => {
+    const concept = new Concept({
+      id: 'c1',
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          definition: [{ content: 'Some {{urn:iso:std:iso:14812}} here.' }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    assert.equal(refs.filter(r => r.type === 'bibliography' || r.type === 'concept').length, 0);
+  });
+
+  it('shares a Citation object reference across multiple inline mentions of the same source', () => {
+    const source = new ConceptSource({
+      id: 'a',
+      origin: new Citation({ ref: { source: 'X' } }),
+    });
+    const concept = new Concept({
+      id: 'c1',
+      sources: [source],
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          definition: [{ content: 'See {{cite:a}} and {{cite:a,again}}.' }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    const bibRefs = refs.filter(r => r.type === 'bibliography');
+    assert.equal(bibRefs.length, 2);
+    assert.equal(bibRefs[0].citation, bibRefs[1].citation);
+  });
+});
+
+describe('ReferenceResolver.resolveReference — bibliography registry', () => {
+  function makeRegistry() {
+    const isoRecord = new Concept({ id: '7301' });
+    isoRecord.version = '2024';
+    const isoColl = new ConceptCollection([isoRecord]);
+    return {
+      isoRecord,
+      registry: {
+        isotc204: { concepts: new ConceptCollection() },
+        'bibliography:ISO': { concepts: isoColl },
+      },
+    };
+  }
+
+  it('case 1: no bibliography registry — returns the inline Citation', () => {
+    const ref = new Reference('bibliography', 'inline', null, 'inline', {
+      citation: new Citation({
+        ref: { source: 'ISO', id: '7301', version: '2024' },
+        locality: { type: 'clause', reference_from: '3.2' },
+      }),
+    });
+    const noBioRegistry = { isotc204: { concepts: new ConceptCollection() } };
+    const result = new ReferenceResolver().resolveReference(ref, noBioRegistry);
+    assert.ok(result instanceof Citation);
+    assert.equal(result.ref.id, '7301');
+  });
+
+  it('case 2: bibliography registry matches — returns the rich record', () => {
+    const { isoRecord, registry } = makeRegistry();
+    const ref = new Reference('bibliography', 'inline', null, 'inline', {
+      citation: new Citation({
+        ref: { source: 'ISO', id: '7301', version: '2024' },
+        locality: { type: 'clause', reference_from: '3.2' },
+      }),
+    });
+    const result = new ReferenceResolver().resolveReference(ref, registry);
+    assert.equal(result, isoRecord);
+  });
+
+  it('case 2: matches by id and version when version is present', () => {
+    const older = new Concept({ id: '7301' });
+    older.version = '2010';
+    const newer = new Concept({ id: '7301' });
+    newer.version = '2024';
+    const mixedColl = new ConceptCollection([older, newer]);
+    const mixedRegistry = { 'bibliography:ISO': { concepts: mixedColl } };
+    const ref = new Reference('bibliography', 'inline', null, 'inline', {
+      citation: new Citation({
+        ref: { source: 'ISO', id: '7301', version: '2024' },
+      }),
+    });
+    assert.equal(new ReferenceResolver().resolveReference(ref, mixedRegistry), newer);
+  });
+
+  it('case 2: matches by id alone when version is absent', () => {
+    const { isoRecord, registry } = makeRegistry();
+    const ref = new Reference('bibliography', 'inline', null, 'inline', {
+      citation: new Citation({ ref: { source: 'ISO', id: '7301' } }),
+    });
+    assert.equal(new ReferenceResolver().resolveReference(ref, registry), isoRecord);
+  });
+
+  it('case 3: URI form, no bibliography registry — returns null', () => {
+    const ref = new Reference('bibliography', 'inline', null, 'inline', {
+      uri: 'urn:iso:std:iso:7301:2024',
+      resolution: {
+        kind: 'bibliography-namespace',
+        source: 'ISO',
+        id: '7301',
+        version: '2024',
+      },
+    });
+    const noBioRegistry = { isotc204: { concepts: new ConceptCollection() } };
+    assert.equal(new ReferenceResolver().resolveReference(ref, noBioRegistry), null);
+  });
+
+  it('case 3: URI form, bibliography registry matches — returns the rich record', () => {
+    const { isoRecord, registry } = makeRegistry();
+    const ref = new Reference('bibliography', 'inline', null, 'inline', {
+      uri: 'urn:iso:std:iso:7301:2024',
+      resolution: {
+        kind: 'bibliography-namespace',
+        source: 'ISO',
+        id: '7301',
+        version: '2024',
+      },
+    });
+    assert.equal(new ReferenceResolver().resolveReference(ref, registry), isoRecord);
+  });
+
+  it('falls back to the inline Citation when ref has no source or id', () => {
+    const { registry } = makeRegistry();
+    const ref = new Reference('bibliography', 'inline', null, 'inline', {
+      citation: new Citation({ ref: { source: null, id: null } }),
+    });
+    const result = new ReferenceResolver().resolveReference(ref, registry);
+    assert.ok(result instanceof Citation);
+  });
+
+  it('returns the empty inline Citation as a self-contained fallback', () => {
+    const { registry } = makeRegistry();
+    const ref = new Reference('bibliography', 'inline', null, 'inline', {
+      citation: new Citation({}),
+    });
+    const result = new ReferenceResolver().resolveReference(ref, registry);
+    assert.ok(result instanceof Citation);
+    assert.equal(result.ref, null);
+  });
+
+  it('backward compat: a single ConceptCollection is treated as a one-key registry', () => {
+    const coll = new ConceptCollection([new Concept({ id: '3.1.1.1' })]);
+    const ref = new Reference('concept', '3.1.1.1', null, 'inline');
+    const result = new ReferenceResolver().resolveReference(ref, coll);
+    assert.equal(result.id, '3.1.1.1');
+  });
+
+  it('does not mutate the Reference or the registry', () => {
+    const { registry } = makeRegistry();
+    const ref = new Reference('bibliography', 'inline', null, 'inline', {
+      citation: new Citation({ ref: { source: 'ISO', id: '7301' } }),
+    });
+    const beforeRef = JSON.stringify(ref);
+    const beforeRegistry = JSON.stringify(registry);
+    new ReferenceResolver().resolveReference(ref, registry);
+    assert.equal(JSON.stringify(ref), beforeRef);
+    assert.equal(JSON.stringify(registry), beforeRegistry);
+  });
+
+  it('resolves a numeric mention against the source dataset via lookupKey', () => {
+    const c1 = new Concept({ id: '3.1.1.1' });
+    const c2 = new Concept({ id: '3.1.1.2' });
+    const coll = new ConceptCollection([c1, c2]);
+    const reg = { isotc204: { concepts: coll } };
+    const ref = new Reference('concept', '3.1.1.1', null, 'inline', {
+      lookupKey: { id: '3.1.1.1', dataset: 'isotc204' },
+    });
+    assert.equal(new ReferenceResolver().resolveReference(ref, reg), c1);
   });
 });

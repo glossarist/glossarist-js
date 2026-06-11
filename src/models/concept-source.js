@@ -4,6 +4,7 @@ import { Citation } from './citation.js';
 export class ConceptSource extends GlossaristModel {
   constructor(data = {}) {
     super();
+    this.id = data.id ?? null;
     this.status = data.status ?? null;
     this.type = data.type ?? null;
     this.origin = data.origin
@@ -14,6 +15,7 @@ export class ConceptSource extends GlossaristModel {
 
   toJSON() {
     const obj = {};
+    if (this.id != null) obj.id = this.id;
     if (this.status != null) obj.status = this.status;
     if (this.type != null) obj.type = this.type;
     if (this.origin != null) obj.origin = this.origin.toJSON();

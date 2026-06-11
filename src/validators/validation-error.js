@@ -8,4 +8,8 @@ export class ValidationError {
   toString() {
     return `[${this.severity.toUpperCase()}] ${this.path}: ${this.message}`;
   }
+
+  toJSON() {
+    return { path: this.path, message: this.message, severity: this.severity };
+  }
 }

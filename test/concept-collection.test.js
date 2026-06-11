@@ -94,23 +94,23 @@ describe('ConceptCollection', () => {
       parseConceptYaml('termid: "3.1.1"\neng:\n  terms:\n    - designation: a'),
     ]);
     const sorted = cc.sorted();
-    assert.equal(sorted[0].id, '3.1.1');
-    assert.equal(sorted[1].id, '3.1.2');
-    assert.equal(sorted[2].id, '3.1.10');
+    assert.equal(sorted.at(0).id, '3.1.1');
+    assert.equal(sorted.at(1).id, '3.1.2');
+    assert.equal(sorted.at(2).id, '3.1.10');
   });
 
   it('search finds by designation text', () => {
     const cc = makeCollection();
     const result = cc.search('function');
     assert.equal(result.length, 1);
-    assert.equal(result[0].id, '3.1.1.2');
+    assert.equal(result.at(0).id, '3.1.1.2');
   });
 
   it('search finds by definition text', () => {
     const cc = makeCollection();
     const result = cc.search('concrete');
     assert.equal(result.length, 1);
-    assert.equal(result[0].id, '3.1.1.1');
+    assert.equal(result.at(0).id, '3.1.1.1');
   });
 
   it('search finds by note text', () => {
@@ -125,7 +125,7 @@ describe('ConceptCollection', () => {
     const cc = new ConceptCollection([c]);
     const result = cc.search('safety');
     assert.equal(result.length, 1);
-    assert.equal(result[0].id, '100');
+    assert.equal(result.at(0).id, '100');
   });
 
   it('search finds by example text', () => {
@@ -140,7 +140,7 @@ describe('ConceptCollection', () => {
     const cc = new ConceptCollection([c]);
     const result = cc.search('automotive');
     assert.equal(result.length, 1);
-    assert.equal(result[0].id, '200');
+    assert.equal(result.at(0).id, '200');
   });
 
   it('search finds by annotation text', () => {
@@ -153,7 +153,7 @@ describe('ConceptCollection', () => {
     const cc = new ConceptCollection([c]);
     const result = cc.search('deprecated');
     assert.equal(result.length, 1);
-    assert.equal(result[0].id, '300');
+    assert.equal(result.at(0).id, '300');
   });
 
   it('allLanguages collects unique language codes', () => {
@@ -173,26 +173,94 @@ describe('ConceptCollection', () => {
     assert.ok(cc.slice(0, 1) instanceof ConceptCollection);
   });
 
-  it('supports numeric index access via Proxy', () => {
+  it('supports numeric index access via at()', () => {
     const cc = makeCollection();
-    assert.equal(cc[0].id, '3.1.1.1');
-    assert.equal(cc[1].id, '3.1.1.2');
-    assert.equal(cc[2].id, '3.1.2.1');
-    assert.equal(cc[999], undefined);
+    assert.equal(cc.at(0).id, '3.1.1.1');
+    assert.equal(cc.at(1).id, '3.1.1.2');
+    assert.equal(cc.at(2).id, '3.1.2.1');
+    assert.equal(cc.at(999), undefined);
   });
 
-  it('supports numeric index set via Proxy', () => {
+  it('supports set for replacement', () => {
     const cc = makeCollection();
     const replacement = parseConceptYaml('termid: "9.9.9"\neng:\n  terms:\n    - designation: replaced');
-    cc[1] = replacement;
-    assert.equal(cc[1].id, '9.9.9');
+    cc.set(1, replacement);
+    assert.equal(cc.at(1).id, '9.9.9');
     assert.equal(cc.length, 3);
   });
 
-  it('supports "in" operator for numeric indices', () => {
+  it('toArray returns a plain array copy', () => {
     const cc = makeCollection();
-    assert.equal(0 in cc, true);
-    assert.equal(2 in cc, true);
-    assert.equal(3 in cc, false);
+    const arr = cc.toArray();
+    assert.ok(Array.isArray(arr));
+    assert.equal(arr.length, 3);
+    assert.equal(arr[0].id, '3.1.1.1');
+  });
+
+  it('is iterable', () => {
+    const cc = makeCollection();
+    const ids = [];
+    for (const c of cc) ids.push(c.id);
+    assert.deepEqual(ids, ['3.1.1.1', '3.1.1.2', '3.1.2.1']);
+  });
+});
+
+describe('ConceptCollection.byIdAnd', () => {
+  // The Concept model has no `version` field; the deployment
+  // sets concept.version directly on the instance.
+  function withVersion(concept, version) {
+    concept.version = version;
+    return concept;
+  }
+
+  it('matches on id alone when version is null (falls back to byId)', () => {
+    const c1 = new Concept({ id: 'ISO-7301' });
+    const coll = new ConceptCollection([c1]);
+    assert.equal(coll.byIdAnd('ISO-7301', null), c1);
+  });
+
+  it('matches on id alone when version is undefined', () => {
+    const c1 = new Concept({ id: 'ISO-7301' });
+    const coll = new ConceptCollection([c1]);
+    assert.equal(coll.byIdAnd('ISO-7301'), c1);
+    assert.equal(coll.byIdAnd('ISO-7301', undefined), c1);
+  });
+
+  it('matches on id and version together', () => {
+    const c2010 = withVersion(new Concept({ id: 'ISO-7301' }), '2010');
+    const c2024 = withVersion(new Concept({ id: 'ISO-7301' }), '2024');
+    const coll = new ConceptCollection([c2010, c2024]);
+    assert.equal(coll.byIdAnd('ISO-7301', '2024'), c2024);
+    assert.equal(coll.byIdAnd('ISO-7301', '2010'), c2010);
+  });
+
+  it('returns null when no concept has the (id, version) pair', () => {
+    const c = withVersion(new Concept({ id: 'ISO-7301' }), '2010');
+    const coll = new ConceptCollection([c]);
+    assert.equal(coll.byIdAnd('ISO-7301', '2030'), null);
+  });
+
+  it('returns null when no concept has the id', () => {
+    const coll = new ConceptCollection([]);
+    assert.equal(coll.byIdAnd('anything', '2024'), null);
+  });
+
+  it('falls through to byId when version is null, even if a versioned concept exists', () => {
+    const c1 = withVersion(new Concept({ id: 'ISO-7301' }), '2010');
+    const c2 = withVersion(new Concept({ id: 'ISO-7301' }), '2024');
+    const coll = new ConceptCollection([c1, c2]);
+    assert.equal(coll.byIdAnd('ISO-7301', null), c1);
+  });
+
+  it('matches on termid (alias for id)', () => {
+    const c = new Concept({ termid: '103-01-02' });
+    const coll = new ConceptCollection([c]);
+    assert.equal(coll.byIdAnd('103-01-02', null), c);
+  });
+
+  it('treats empty-string version as no match (byIdAnd is strict)', () => {
+    const c = withVersion(new Concept({ id: 'ISO-7301' }), '2024');
+    const coll = new ConceptCollection([c]);
+    assert.equal(coll.byIdAnd('ISO-7301', ''), null);
   });
 });

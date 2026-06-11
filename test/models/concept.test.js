@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Concept } from '../../src/models/concept.js';
 import { Citation } from '../../src/models/citation.js';
 import { ConceptReference } from '../../src/models/concept-reference.js';
+import { ConceptSource } from '../../src/models/concept-source.js';
 import { LocalizedConcept } from '../../src/models/localized-concept.js';
 import { parseConceptYaml } from '../../src/gcr-reader.js';
 
@@ -36,6 +37,11 @@ describe('Concept model', () => {
   it('lists languages', () => {
     const c = makeConcept();
     assert.deepEqual(c.languages, ['eng', 'fra']);
+  });
+
+  it('languageCodes is alias for languages', () => {
+    const c = makeConcept();
+    assert.deepEqual(c.languageCodes, c.languages);
   });
 
   it('returns raw localizations for backward compat', () => {
@@ -367,5 +373,95 @@ describe('Concept tags', () => {
   it('defaults tags to empty array', () => {
     const c = new Concept({ id: '103-01-01' });
     assert.deepEqual(c.tags, []);
+  });
+});
+
+describe('Concept.findSourceById', () => {
+  it('returns null when no source has the id', () => {
+    const c = new Concept({
+      id: 'c1',
+      localizations: { eng: { terms: [{ designation: 'foo' }] } },
+    });
+    assert.equal(c.findSourceById('anything'), null);
+  });
+
+  it('finds a concept-level source by id', () => {
+    const source = new ConceptSource({
+      id: 'iso-7301-3-2',
+      origin: new Citation({ ref: { source: 'ISO', id: '7301', version: '2024' } }),
+    });
+    const c = new Concept({
+      id: 'c1',
+      sources: [source],
+      localizations: { eng: { terms: [{ designation: 'foo' }] } },
+    });
+    assert.equal(c.findSourceById('iso-7301-3-2'), source);
+  });
+
+  it('finds a localization-level source by id', () => {
+    const source = new ConceptSource({
+      id: 'iso-7301-3-2',
+      origin: new Citation({ ref: { source: 'ISO', id: '7301', version: '2024' } }),
+    });
+    const c = new Concept({
+      id: 'c1',
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          sources: [source],
+        },
+      },
+    });
+    assert.equal(c.findSourceById('iso-7301-3-2'), source);
+  });
+
+  it('finds a designation-level source by id', () => {
+    const source = new ConceptSource({
+      id: 'smith-2020',
+      origin: new Citation({ ref: { source: 'DOI', id: '10.1234/abc' } }),
+    });
+    const c = new Concept({
+      id: 'c1',
+      localizations: {
+        eng: {
+          terms: [{
+            designation: 'foo',
+            sources: [source],
+          }],
+        },
+      },
+    });
+    assert.equal(c.findSourceById('smith-2020'), source);
+  });
+
+  it('skips sources without an id', () => {
+    const sourceWithoutId = new ConceptSource({
+      origin: new Citation({ ref: { source: 'ISO', id: '7301' } }),
+    });
+    const c = new Concept({
+      id: 'c1',
+      sources: [sourceWithoutId],
+      localizations: { eng: { terms: [{ designation: 'foo' }] } },
+    });
+    assert.equal(c.findSourceById('ISO 7301'), null);
+  });
+
+  it('returns null for non-string id', () => {
+    const c = new Concept({ id: 'c1' });
+    assert.equal(c.findSourceById(null), null);
+    assert.equal(c.findSourceById(undefined), null);
+    assert.equal(c.findSourceById(''), null);
+    assert.equal(c.findSourceById(123), null);
+  });
+
+  it('returns the first match when ids collide (validator catches this; lookup is forgiving)', () => {
+    const a = new ConceptSource({ id: 'foo', origin: new Citation({ ref: { source: 'A' } }) });
+    const b = new ConceptSource({ id: 'foo', origin: new Citation({ ref: { source: 'B' } }) });
+    const c = new Concept({
+      id: 'c1',
+      sources: [a, b],
+      localizations: { eng: { terms: [{ designation: 'x' }] } },
+    });
+    assert.equal(c.findSourceById('foo'), a);
   });
 });

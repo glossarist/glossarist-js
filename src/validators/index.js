@@ -13,6 +13,7 @@ export {
   DomainRefRule,
   UuidFormatRule,
   SourceUrnFormatRule,
+  CiteRefIntegrityRule,
 } from './v3-rules.js';
 
 import { ConceptValidator, LanguageCodeRule, DesignationTypeRule, EntryStatusRule } from './concept-validator.js';
@@ -27,6 +28,7 @@ import {
   DomainRefRule,
   UuidFormatRule,
   SourceUrnFormatRule,
+  CiteRefIntegrityRule,
 } from './v3-rules.js';
 
 const _default = new ConceptValidator()
@@ -40,7 +42,8 @@ const _default = new ConceptValidator()
   .addRule(new DomainRefRule())
   .addRule(new UuidFormatRule())
   .addRule(new SourceUrnFormatRule())
-  .addRule(new RelationshipTypeRule());
+  .addRule(new RelationshipTypeRule())
+  .addRule(new CiteRefIntegrityRule());
 
 export function validateConcept(concept) {
   return _default.validate(concept);

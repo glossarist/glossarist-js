@@ -34,6 +34,16 @@ export { conceptUuid, localizedConceptUuid, uuidV5 } from './uuid';
 // Reference resolution
 export { ReferenceResolver, Reference, referenceResolver } from './reference-resolver';
 
+export type MentionParseResult = {
+  kind: 'cite-ref' | 'numeric' | 'unresolved';
+  key?: string;
+  label?: string | null;
+  id?: string;
+  raw: string;
+};
+
+export function parseMention(raw: string): MentionParseResult;
+
 // V1 support
 export { V1Reader, migrateV1ToV2 } from './v1-reader';
 

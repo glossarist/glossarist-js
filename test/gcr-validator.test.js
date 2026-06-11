@@ -25,14 +25,16 @@ describe('ValidationResult', () => {
     const r = new ValidationResult();
     r.addError('something broke');
     assert.equal(r.valid, false);
-    assert.deepEqual(r.errors, ['something broke']);
+    assert.equal(r.errors.length, 1);
+    assert.equal(r.errors[0].message, 'something broke');
   });
 
   it('warnings do not affect validity', () => {
     const r = new ValidationResult();
     r.addWarning('minor issue');
     assert.equal(r.valid, true);
-    assert.deepEqual(r.warnings, ['minor issue']);
+    assert.equal(r.warnings.length, 1);
+    assert.equal(r.warnings[0].message, 'minor issue');
   });
 
   it('merge combines results', () => {
@@ -42,8 +44,8 @@ describe('ValidationResult', () => {
     b.addError('e2');
     b.addWarning('w1');
     a.merge(b);
-    assert.deepEqual(a.errors, ['e1', 'e2']);
-    assert.deepEqual(a.warnings, ['w1']);
+    assert.equal(a.errors.length, 2);
+    assert.equal(a.warnings.length, 1);
   });
 
   it('toJSON produces plain object', () => {
@@ -52,14 +54,32 @@ describe('ValidationResult', () => {
     r.addWarning('meh');
     const json = r.toJSON();
     assert.equal(json.valid, false);
-    assert.deepEqual(json.errors, ['bad']);
-    assert.deepEqual(json.warnings, ['meh']);
+    assert.equal(json.errors.length, 1);
+    assert.equal(json.warnings.length, 1);
+    assert.equal(json.errors[0].message, 'bad');
+    assert.equal(json.warnings[0].message, 'meh');
   });
 
   it('add methods are chainable', () => {
     const r = new ValidationResult();
     const result = r.addError('a').addWarning('b');
     assert.ok(result instanceof ValidationResult);
+  });
+
+  it('addError accepts (path, message)', () => {
+    const r = new ValidationResult();
+    r.addError('field.name', 'is required');
+    assert.equal(r.errors[0].path, 'field.name');
+    assert.equal(r.errors[0].message, 'is required');
+    assert.equal(r.errors[0].severity, 'error');
+  });
+
+  it('addWarning accepts (path, message)', () => {
+    const r = new ValidationResult();
+    r.addWarning('field.name', 'could be better');
+    assert.equal(r.warnings[0].path, 'field.name');
+    assert.equal(r.warnings[0].message, 'could be better');
+    assert.equal(r.warnings[0].severity, 'warning');
   });
 });
 
@@ -70,21 +90,22 @@ describe('GcrValidator', () => {
     const buf = fs.readFileSync(path.join(FIXTURES, 'canonical.gcr'));
     const pkg = await loadGcr(buf);
     const result = await new GcrValidator().validate(pkg);
-    assert.equal(result.valid, true, `Unexpected errors: ${result.errors.join(', ')}`);
+    assert.ok(result instanceof ValidationResult);
+    assert.equal(result.valid, true, `Unexpected errors: ${result.errors.map(e => e.message).join(', ')}`);
   });
 
   it('validates a well-formed managed GCR', async () => {
     const buf = fs.readFileSync(path.join(FIXTURES, 'managed.gcr'));
     const pkg = await loadGcr(buf);
     const result = await new GcrValidator().validate(pkg);
-    assert.equal(result.valid, true, `Unexpected errors: ${result.errors.join(', ')}`);
+    assert.equal(result.valid, true, `Unexpected errors: ${result.errors.map(e => e.message).join(', ')}`);
   });
 
   it('validates GCR with assets', async () => {
     const buf = fs.readFileSync(path.join(FIXTURES, 'assets.gcr'));
     const pkg = await loadGcr(buf);
     const result = await new GcrValidator().validate(pkg);
-    assert.equal(result.valid, true, `Unexpected errors: ${result.errors.join(', ')}`);
+    assert.equal(result.valid, true, `Unexpected errors: ${result.errors.map(e => e.message).join(', ')}`);
   });
 
   it('flags missing metadata', async () => {
@@ -94,7 +115,7 @@ describe('GcrValidator', () => {
     const pkg = await loadGcr(buf);
     const result = await new GcrValidator().validate(pkg);
     assert.equal(result.valid, false);
-    assert.ok(result.errors.some((e) => e.includes('metadata.yaml')));
+    assert.ok(result.errors.some(e => e.message.includes('metadata.yaml')));
   });
 
   it('flags metadata missing required fields', async () => {
@@ -104,8 +125,8 @@ describe('GcrValidator', () => {
     const buf = await zip.generateAsync({ type: 'uint8array' });
     const pkg = await loadGcr(buf);
     const result = await new GcrValidator().validate(pkg);
-    assert.ok(result.errors.some((e) => e.includes('version')));
-    assert.ok(result.errors.some((e) => e.includes('concept_count')));
+    assert.ok(result.errors.some(e => e.message.includes('version')));
+    assert.ok(result.errors.some(e => e.message.includes('concept_count')));
   });
 
   it('flags missing concepts directory', async () => {
@@ -114,7 +135,7 @@ describe('GcrValidator', () => {
     const buf = await zip.generateAsync({ type: 'uint8array' });
     const pkg = await loadGcr(buf);
     const result = await new GcrValidator().validate(pkg);
-    assert.ok(result.errors.some((e) => e.includes('No concept files')));
+    assert.ok(result.errors.some(e => e.message.includes('No concept files')));
   });
 
   it('warns on empty images directory', async () => {
@@ -125,7 +146,7 @@ describe('GcrValidator', () => {
     const buf = await zip.generateAsync({ type: 'uint8array' });
     const pkg = await loadGcr(buf);
     const result = await new GcrValidator().validate(pkg);
-    assert.ok(result.warnings.some((w) => w.includes('images/') && w.includes('empty')));
+    assert.ok(result.warnings.some(w => w.message.includes('images/') && w.message.includes('empty')));
   });
 
   it('flags invalid YAML in file asset', async () => {
@@ -136,6 +157,6 @@ describe('GcrValidator', () => {
     const buf = await zip.generateAsync({ type: 'uint8array' });
     const pkg = await loadGcr(buf);
     const result = await new GcrValidator().validate(pkg);
-    assert.ok(result.errors.some((e) => e.includes('bibliography.yaml')));
+    assert.ok(result.errors.some(e => e.message.includes('bibliography.yaml')));
   });
 });

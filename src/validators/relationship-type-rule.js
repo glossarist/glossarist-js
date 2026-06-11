@@ -8,32 +8,31 @@ const KNOWN_DESIGNATION_TYPES = new Set(DESIGNATION_RELATIONSHIP_TYPES);
 export class RelationshipTypeRule extends ValidationRule {
   constructor() { super('relationship-type', 'warning'); }
 
-  validate(value, path) {
-    const errors = [];
-    this._checkRelated(value.related, `${path}related`, KNOWN_CONCEPT_TYPES, errors);
+  validate(concept, path, result) {
+    const related = concept.relatedConcepts ?? concept.related ?? [];
+    this._checkRelated(related, `${path}related`, KNOWN_CONCEPT_TYPES, result);
 
-    if (value.localizations) {
-      for (const [lang, lc] of Object.entries(value.localizations)) {
-        this._checkRelated(lc.related, `${path}localizations.${lang}.related`, KNOWN_CONCEPT_TYPES, errors);
+    const langs = concept.languages ?? [];
+    for (const lang of langs) {
+      const lc = concept.localization?.(lang);
+      if (!lc) continue;
 
-        if (lc.terms) {
-          for (let ti = 0; ti < lc.terms.length; ti++) {
-            this._checkRelated(lc.terms[ti]?.related,
-              `${path}localizations.${lang}.terms[${ti}].related`, KNOWN_DESIGNATION_TYPES, errors);
-          }
-        }
+      this._checkRelated(lc.related, `${path}localizations.${lang}.related`, KNOWN_CONCEPT_TYPES, result);
+
+      for (let ti = 0; ti < lc.terms.length; ti++) {
+        this._checkRelated(lc.terms[ti]?.related,
+          `${path}localizations.${lang}.terms[${ti}].related`, KNOWN_DESIGNATION_TYPES, result);
       }
     }
-    return errors;
   }
 
-  _checkRelated(arr, basePath, knownTypes, errors) {
+  _checkRelated(arr, basePath, knownTypes, result) {
     if (!arr) return;
     for (let i = 0; i < arr.length; i++) {
       const type = arr[i]?.type;
       if (type && !knownTypes.has(type)) {
-        errors.push(...this.error(`${basePath}[${i}].type`,
-          `Unknown relationship type '${type}'`));
+        this.addIssue(result, `${basePath}[${i}].type`,
+          `Unknown relationship type '${type}'`);
       }
     }
   }

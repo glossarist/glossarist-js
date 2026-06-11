@@ -5,7 +5,6 @@ const _items = Symbol('items');
 export class ConceptCollection {
   constructor(concepts = []) {
     this[_items] = Array.from(concepts);
-    return new Proxy(this, _handler);
   }
 
   get length() { return this[_items].length; }
@@ -23,8 +22,33 @@ export class ConceptCollection {
   splice(...args) { return this[_items].splice(...args); }
   set(index, item) { this[_items][index] = item; }
 
+  toArray() { return [...this[_items]]; }
+
   byId(id) {
     return this[_items].find(c => c.id === id || c.termid === id);
+  }
+
+  /**
+   * Find a concept by id and version.
+   *
+   * The version is matched against a top-level `version` field on
+   * the concept instance (e.g. `concept.version`). The deployment
+   * is responsible for setting this field on bibliographic records;
+   * the data model does not enforce its presence or type.
+   *
+   * If `version` is null, the method falls back to `byId(id)`. This
+   * supports the "version-agnostic" lookup for datasets where
+   * version is not tracked.
+   *
+   * @param {string} id
+   * @param {string | null} version
+   * @returns {Concept | null}
+   */
+  byIdAnd(id, version) {
+    if (version == null) return this.byId(id);
+    return this[_items].find(c =>
+      (c.id === id || c.termid === id) && c.version === version
+    ) ?? null;
   }
 
   byPrefix(prefix) {
@@ -90,27 +114,3 @@ export class ConceptCollection {
   slice(...args) { return new ConceptCollection(this[_items].slice(...args)); }
   concat(...args) { return new ConceptCollection(this[_items].concat(...args)); }
 }
-
-const _handler = {
-  get(target, prop, receiver) {
-    if (typeof prop === 'string' && /^\d+$/.test(prop)) {
-      return target[_items][Number(prop)];
-    }
-    if (prop === 'length') return target[_items].length;
-    const value = Reflect.get(target, prop, receiver);
-    return typeof value === 'function' ? value.bind(target) : value;
-  },
-  set(target, prop, value) {
-    if (typeof prop === 'string' && /^\d+$/.test(prop)) {
-      target[_items][Number(prop)] = value;
-      return true;
-    }
-    return Reflect.set(target, prop, value);
-  },
-  has(target, prop) {
-    if (typeof prop === 'string' && /^\d+$/.test(prop)) {
-      return Number(prop) in target[_items];
-    }
-    return Reflect.has(target, prop);
-  },
-};

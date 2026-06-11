@@ -367,11 +367,41 @@ export class GcrPackage {
     return map;
   }
 
-  /** @private @param {string} filePath @returns {Promise<string | null>} */
-  async _readText(filePath) {
+  /**
+   * Read a text file from the package.
+   * @param {string} filePath
+   * @returns {Promise<string | null>} null if the file doesn't exist
+   */
+  async readText(filePath) {
     const entry = this._zip.file(filePath);
     if (!entry) return null;
     return entry.async('text');
+  }
+
+  /**
+   * List all entry paths in the package.
+   * @returns {Array<{ path: string, dir: boolean }>}
+   */
+  entryPaths() {
+    const entries = [];
+    this._zip.forEach((relativePath, entry) => {
+      entries.push({ path: relativePath, dir: !!entry.dir });
+    });
+    return entries;
+  }
+
+  /**
+   * Check whether a specific entry exists in the package.
+   * @param {string} filePath
+   * @returns {boolean}
+   */
+  hasEntry(filePath) {
+    return this._zip.file(filePath) != null;
+  }
+
+  /** @private @deprecated Use readText instead */
+  async _readText(filePath) {
+    return this.readText(filePath);
   }
 }
 

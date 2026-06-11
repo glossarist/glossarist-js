@@ -30,6 +30,11 @@ export class Concept extends GlossaristModel {
     return Object.keys(this._rawLocalizations);
   }
 
+  get languageCodes() {
+    return this.languages;
+  }
+
+  /** @deprecated Use localization(lang) for model access, or toJSON().localizations for raw data */
   get localizations() {
     return this._rawLocalizations;
   }
@@ -66,6 +71,45 @@ export class Concept extends GlossaristModel {
 
   hasLocalization(lang) {
     return lang in this._rawLocalizations;
+  }
+
+  /**
+   * Find a source by its local id within this concept.
+   *
+   * The lookup walks concept-level, localization-level, and
+   * designation-level sources in that order, returning the first
+   * source whose `id` matches. Sources without an `id` are
+   * skipped. The id is local to the concept; uniqueness is
+   * enforced by the validator (see CiteRefIntegrityRule).
+   *
+   * @param {string} id
+   * @returns {ConceptSource | null}
+   */
+  findSourceById(id) {
+    if (typeof id !== 'string' || id.length === 0) return null;
+
+    // 1. Concept-level sources.
+    for (const source of this.sources) {
+      if (source.id === id) return source;
+    }
+
+    // 2. Localization-level sources.
+    for (const lang of this.languages) {
+      const lc = this.localization(lang);
+      if (!lc) continue;
+      for (const source of lc.sources) {
+        if (source.id === id) return source;
+      }
+
+      // 3. Designation-level sources.
+      for (const designation of lc.terms) {
+        for (const source of designation.sources) {
+          if (source.id === id) return source;
+        }
+      }
+    }
+
+    return null;
   }
 
   toJSON() {

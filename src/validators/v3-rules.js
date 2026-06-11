@@ -1,20 +1,25 @@
 import { ValidationRule } from './validation-rule.js';
 
-/**
- * GLS-305: Enforces Citation#ref is a proper Citation.Ref object
- * and RelatedConcept#ref has at least source or id.
- */
+const _langs = (concept) =>
+  concept.languages ?? (concept.localizations ? Object.keys(concept.localizations) : []);
+
+const _loc = (concept, lang) =>
+  typeof concept.localization === 'function' ? concept.localization(lang) : concept.localizations?.[lang];
+
+const _eachLocalization = (concept, fn) => {
+  for (const lang of _langs(concept)) {
+    const lc = _loc(concept, lang);
+    if (lc) fn(lang, lc);
+  }
+};
+
 export class RefShapeRule extends ValidationRule {
   constructor() { super('ref-shape'); }
 
-  validate(value, path) {
-    const errors = [];
-
-    // Check sources in localizations
-    const localizations = value.localizations || {};
+  validate(concept, path, result) {
     let sourceIdx = 0;
-    for (const [lang, lc] of Object.entries(localizations)) {
-      const sources = lc.sources || [];
+    _eachLocalization(concept, (lang, lc) => {
+      const sources = lc.sources ?? [];
       for (let i = 0; i < sources.length; i++) {
         sourceIdx++;
         const origin = sources[i].origin;
@@ -22,195 +27,254 @@ export class RefShapeRule extends ValidationRule {
 
         const ref = origin.ref;
         if (!ref) {
-          errors.push(...this.error(
+          this.addIssue(result,
             `${path}localizations.${lang}.sources[${i}].origin.ref`,
-            `source ${sourceIdx} origin has nil ref (expected Citation.Ref hash)`,
-          ));
+            `source ${sourceIdx} origin has nil ref (expected Citation.Ref hash)`);
         } else if (!ref.source && !ref.id) {
-          errors.push(...this.error(
+          this.addIssue(result,
             `${path}localizations.${lang}.sources[${i}].origin.ref`,
-            `source ${sourceIdx} origin.ref has neither source nor id`,
-          ));
+            `source ${sourceIdx} origin.ref has neither source nor id`);
         }
       }
-    }
+    });
 
-    // Check related concepts
-    const related = value.related || [];
+    const related = concept.relatedConcepts ?? concept.related ?? [];
     for (let i = 0; i < related.length; i++) {
       const ref = related[i].ref;
       if (!ref) continue;
       if (!ref.source && !ref.id) {
-        errors.push(...this.error(
+        this.addIssue(result,
           `${path}related[${i}].ref`,
-          `related concept ${i + 1} has empty ref (no source or id)`,
-        ));
+          `related concept ${i + 1} has empty ref (no source or id)`);
       }
     }
-
-    return errors;
   }
 }
 
-/**
- * GLS-308: Locality must have type and reference_from when present.
- */
 export class LocalityCompletenessRule extends ValidationRule {
   constructor() { super('locality-completeness', 'warning'); }
 
-  validate(value, path) {
-    const errors = [];
-    const localizations = value.localizations || {};
-
-    for (const [lang, lc] of Object.entries(localizations)) {
-      const sources = lc.sources || [];
+  validate(concept, path, result) {
+    _eachLocalization(concept, (lang, lc) => {
+      const sources = lc.sources ?? [];
       for (let i = 0; i < sources.length; i++) {
         const origin = sources[i].origin;
         if (!origin || !origin.locality) continue;
 
         const loc = origin.locality;
         if (!loc.type) {
-          errors.push(...this.error(
+          this.addIssue(result,
             `${path}localizations.${lang}.sources[${i}].origin.locality.type`,
-            `source locality has no type`,
-          ));
+            `source locality has no type`);
         }
-        if (!loc.reference_from) {
-          errors.push(...this.error(
+        if (!loc.reference_from && !loc.referenceFrom) {
+          this.addIssue(result,
             `${path}localizations.${lang}.sources[${i}].origin.locality.reference_from`,
-            `source locality has no reference_from`,
-          ));
+            `source locality has no reference_from`);
         }
       }
-    }
-
-    return errors;
+    });
   }
 }
 
-/**
- * GLS-017: Localization map consistency.
- */
 export class LocalizationConsistencyRule extends ValidationRule {
   constructor() { super('localization-consistency'); }
 
-  validate(value, path) {
-    const errors = [];
-    const localizations = value.localizations || {};
-    const data = value.raw?.data || value;
-
+  validate(concept, path, result) {
+    const langs = _langs(concept);
+    const data = concept.raw?.data || concept;
     const declaredLangs = data.localized_concepts
       ? Object.keys(data.localized_concepts)
-      : Object.keys(localizations);
+      : langs;
 
     for (const lang of declaredLangs) {
-      if (!localizations[lang]) {
-        errors.push(...this.error(
+      if (!concept.hasLocalization?.(lang) && !(concept.localizations?.[lang])) {
+        this.addIssue(result,
           `${path}localizations.${lang}`,
-          `localized_concepts map has '${lang}' but no localization loaded`,
-        ));
+          `localized_concepts map has '${lang}' but no localization loaded`);
       }
     }
-
-    return errors;
   }
 }
 
-/**
- * GLS-010: Schema version should be 3.
- */
 export class SchemaVersionRule extends ValidationRule {
   constructor() { super('schema-version', 'warning'); }
 
-  validate(value, path) {
-    const errors = [];
-    const version = value.schemaVersion || value.schema_version;
+  validate(concept, path, result) {
+    const version = concept.schemaVersion ?? concept.schema_version;
 
     if (version && String(version) !== '3') {
-      errors.push(...this.error(
+      this.addIssue(result,
         `${path}schema_version`,
-        `schema_version is '${version}', expected '3'`,
-      ));
+        `schema_version is '${version}', expected '3'`);
     }
-
-    return errors;
   }
 }
 
-/**
- * GLS-309: Domain references need concept_id or urn.
- */
 export class DomainRefRule extends ValidationRule {
   constructor() { super('domain-ref', 'warning'); }
 
-  validate(value, path) {
-    const errors = [];
-    const domains = value.domains || [];
+  validate(concept, path, result) {
+    const domains = concept.domains || [];
 
     for (let i = 0; i < domains.length; i++) {
       const domain = domains[i];
-      if (!domain.concept_id && !domain.urn) {
-        errors.push(...this.error(
+      const json = typeof domain.toJSON === 'function' ? domain.toJSON() : domain;
+      if (!json.concept_id && !json.urn) {
+        this.addIssue(result,
           `${path}domains[${i}]`,
-          `domain ${i + 1} has neither concept_id nor urn`,
-        ));
+          `domain ${i + 1} has neither concept_id nor urn`);
       }
     }
-
-    return errors;
   }
 }
 
-/**
- * GLS-016: UUID format validation.
- */
 export class UuidFormatRule extends ValidationRule {
   constructor() { super('uuid-format'); }
 
-  validate(value, path) {
-    const errors = [];
+  validate(concept, path, result) {
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const id = value.id || value.uuid;
+    const id = concept.id || concept.uuid;
 
     if (id && !UUID_RE.test(String(id))) {
-      // Only flag if it looks like it's supposed to be a UUID
       if (String(id).includes('-') && String(id).length > 20) {
-        errors.push(...this.error(
+        this.addIssue(result,
           `${path}id`,
-          `concept ID '${id}' is not valid UUID format`,
-        ));
+          `concept ID '${id}' is not valid UUID format`);
       }
     }
-
-    return errors;
   }
 }
 
-/**
- * GLS-310: URN format validation for sources.
- */
 export class SourceUrnFormatRule extends ValidationRule {
   constructor() { super('source-urn-format', 'warning'); }
 
-  validate(value, path) {
-    const errors = [];
+  validate(concept, path, result) {
     const URN_RE = /^urn:[a-z0-9][a-z0-9-]{0,31}:[a-z0-9()+,\-.:=@;$_!*'%/?#]+$/i;
 
-    const localizations = value.localizations || {};
-    for (const [lang, lc] of Object.entries(localizations)) {
-      const sources = lc.sources || [];
+    _eachLocalization(concept, (lang, lc) => {
+      const sources = lc.sources ?? [];
       for (let i = 0; i < sources.length; i++) {
-        const source = sources[i].origin?.ref?.source;
+        const source = lc.sources[i].origin?.ref?.source;
         if (!source || !source.startsWith('urn:')) continue;
         if (!URN_RE.test(source)) {
-          errors.push(...this.error(
+          this.addIssue(result,
             `${path}localizations.${lang}.sources[${i}].origin.ref.source`,
-            `malformed URN '${source}'`,
-          ));
+            `malformed URN '${source}'`);
         }
       }
+    });
+  }
+}
+
+const CITE_MENTION_RE = /\{\{\s*cite:([^,}\s]+)[^}]*?\}\}/g;
+
+function _findCiteMentions(concept) {
+  const mentions = [];
+  const walkText = (text, source) => {
+    if (typeof text !== 'string' || text.length === 0) return;
+    CITE_MENTION_RE.lastIndex = 0;
+    let m;
+    while ((m = CITE_MENTION_RE.exec(text)) !== null) {
+      mentions.push({ key: m[1].trim(), source });
+    }
+  };
+
+  for (const lang of _langs(concept)) {
+    const lc = _loc(concept, lang);
+    if (!lc) continue;
+
+    for (let i = 0; (lc.definitions ?? [])[i]; i++) {
+      walkText(lc.definitions[i]?.content, `localizations.${lang}.definitions[${i}].content`);
+    }
+    for (let i = 0; (lc.notes ?? [])[i]; i++) {
+      const content = typeof lc.notes[i] === 'object'
+        ? (lc.notes[i]?.content ?? '')
+        : String(lc.notes[i] ?? '');
+      walkText(content, `localizations.${lang}.notes[${i}].content`);
+    }
+    for (let i = 0; (lc.examples ?? [])[i]; i++) {
+      walkText(lc.examples[i]?.content, `localizations.${lang}.examples[${i}].content`);
+    }
+    for (let i = 0; (lc.annotations ?? [])[i]; i++) {
+      walkText(lc.annotations[i]?.content, `localizations.${lang}.annotations[${i}].content`);
+    }
+  }
+
+  return mentions;
+}
+
+function _findDuplicateSourceIds(concept) {
+  const seen = new Map();
+  const record = (source) => {
+    if (source?.id == null) return;
+    if (!seen.has(source.id)) seen.set(source.id, []);
+    seen.get(source.id).push(source);
+  };
+
+  for (const source of (concept.sources ?? [])) record(source);
+  for (const lang of _langs(concept)) {
+    const lc = _loc(concept, lang);
+    if (!lc) continue;
+    for (const source of (lc.sources ?? [])) record(source);
+    for (const designation of (lc.terms ?? [])) {
+      for (const source of (designation.sources ?? [])) record(source);
+    }
+  }
+
+  const duplicates = new Map();
+  for (const [id, sources] of seen) {
+    if (sources.length > 1) duplicates.set(id, sources);
+  }
+  return duplicates;
+}
+
+function _collectSourceIds(concept) {
+  const ids = new Set();
+  for (const source of (concept.sources ?? [])) {
+    if (source?.id != null) ids.add(source.id);
+  }
+  for (const lang of _langs(concept)) {
+    const lc = _loc(concept, lang);
+    if (!lc) continue;
+    for (const source of (lc.sources ?? [])) {
+      if (source?.id != null) ids.add(source.id);
+    }
+    for (const designation of (lc.terms ?? [])) {
+      for (const source of (designation.sources ?? [])) {
+        if (source?.id != null) ids.add(source.id);
+      }
+    }
+  }
+  return ids;
+}
+
+export class CiteRefIntegrityRule extends ValidationRule {
+  constructor() {
+    super('cite-ref-integrity', 'warning');
+  }
+
+  validate(concept, path, result) {
+    // 1. Check unique source ids.
+    const duplicates = _findDuplicateSourceIds(concept);
+    for (const [id] of duplicates) {
+      this.addIssue(result,
+        `${path}sources`,
+        `duplicate source id "${id}" in concept "${concept.id ?? ''}"`);
     }
 
-    return errors;
+    // 2. Check that every inline {{cite:<key>}} mention resolves.
+    const mentions = _findCiteMentions(concept);
+    if (mentions.length === 0) return;
+
+    const knownIds = _collectSourceIds(concept);
+
+    for (const { key, source } of mentions) {
+      if (!knownIds.has(key)) {
+        this.addIssue(result,
+          source,
+          `inline {{cite:${key}}} does not resolve to any source in concept "${concept.id ?? ''}"`);
+      }
+    }
   }
 }

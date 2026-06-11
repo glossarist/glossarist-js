@@ -1,34 +1,52 @@
+import { ValidationError } from './validation-error.js';
+
 export class ValidationResult {
   constructor() {
-    this.errors = [];
-    this.warnings = [];
+    this._issues = [];
   }
 
   get valid() {
-    return this.errors.length === 0;
+    return this._issues.filter(e => e.severity === 'error').length === 0;
   }
 
-  addError(message) {
-    this.errors.push(message);
+  get errors() {
+    return this._issues.filter(e => e.severity === 'error');
+  }
+
+  get warnings() {
+    return this._issues.filter(e => e.severity === 'warning');
+  }
+
+  addError(pathOrMessage, message) {
+    if (message === undefined) {
+      this._issues.push(new ValidationError('', pathOrMessage, 'error'));
+    } else {
+      this._issues.push(new ValidationError(pathOrMessage, message, 'error'));
+    }
     return this;
   }
 
-  addWarning(message) {
-    this.warnings.push(message);
+  addWarning(pathOrMessage, message) {
+    if (message === undefined) {
+      this._issues.push(new ValidationError('', pathOrMessage, 'warning'));
+    } else {
+      this._issues.push(new ValidationError(pathOrMessage, message, 'warning'));
+    }
     return this;
   }
 
   merge(other) {
-    for (const e of other.errors) this.errors.push(e);
-    for (const w of other.warnings) this.warnings.push(w);
+    if (other instanceof ValidationResult) {
+      for (const issue of other._issues) this._issues.push(issue);
+    }
     return this;
   }
 
   toJSON() {
     return {
       valid: this.valid,
-      errors: [...this.errors],
-      warnings: [...this.warnings],
+      errors: this.errors.map(e => e.toJSON ? e.toJSON() : e),
+      warnings: this.warnings.map(e => e.toJSON ? e.toJSON() : e),
     };
   }
 }

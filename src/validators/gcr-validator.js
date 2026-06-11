@@ -12,7 +12,7 @@ export class GcrValidator {
   }
 
   async _validateMetadata(pkg, result) {
-    const raw = await pkg._readText('metadata.yaml');
+    const raw = await pkg.readText('metadata.yaml');
     if (!raw) {
       result.addError('metadata.yaml is missing');
       return;
@@ -49,7 +49,7 @@ export class GcrValidator {
   }
 
   async _validateFileAsset(pkg, path, result) {
-    const raw = await pkg._readText(path);
+    const raw = await pkg.readText(path);
     if (!raw) return;
     try {
       yaml.load(raw);
@@ -58,15 +58,15 @@ export class GcrValidator {
     }
   }
 
-  async _validateDirectoryAsset(pkg, dirPath, result) {
+  _validateDirectoryAsset(pkg, dirPath, result) {
     let hasFiles = false;
     let hasEntries = false;
-    pkg._zip.forEach((relativePath, entry) => {
-      if (relativePath.startsWith(`${dirPath}/`)) {
+    for (const entry of pkg.entryPaths()) {
+      if (entry.path.startsWith(`${dirPath}/`)) {
         hasEntries = true;
         if (!entry.dir) hasFiles = true;
       }
-    });
+    }
     if (hasEntries && !hasFiles) {
       result.addWarning(`${dirPath}/ directory exists but is empty`);
     }

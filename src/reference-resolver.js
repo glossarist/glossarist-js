@@ -151,11 +151,16 @@ export class ReferenceResolver {
           refs.push(this._resolveCiteRef(parsed, source, concept));
           break;
         case 'numeric':
-          refs.push(new Reference('concept', parsed.id, 'embedded', source));
+          refs.push(new Reference('concept', parsed.label ?? parsed.id, 'embedded', source, {
+            lookupKey: { id: parsed.id },
+          }));
+          break;
+        case 'designation':
+          refs.push(new Reference('concept', parsed.label ?? parsed.id, 'embedded', source, {
+            lookupKey: { designation: parsed.id },
+          }));
           break;
         case 'unresolved':
-          // Silently dropped. The mention is either non-reference
-          // text (e.g. math, code) or a form we don't support.
           break;
       }
     }

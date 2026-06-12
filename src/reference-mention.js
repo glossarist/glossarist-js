@@ -2,29 +2,21 @@
  * Mention parser for {{...}} inline references in concept text.
  *
  * Pure function: takes a raw mention body (the text inside
- * {{...}}) and returns a structured MentionParseResult. The
- * extractor (in src/reference-resolver.js) consumes the
- * structured form to emit Reference objects.
+ * {{...}}) and returns a structured MentionParseResult.
  *
- * Two outcomes in v8:
- *  - 'cite-ref': the mention is {{cite:<key>}} or
- *    {{cite:<key>,<label>}}. The extractor looks the key up in
- *    the current concept's sources list.
- *  - 'numeric': the mention is a bare dotted or dashed id
- *    like {{3.1.1.1}} or {{103-01-02}}. Resolves to a
- *    same-dataset concept.
- *  - 'unresolved': the mention did not match a recognized
- *    form. The extractor silently drops it.
+ * Convention: the ID always comes first, the display (render) text
+ * always comes last.  Every comma-separated form follows this:
  *
- * The full v6 form-aware parser (URI schemes, short-ids,
- * quoting) is aspirational; v8 only supports the two forms
- * above plus a catch-all unresolved case.
+ *   {{id}}                        bare ID
+ *   {{id, display text}}          ID + display text
+ *   {{cite:key}}                  cite-key (source id)
+ *   {{cite:key, display text}}    cite-key + display text
  *
  * @typedef {Object} MentionParseResult
- * @property {'cite-ref' | 'numeric' | 'unresolved'} kind
+ * @property {'cite-ref' | 'numeric' | 'designation' | 'unresolved'} kind
  * @property {string} [key]   — for 'cite-ref': the local key
- * @property {string} [label] — for 'cite-ref': the inline label
- * @property {string} [id]    — for 'numeric': the bare id
+ * @property {string} [label] — display text (always last)
+ * @property {string} [id]    — for 'numeric' / 'designation': the id
  * @property {string} raw     — the original mention body
  */
 
@@ -42,12 +34,8 @@ const NUMERIC_RE = /^\d+(?:[.-]\d+)+$/;
 export function parseMention(raw) {
   const body = raw.trim();
 
-  // 1. cite:<key> form, with optional ,<label> after the key.
-  //    The key must not contain a comma (the comma is the
-  //    label separator). Labels can be quoted (CSV-style) to
-  //    contain commas; if not quoted, the label is the text
-  //    up to the next comma or the end of the mention. The
-  //    label may be empty.
+  // 1. cite:<key>[,display] — explicit citation reference.
+  //    Key is the source id; display text is optional.
   const citeMatch = body.match(/^cite:([^,}]+)(?:,(.*))?$/);
   if (citeMatch) {
     const label = citeMatch[2] !== undefined ? unquoteLabel(citeMatch[2].trim()) : null;
@@ -59,20 +47,26 @@ export function parseMention(raw) {
     };
   }
 
-  // 2. Bare numeric id: same-dataset concept id.
-  if (NUMERIC_RE.test(body)) {
-    return {
-      kind: 'numeric',
-      id: body,
-      raw: body,
-    };
+  // 2. Comma-separated form: {{id, display}}.
+  //    ID always comes first, display text always comes last.
+  const commaIdx = body.indexOf(',');
+  if (commaIdx !== -1) {
+    const id = body.slice(0, commaIdx).trim();
+    const label = unquoteLabel(body.slice(commaIdx + 1).trim());
+
+    if (NUMERIC_RE.test(id)) {
+      return { kind: 'numeric', id, label, raw: body };
+    }
+    return { kind: 'designation', id, label, raw: body };
   }
 
-  // 3. Anything else is unresolved at the parse layer.
-  return {
-    kind: 'unresolved',
-    raw: body,
-  };
+  // 3. Bare numeric id.
+  if (NUMERIC_RE.test(body)) {
+    return { kind: 'numeric', id: body, label: null, raw: body };
+  }
+
+  // 4. Anything else is unresolved at the parse layer.
+  return { kind: 'unresolved', raw: body };
 }
 
 /**

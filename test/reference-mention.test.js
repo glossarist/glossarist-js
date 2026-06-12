@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { parseMention } from '../src/reference-mention.js';
 
 describe('parseMention', () => {
-  describe('cite: form', () => {
+  describe('cite: form — cite:key[,display]', () => {
     it('parses {{cite:source-id}}', () => {
       assert.deepEqual(parseMention('cite:source-id'), {
         kind: 'cite-ref',
@@ -13,7 +13,7 @@ describe('parseMention', () => {
       });
     });
 
-    it('parses {{cite:source-id,display text}}', () => {
+    it('parses {{cite:source-id,display text}} — key first, display last', () => {
       assert.deepEqual(parseMention('cite:source-id,display text'), {
         kind: 'cite-ref',
         key: 'source-id',
@@ -28,18 +28,6 @@ describe('parseMention', () => {
         key: 'source-id',
         label: 'label, with, comma',
         raw: 'cite:source-id,"label, with, comma"',
-      });
-    });
-
-    it('treats embedded comma in the key as the label separator (strict)', () => {
-      // The parser sees 'cite:foo,bar' as key='foo' label='bar'.
-      // If a key with a literal comma is needed, the author
-      // should use a different separator (or rename the key).
-      assert.deepEqual(parseMention('cite:foo,bar'), {
-        kind: 'cite-ref',
-        key: 'foo',
-        label: 'bar',
-        raw: 'cite:foo,bar',
       });
     });
 
@@ -62,35 +50,92 @@ describe('parseMention', () => {
     });
   });
 
-  describe('numeric form', () => {
-    it('parses a dot-separated numeric id', () => {
+  describe('numeric form — id[,display]', () => {
+    it('parses bare dot-separated numeric id', () => {
       assert.deepEqual(parseMention('3.1.1.1'), {
         kind: 'numeric',
         id: '3.1.1.1',
+        label: null,
         raw: '3.1.1.1',
       });
     });
 
-    it('parses a dash-separated numeric id (IEV style)', () => {
+    it('parses bare dash-separated numeric id (IEV style)', () => {
       assert.deepEqual(parseMention('103-01-02'), {
         kind: 'numeric',
         id: '103-01-02',
+        label: null,
         raw: '103-01-02',
       });
     });
 
+    it('parses {{0.10, measuring instrument}} — id first, display last', () => {
+      assert.deepEqual(parseMention('0.10, measuring instrument'), {
+        kind: 'numeric',
+        id: '0.10',
+        label: 'measuring instrument',
+        raw: '0.10, measuring instrument',
+      });
+    });
+
+    it('parses {{0.03, indication}} — id first, display last', () => {
+      assert.deepEqual(parseMention('0.03, indication'), {
+        kind: 'numeric',
+        id: '0.03',
+        label: 'indication',
+        raw: '0.03, indication',
+      });
+    });
+
+    it('parses numeric id with quoted display text', () => {
+      assert.deepEqual(parseMention('3.1.1.1,"entity, with comma"'), {
+        kind: 'numeric',
+        id: '3.1.1.1',
+        label: 'entity, with comma',
+        raw: '3.1.1.1,"entity, with comma"',
+      });
+    });
+
     it('rejects a single bare number (no separator)', () => {
-      // '103' has no separator; not a multi-part concept id.
       assert.equal(parseMention('103').kind, 'unresolved');
     });
 
-    it('rejects a bare number with trailing punctuation', () => {
+    it('rejects trailing punctuation', () => {
       assert.equal(parseMention('3.1.1.1.').kind, 'unresolved');
     });
   });
 
+  describe('designation form — designation[,display]', () => {
+    it('parses {{entity data type value, single entity data type value}} — designation first, display last', () => {
+      assert.deepEqual(parseMention('entity data type value, single entity data type value'), {
+        kind: 'designation',
+        id: 'entity data type value',
+        label: 'single entity data type value',
+        raw: 'entity data type value, single entity data type value',
+      });
+    });
+
+    it('parses designation with display text', () => {
+      assert.deepEqual(parseMention('foo, bar'), {
+        kind: 'designation',
+        id: 'foo',
+        label: 'bar',
+        raw: 'foo, bar',
+      });
+    });
+
+    it('handles quoted display text in designation form', () => {
+      assert.deepEqual(parseMention('foo,"bar, with comma"'), {
+        kind: 'designation',
+        id: 'foo',
+        label: 'bar, with comma',
+        raw: 'foo,"bar, with comma"',
+      });
+    });
+  });
+
   describe('unresolved form', () => {
-    it('returns unresolved for arbitrary text', () => {
+    it('returns unresolved for arbitrary text without comma', () => {
       assert.deepEqual(parseMention('hello world'), {
         kind: 'unresolved',
         raw: 'hello world',
@@ -105,9 +150,6 @@ describe('parseMention', () => {
     });
 
     it('returns unresolved for a URN (not yet supported at parse layer)', () => {
-      // The v3 plan's URI form is aspirational; v8 only supports
-      // cite:key and numeric. URN-form mentions are unresolved
-      // at this layer.
       assert.equal(parseMention('urn:iso:std:iso:14812:3.1.1.1').kind, 'unresolved');
     });
   });

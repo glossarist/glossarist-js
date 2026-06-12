@@ -174,6 +174,43 @@ describe('ReferenceResolver — cite-ref extraction', () => {
     const conceptRefs = refs.filter(r => r.type === 'concept');
     assert.equal(conceptRefs.length, 1);
     assert.equal(conceptRefs[0].target, '3.1.1.1');
+    assert.equal(conceptRefs[0].lookupKey.id, '3.1.1.1');
+  });
+
+  it('uses display text as target for {{id, display}} — id first, display last', () => {
+    const concept = new Concept({
+      id: 'c1',
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          definition: [{ content: 'See {{0.10, measuring instrument}} for details.' }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    const conceptRefs = refs.filter(r => r.type === 'concept');
+    assert.equal(conceptRefs.length, 1);
+    assert.equal(conceptRefs[0].target, 'measuring instrument');
+    assert.equal(conceptRefs[0].lookupKey.id, '0.10');
+  });
+
+  it('emits a Concept Reference with designation lookupKey for designation form', () => {
+    const concept = new Concept({
+      id: 'c1',
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          definition: [{ content: 'See {{entity data type value, single entity data type value}}.' }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    const conceptRefs = refs.filter(r => r.type === 'concept');
+    assert.equal(conceptRefs.length, 1);
+    assert.equal(conceptRefs[0].target, 'single entity data type value');
+    assert.equal(conceptRefs[0].lookupKey.designation, 'entity data type value');
   });
 
   it('walks examples and annotations text in addition to definitions and notes', () => {

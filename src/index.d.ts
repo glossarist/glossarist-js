@@ -35,7 +35,7 @@ export { conceptUuid, localizedConceptUuid, uuidV5 } from './uuid';
 export { ReferenceResolver, Reference, referenceResolver } from './reference-resolver';
 
 export type MentionParseResult = {
-  kind: 'cite-ref' | 'numeric' | 'unresolved';
+  kind: 'cite-ref' | 'numeric' | 'designation' | 'unresolved';
   key?: string;
   label?: string | null;
   id?: string;

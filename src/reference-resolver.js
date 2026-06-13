@@ -150,6 +150,12 @@ export class ReferenceResolver {
         case 'cite-ref':
           refs.push(this._resolveCiteRef(parsed, source, concept));
           break;
+        case 'urn-ref':
+          refs.push(new Reference('concept', parsed.label ?? parsed.uri, 'embedded', source, {
+            uri: parsed.uri,
+            resolution: null,
+          }));
+          break;
         case 'numeric':
           refs.push(new Reference('concept', parsed.label ?? parsed.id, 'embedded', source, {
             lookupKey: { id: parsed.id },

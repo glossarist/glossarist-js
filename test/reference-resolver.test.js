@@ -237,19 +237,39 @@ describe('ReferenceResolver — cite-ref extraction', () => {
     assert.equal(bibRefs.length, 4);
   });
 
-  it('does not emit a Reference for an unresolved (non-cite, non-numeric) mention', () => {
+  it('emits a Concept Reference with uri for a URN mention', () => {
     const concept = new Concept({
       id: 'c1',
       localizations: {
         eng: {
           terms: [{ designation: 'foo' }],
-          definition: [{ content: 'Some {{urn:iso:std:iso:14812}} here.' }],
+          definition: [{ content: 'See {{urn:iso:std:iso:14812}} here.' }],
         },
       },
     });
     const resolver = new ReferenceResolver();
     const refs = resolver.extractReferences(concept);
-    assert.equal(refs.filter(r => r.type === 'bibliography' || r.type === 'concept').length, 0);
+    const conceptRefs = refs.filter(r => r.type === 'concept');
+    assert.equal(conceptRefs.length, 1);
+    assert.equal(conceptRefs[0].uri, 'urn:iso:std:iso:14812');
+  });
+
+  it('uses render term as target for URN with render term', () => {
+    const concept = new Concept({
+      id: 'c1',
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          definition: [{ content: 'See {{urn:iso:std:iso:7301:2024,rice}} here.' }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    const conceptRefs = refs.filter(r => r.type === 'concept');
+    assert.equal(conceptRefs.length, 1);
+    assert.equal(conceptRefs[0].target, 'rice');
+    assert.equal(conceptRefs[0].uri, 'urn:iso:std:iso:7301:2024');
   });
 
   it('shares a Citation object reference across multiple inline mentions of the same source', () => {

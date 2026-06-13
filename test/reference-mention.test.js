@@ -134,6 +134,35 @@ describe('parseMention', () => {
     });
   });
 
+  describe('URN form — urn:...[,render]', () => {
+    it('parses bare URN', () => {
+      assert.deepEqual(parseMention('urn:iso:std:iso:14812:3.1.1.1'), {
+        kind: 'urn-ref',
+        uri: 'urn:iso:std:iso:14812:3.1.1.1',
+        label: null,
+        raw: 'urn:iso:std:iso:14812:3.1.1.1',
+      });
+    });
+
+    it('parses URN with render term — URN first, render last', () => {
+      assert.deepEqual(parseMention('urn:iso:std:iso:7301:2024,rice'), {
+        kind: 'urn-ref',
+        uri: 'urn:iso:std:iso:7301:2024',
+        label: 'rice',
+        raw: 'urn:iso:std:iso:7301:2024,rice',
+      });
+    });
+
+    it('parses URN with quoted render term', () => {
+      assert.deepEqual(parseMention('urn:iso:std:iso:7301:2024,"rice grain"'), {
+        kind: 'urn-ref',
+        uri: 'urn:iso:std:iso:7301:2024',
+        label: 'rice grain',
+        raw: 'urn:iso:std:iso:7301:2024,"rice grain"',
+      });
+    });
+  });
+
   describe('unresolved form', () => {
     it('returns unresolved for arbitrary text without comma', () => {
       assert.deepEqual(parseMention('hello world'), {
@@ -147,10 +176,6 @@ describe('parseMention', () => {
         kind: 'unresolved',
         raw: '',
       });
-    });
-
-    it('returns unresolved for a URN (not yet supported at parse layer)', () => {
-      assert.equal(parseMention('urn:iso:std:iso:14812:3.1.1.1').kind, 'unresolved');
     });
   });
 });

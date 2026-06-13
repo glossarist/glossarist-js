@@ -7,15 +7,20 @@
  * Convention: the ID always comes first, the display (render) text
  * always comes last.  Every comma-separated form follows this:
  *
- *   {{id}}                        bare ID
- *   {{id, display text}}          ID + display text
  *   {{cite:key}}                  cite-key (source id)
- *   {{cite:key, display text}}    cite-key + display text
+ *   {{cite:key, render term}}     cite-key + render term
+ *   {{urn:...}}                   URN reference
+ *   {{urn:..., render term}}      URN + render term
+ *   {{numeric_id}}                local concept ID
+ *   {{numeric_id, render term}}   local concept ID + render term
+ *   {{designation}}               designation matching
+ *   {{designation, render term}}  designation + render term
  *
  * @typedef {Object} MentionParseResult
- * @property {'cite-ref' | 'numeric' | 'designation' | 'unresolved'} kind
+ * @property {'cite-ref' | 'urn-ref' | 'numeric' | 'designation' | 'unresolved'} kind
  * @property {string} [key]   — for 'cite-ref': the local key
- * @property {string} [label] — display text (always last)
+ * @property {string} [uri]   — for 'urn-ref': the URN
+ * @property {string} [label] — render text (always last)
  * @property {string} [id]    — for 'numeric' / 'designation': the id
  * @property {string} raw     — the original mention body
  */
@@ -34,8 +39,7 @@ const NUMERIC_RE = /^\d+(?:[.-]\d+)+$/;
 export function parseMention(raw) {
   const body = raw.trim();
 
-  // 1. cite:<key>[,display] — explicit citation reference.
-  //    Key is the source id; display text is optional.
+  // 1. cite:<key>[,render] — explicit citation reference.
   const citeMatch = body.match(/^cite:([^,}]+)(?:,(.*))?$/);
   if (citeMatch) {
     const label = citeMatch[2] !== undefined ? unquoteLabel(citeMatch[2].trim()) : null;
@@ -47,8 +51,20 @@ export function parseMention(raw) {
     };
   }
 
-  // 2. Comma-separated form: {{id, display}}.
-  //    ID always comes first, display text always comes last.
+  // 2. urn:...[,render] — URN reference.
+  const urnMatch = body.match(/^(urn:[^,}]+)(?:,(.*))?$/);
+  if (urnMatch) {
+    const label = urnMatch[2] !== undefined ? unquoteLabel(urnMatch[2].trim()) : null;
+    return {
+      kind: 'urn-ref',
+      uri: urnMatch[1].trim(),
+      label,
+      raw: body,
+    };
+  }
+
+  // 3. Comma-separated form: {{id, render}}.
+  //    ID always comes first, render text always comes last.
   const commaIdx = body.indexOf(',');
   if (commaIdx !== -1) {
     const id = body.slice(0, commaIdx).trim();
@@ -60,12 +76,12 @@ export function parseMention(raw) {
     return { kind: 'designation', id, label, raw: body };
   }
 
-  // 3. Bare numeric id.
+  // 4. Bare numeric id.
   if (NUMERIC_RE.test(body)) {
     return { kind: 'numeric', id: body, label: null, raw: body };
   }
 
-  // 4. Anything else is unresolved at the parse layer.
+  // 5. Anything else is unresolved at the parse layer.
   return { kind: 'unresolved', raw: body };
 }
 

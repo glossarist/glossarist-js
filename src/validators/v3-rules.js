@@ -1,14 +1,8 @@
 import { ValidationRule } from './validation-rule.js';
 
-const _langs = (concept) =>
-  concept.languages ?? (concept.localizations ? Object.keys(concept.localizations) : []);
-
-const _loc = (concept, lang) =>
-  typeof concept.localization === 'function' ? concept.localization(lang) : concept.localizations?.[lang];
-
 const _eachLocalization = (concept, fn) => {
-  for (const lang of _langs(concept)) {
-    const lc = _loc(concept, lang);
+  for (const lang of concept.languages) {
+    const lc = concept.localization(lang);
     if (lc) fn(lang, lc);
   }
 };
@@ -19,7 +13,7 @@ export class RefShapeRule extends ValidationRule {
   validate(concept, path, result) {
     let sourceIdx = 0;
     _eachLocalization(concept, (lang, lc) => {
-      const sources = lc.sources ?? [];
+      const sources = lc.sources;
       for (let i = 0; i < sources.length; i++) {
         sourceIdx++;
         const origin = sources[i].origin;
@@ -38,7 +32,7 @@ export class RefShapeRule extends ValidationRule {
       }
     });
 
-    const related = concept.relatedConcepts ?? concept.related ?? [];
+    const related = concept.relatedConcepts;
     for (let i = 0; i < related.length; i++) {
       const ref = related[i].ref;
       if (!ref) continue;
@@ -56,7 +50,7 @@ export class LocalityCompletenessRule extends ValidationRule {
 
   validate(concept, path, result) {
     _eachLocalization(concept, (lang, lc) => {
-      const sources = lc.sources ?? [];
+      const sources = lc.sources;
       for (let i = 0; i < sources.length; i++) {
         const origin = sources[i].origin;
         if (!origin || !origin.locality) continue;
@@ -81,14 +75,14 @@ export class LocalizationConsistencyRule extends ValidationRule {
   constructor() { super('localization-consistency'); }
 
   validate(concept, path, result) {
-    const langs = _langs(concept);
-    const data = concept.raw?.data || concept;
+    const langs = concept.languages;
+    const data = concept.raw?.data || {};
     const declaredLangs = data.localized_concepts
       ? Object.keys(data.localized_concepts)
       : langs;
 
     for (const lang of declaredLangs) {
-      if (!concept.hasLocalization?.(lang) && !(concept.localizations?.[lang])) {
+      if (!concept.hasLocalization(lang)) {
         this.addIssue(result,
           `${path}localizations.${lang}`,
           `localized_concepts map has '${lang}' but no localization loaded`);
@@ -101,12 +95,10 @@ export class SchemaVersionRule extends ValidationRule {
   constructor() { super('schema-version', 'warning'); }
 
   validate(concept, path, result) {
-    const version = concept.schemaVersion ?? concept.schema_version;
-
-    if (version && String(version) !== '3') {
+    if (concept.schemaVersion && String(concept.schemaVersion) !== '3') {
       this.addIssue(result,
         `${path}schema_version`,
-        `schema_version is '${version}', expected '3'`);
+        `schema_version is '${concept.schemaVersion}', expected '3'`);
     }
   }
 }
@@ -115,11 +107,8 @@ export class DomainRefRule extends ValidationRule {
   constructor() { super('domain-ref', 'warning'); }
 
   validate(concept, path, result) {
-    const domains = concept.domains || [];
-
-    for (let i = 0; i < domains.length; i++) {
-      const domain = domains[i];
-      const json = typeof domain.toJSON === 'function' ? domain.toJSON() : domain;
+    for (let i = 0; i < concept.domains.length; i++) {
+      const json = concept.domains[i].toJSON();
       if (!json.concept_id && !json.urn) {
         this.addIssue(result,
           `${path}domains[${i}]`,
@@ -134,7 +123,7 @@ export class UuidFormatRule extends ValidationRule {
 
   validate(concept, path, result) {
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const id = concept.id || concept.uuid;
+    const id = concept.id;
 
     if (id && !UUID_RE.test(String(id))) {
       if (String(id).includes('-') && String(id).length > 20) {
@@ -153,7 +142,7 @@ export class SourceUrnFormatRule extends ValidationRule {
     const URN_RE = /^urn:[a-z0-9][a-z0-9-]{0,31}:[a-z0-9()+,\-.:=@;$_!*'%/?#]+$/i;
 
     _eachLocalization(concept, (lang, lc) => {
-      const sources = lc.sources ?? [];
+      const sources = lc.sources;
       for (let i = 0; i < sources.length; i++) {
         const source = lc.sources[i].origin?.ref?.source;
         if (!source || !source.startsWith('urn:')) continue;
@@ -180,23 +169,23 @@ function _findCiteMentions(concept) {
     }
   };
 
-  for (const lang of _langs(concept)) {
-    const lc = _loc(concept, lang);
+  for (const lang of concept.languages) {
+    const lc = concept.localization(lang);
     if (!lc) continue;
 
-    for (let i = 0; (lc.definitions ?? [])[i]; i++) {
+    for (let i = 0; lc.definitions[i]; i++) {
       walkText(lc.definitions[i]?.content, `localizations.${lang}.definitions[${i}].content`);
     }
-    for (let i = 0; (lc.notes ?? [])[i]; i++) {
+    for (let i = 0; lc.notes[i]; i++) {
       const content = typeof lc.notes[i] === 'object'
         ? (lc.notes[i]?.content ?? '')
         : String(lc.notes[i] ?? '');
       walkText(content, `localizations.${lang}.notes[${i}].content`);
     }
-    for (let i = 0; (lc.examples ?? [])[i]; i++) {
+    for (let i = 0; lc.examples[i]; i++) {
       walkText(lc.examples[i]?.content, `localizations.${lang}.examples[${i}].content`);
     }
-    for (let i = 0; (lc.annotations ?? [])[i]; i++) {
+    for (let i = 0; lc.annotations[i]; i++) {
       walkText(lc.annotations[i]?.content, `localizations.${lang}.annotations[${i}].content`);
     }
   }
@@ -212,13 +201,13 @@ function _findDuplicateSourceIds(concept) {
     seen.get(source.id).push(source);
   };
 
-  for (const source of (concept.sources ?? [])) record(source);
-  for (const lang of _langs(concept)) {
-    const lc = _loc(concept, lang);
+  for (const source of concept.sources) record(source);
+  for (const lang of concept.languages) {
+    const lc = concept.localization(lang);
     if (!lc) continue;
-    for (const source of (lc.sources ?? [])) record(source);
-    for (const designation of (lc.terms ?? [])) {
-      for (const source of (designation.sources ?? [])) record(source);
+    for (const source of (lc.sources)) record(source);
+    for (const designation of lc.terms) {
+      for (const source of designation.sources) record(source);
     }
   }
 
@@ -231,17 +220,17 @@ function _findDuplicateSourceIds(concept) {
 
 function _collectSourceIds(concept) {
   const ids = new Set();
-  for (const source of (concept.sources ?? [])) {
+  for (const source of concept.sources) {
     if (source?.id != null) ids.add(source.id);
   }
-  for (const lang of _langs(concept)) {
-    const lc = _loc(concept, lang);
+  for (const lang of concept.languages) {
+    const lc = concept.localization(lang);
     if (!lc) continue;
-    for (const source of (lc.sources ?? [])) {
+    for (const source of (lc.sources)) {
       if (source?.id != null) ids.add(source.id);
     }
-    for (const designation of (lc.terms ?? [])) {
-      for (const source of (designation.sources ?? [])) {
+    for (const designation of lc.terms) {
+      for (const source of designation.sources) {
         if (source?.id != null) ids.add(source.id);
       }
     }

@@ -20,7 +20,7 @@ function assertDir(dir, fnName) {
  *
  * @example
  * const concepts = readConcepts('./geolexica-v2/');
- * console.log(concepts[0].localizations.eng.terms[0].designation);
+ * console.log(concepts[0].localization('eng').terms[0].designation);
  */
 export function readConcepts(dir) {
   assertDir(dir, 'readConcepts');

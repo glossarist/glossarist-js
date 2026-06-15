@@ -55,7 +55,8 @@ describe('ReferenceResolver', () => {
     c1.relatedConcepts = [{ type: 'related', content: '002' }];
 
     const cc = new ConceptCollection([c1, c2]);
-    const resolved = referenceResolver.resolveAll(c1, cc);
+    const registry = { default: { concepts: cc } };
+    const resolved = referenceResolver.resolveAll(c1, registry);
     assert.equal(resolved.get('002')?.id, '002');
   });
 
@@ -64,7 +65,8 @@ describe('ReferenceResolver', () => {
     c.relatedConcepts = [{ type: 'related', content: '999' }];
 
     const cc = new ConceptCollection([c]);
-    const resolved = referenceResolver.resolveAll(c, cc);
+    const registry = { default: { concepts: cc } };
+    const resolved = referenceResolver.resolveAll(c, registry);
     assert.equal(resolved.get('999'), undefined);
   });
 });
@@ -402,13 +404,6 @@ describe('ReferenceResolver.resolveReference — bibliography registry', () => {
     const result = new ReferenceResolver().resolveReference(ref, registry);
     assert.ok(result instanceof Citation);
     assert.equal(result.ref, null);
-  });
-
-  it('backward compat: a single ConceptCollection is treated as a one-key registry', () => {
-    const coll = new ConceptCollection([new Concept({ id: '3.1.1.1' })]);
-    const ref = new Reference('concept', '3.1.1.1', null, 'inline');
-    const result = new ReferenceResolver().resolveReference(ref, coll);
-    assert.equal(result.id, '3.1.1.1');
   });
 
   it('does not mutate the Reference or the registry', () => {

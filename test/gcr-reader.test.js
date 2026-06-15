@@ -25,10 +25,10 @@ describe('parseConceptYaml', () => {
 
     const concept = parseConceptYaml(raw);
     assert.equal(concept.termid, '001');
-    assert.ok(concept.localizations.eng);
-    assert.equal(concept.localizations.eng.terms[0].designation, 'first concept');
-    assert.equal(concept.localizations.eng.definition[0].content, 'The first concept.');
-    assert.equal(concept.localizations.eng.entry_status, 'valid');
+    assert.ok(concept.localization('eng'));
+    assert.equal(concept.localization('eng').terms[0].designation, 'first concept');
+    assert.equal(concept.localization('eng').definition[0].content, 'The first concept.');
+    assert.equal(concept.localization('eng').entryStatus, 'valid');
   });
 
   it('parses managed concept format (multi-doc)', () => {
@@ -64,13 +64,12 @@ describe('parseConceptYaml', () => {
 
     const concept = parseConceptYaml(raw);
     assert.equal(concept.termid, '3.1.1.1');
-    assert.ok(concept.localizations.eng);
-    assert.ok(concept.localizations.fra);
-    assert.equal(concept.localizations.eng.terms[0].designation, 'entity');
-    assert.equal(concept.localizations.fra.terms[0].designation, 'entité');
-    assert.equal(concept.localizations.eng.entry_status, 'valid');
-    // language_code should be stripped from localization data
-    assert.equal(concept.localizations.eng.language_code, undefined);
+    assert.ok(concept.localization('eng'));
+    assert.ok(concept.localization('fra'));
+    assert.equal(concept.localization('eng').terms[0].designation, 'entity');
+    assert.equal(concept.localization('fra').terms[0].designation, 'entité');
+    assert.equal(concept.localization('eng').entryStatus, 'valid');
+    assert.equal(concept.localization('eng').languageCode, 'eng');
   });
 
   it('handles single-lang managed concept', () => {
@@ -93,9 +92,9 @@ describe('parseConceptYaml', () => {
 
     const concept = parseConceptYaml(raw);
     assert.equal(concept.termid, '003');
-    assert.ok(concept.localizations.eng);
-    assert.equal(concept.localizations.eng.entry_status, 'draft');
-    assert.equal(Object.keys(concept.localizations).length, 1);
+    assert.ok(concept.localization('eng'));
+    assert.equal(concept.localization('eng').entryStatus, 'draft');
+    assert.equal(concept.languages.length, 1);
   });
 });
 
@@ -140,22 +139,22 @@ describe('GcrPackage (canonical format)', () => {
   it('reads a concept by ID', async () => {
     const c = await pkg.concept('001');
     assert.equal(c.termid, '001');
-    assert.ok(c.localizations.eng);
-    assert.ok(c.localizations.fra);
-    assert.equal(c.localizations.eng.terms[0].designation, 'first concept');
-    assert.equal(c.localizations.fra.terms[0].designation, 'premier concept');
+    assert.ok(c.localization('eng'));
+    assert.ok(c.localization('fra'));
+    assert.equal(c.localization('eng').terms[0].designation, 'first concept');
+    assert.equal(c.localization('fra').terms[0].designation, 'premier concept');
   });
 
   it('reads concept with notes and examples', async () => {
     const c = await pkg.concept('002');
     assert.equal(c.termid, '002');
-    assert.equal(c.localizations.eng.notes[0].content, 'A note about the second concept.');
-    assert.equal(c.localizations.eng.examples[0].content, 'An example for the second concept.');
+    assert.equal(c.localization('eng').notes[0].content, 'A note about the second concept.');
+    assert.equal(c.localization('eng').examples[0].content, 'An example for the second concept.');
   });
 
   it('reads concept with draft status', async () => {
     const c = await pkg.concept('003');
-    assert.equal(c.localizations.eng.entry_status, 'draft');
+    assert.equal(c.localization('eng').entryStatus, 'draft');
   });
 
   it('returns null for missing concept', async () => {
@@ -206,21 +205,21 @@ describe('GcrPackage (managed concept format)', () => {
   it('reads multi-lang concept', async () => {
     const c = await pkg.concept('3.1.1.1');
     assert.equal(c.termid, '3.1.1.1');
-    assert.ok(c.localizations.eng);
-    assert.ok(c.localizations.fra);
-    assert.equal(c.localizations.eng.terms[0].designation, 'entity');
-    assert.equal(c.localizations.eng.definition[0].content, 'concrete or abstract thing');
-    assert.equal(c.localizations.fra.terms[0].designation, 'entité');
-    assert.ok(c.localizations.eng.sources);
-    assert.equal(c.localizations.eng.sources[0].type, 'authoritative');
+    assert.ok(c.localization('eng'));
+    assert.ok(c.localization('fra'));
+    assert.equal(c.localization('eng').terms[0].designation, 'entity');
+    assert.equal(c.localization('eng').definition[0].content, 'concrete or abstract thing');
+    assert.equal(c.localization('fra').terms[0].designation, 'entité');
+    assert.ok(c.localization('eng').sources);
+    assert.equal(c.localization('eng').sources[0].type, 'authoritative');
   });
 
   it('reads single-lang concept', async () => {
     const c = await pkg.concept('3.1.1.2');
     assert.equal(c.termid, '3.1.1.2');
-    assert.ok(c.localizations.eng);
-    assert.equal(c.localizations.eng.terms[0].designation, 'function');
-    assert.equal(c.localizations.eng.notes[0].content, 'A note about functions.');
-    assert.equal(Object.keys(c.localizations).length, 1);
+    assert.ok(c.localization('eng'));
+    assert.equal(c.localization('eng').terms[0].designation, 'function');
+    assert.equal(c.localization('eng').notes[0].content, 'A note about functions.');
+    assert.equal(c.languages.length, 1);
   });
 });

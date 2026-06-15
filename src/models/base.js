@@ -15,4 +15,18 @@ export class GlossaristModel {
   clone() {
     return this.constructor.fromJSON(JSON.parse(JSON.stringify(this.toJSON())));
   }
+
+  _lazy(cacheKey, rawKey, wrapFn) {
+    if (this[cacheKey] === null) {
+      this[cacheKey] = this[rawKey].map(wrapFn);
+    }
+    return this[cacheKey];
+  }
+
+  _serialize(obj, jsonKey, cacheKey, rawKey) {
+    const items = this[cacheKey] ?? (this[rawKey].length > 0 ? this[rawKey] : []);
+    if (items.length > 0) {
+      obj[jsonKey] = items.map(i => (i instanceof GlossaristModel) ? i.toJSON() : i);
+    }
+  }
 }

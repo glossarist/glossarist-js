@@ -7,7 +7,7 @@ export { ConceptCollection } from './concept-collection.js';
 export { ManagedConceptCollection } from './managed-concept-collection.js';
 export { validateConcept, validateRegister, validateGcrPackage, createConceptValidator, ValidationError, ValidationRule, ValidationResult, RegisterValidator, GcrValidator } from './validators/index.js';
 export { conceptUuid, localizedConceptUuid, uuidV5 } from './uuid.js';
-export { ReferenceResolver, Reference, referenceResolver } from './reference-resolver.js';
+export { ReferenceResolver, Reference, referenceResolver, resolveBibliographyRecord } from './reference-resolver.js';
 export { parseMention } from './reference-mention.js';
 export { ReferenceClassifier } from './render-classification.js';
 export { V1Reader, migrateV1ToV2 } from './v1-reader.js';

@@ -46,9 +46,9 @@ describe('Concept model', () => {
 
   it('returns raw localizations for backward compat', () => {
     const c = makeConcept();
-    assert.ok(c.localizations.eng);
-    assert.equal(c.localizations.eng.terms[0].designation, 'first concept');
-    assert.equal(c.localizations.eng.entry_status, 'valid');
+    assert.ok(c.localization('eng'));
+    assert.equal(c.localization('eng').terms[0].designation, 'first concept');
+    assert.equal(c.localization('eng').entryStatus, 'valid');
   });
 
   it('returns LocalizedConcept via localization()', () => {
@@ -88,7 +88,7 @@ describe('Concept model', () => {
     c.setLocalization('deu', lc);
     assert.equal(c.hasLocalization('deu'), true);
     assert.equal(c.localization('deu').primaryDesignation, 'erstes Konzept');
-    assert.equal(c.localizations.deu.terms[0].designation, 'erstes Konzept');
+    assert.equal(c.localization('deu').terms[0].designation, 'erstes Konzept');
   });
 
   it('caches localization instances', () => {

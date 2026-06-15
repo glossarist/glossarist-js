@@ -34,11 +34,6 @@ export class Concept extends GlossaristModel {
     return this.languages;
   }
 
-  /** @deprecated Use localization(lang) for model access, or toJSON().localizations for raw data */
-  get localizations() {
-    return this._rawLocalizations;
-  }
-
   localization(lang) {
     if (!(lang in this._rawLocalizations)) return undefined;
     if (!this._cache[lang]) {

@@ -82,10 +82,10 @@ describe('readConcepts (canonical format)', () => {
     const concepts = readConcepts(path.join(TMPDIR, 'canonical'));
     const c2 = concepts.find(c => c.termid === '002');
     assert.ok(c2);
-    assert.ok(c2.localizations.eng);
-    assert.ok(c2.localizations.fra);
-    assert.equal(c2.localizations.eng.terms[0].designation, 'beta');
-    assert.equal(c2.localizations.fra.terms[0].designation, 'bêta');
+    assert.ok(c2.localization('eng'));
+    assert.ok(c2.localization('fra'));
+    assert.equal(c2.localization('eng').terms[0].designation, 'beta');
+    assert.equal(c2.localization('fra').terms[0].designation, 'bêta');
   });
 });
 
@@ -96,7 +96,7 @@ describe('readConcept (single file)', () => {
     const c = readConcept(path.join(TMPDIR, 'canonical'), '001');
     assert.ok(c);
     assert.equal(c.termid, '001');
-    assert.equal(c.localizations.eng.terms[0].designation, 'alpha');
+    assert.equal(c.localization('eng').terms[0].designation, 'alpha');
   });
 
   it('returns null for missing concept', () => {
@@ -112,7 +112,7 @@ describe('readConcepts (managed concept format)', () => {
     const concepts = readConcepts(path.join(TMPDIR, 'managed'));
     assert.equal(concepts.length, 1);
     assert.equal(concepts[0].termid, '3.1.1.1');
-    assert.equal(concepts[0].localizations.eng.terms[0].designation, 'entity');
+    assert.equal(concepts[0].localization('eng').terms[0].designation, 'entity');
   });
 });
 

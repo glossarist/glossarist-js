@@ -31,9 +31,9 @@ describe('Real GCR: isotc204 (managed concept format)', { skip: !fs.existsSync(I
   it('reads a specific concept', async () => {
     const c = await pkg.concept('3.1.1.1');
     assert.equal(c.termid, '3.1.1.1');
-    assert.ok(c.localizations.eng);
-    assert.equal(c.localizations.eng.terms[0].designation, 'entity');
-    assert.ok(c.localizations.eng.definition[0].content);
+    assert.ok(c.localization('eng'));
+    assert.equal(c.localization('eng').terms[0].designation, 'entity');
+    assert.ok(c.localization('eng').definition[0].content);
   });
 });
 
@@ -60,9 +60,9 @@ describe('Real GCR: IEV (canonical format)', { skip: !fs.existsSync(IEV) }, () =
   it('reads a multi-lang concept', async () => {
     const c = await pkg.concept('551-12-39');
     assert.equal(c.termid, '551-12-39');
-    assert.ok(c.localizations.eng);
-    assert.ok(c.localizations.fra);
-    assert.equal(c.localizations.eng.terms[0].designation, 'double converter');
-    assert.equal(c.localizations.fra.terms[0].designation, 'convertisseur double');
+    assert.ok(c.localization('eng'));
+    assert.ok(c.localization('fra'));
+    assert.equal(c.localization('eng').terms[0].designation, 'double converter');
+    assert.equal(c.localization('fra').terms[0].designation, 'convertisseur double');
   });
 });

@@ -23,42 +23,42 @@ describe('validateConcept', () => {
   });
 
   it('flags missing id', () => {
-    const result = validateConcept({ localizations: { eng: { terms: [{ type: 'expression', designation: 'x' }] } } });
+    const result = validateConcept(new Concept({ localizations: { eng: { terms: [{ type: 'expression', designation: 'x' }] } } }));
     assert.equal(result.valid, false);
     assert.ok(result.errors.some(e => e.path === 'id'));
   });
 
   it('warns on empty localizations', () => {
-    const result = validateConcept({ id: '001' });
+    const result = validateConcept(new Concept({ id: '001' }));
     assert.ok(result.warnings.some(w => w.path === 'localizations'));
   });
 
   it('warns on localization with no terms', () => {
-    const result = validateConcept({ id: '001', localizations: { eng: {} } });
+    const result = validateConcept(new Concept({ id: '001', localizations: { eng: {} } }));
     assert.ok(result.warnings.some(w => w.path.includes('terms')));
   });
 
   it('detects invalid language codes', () => {
-    const result = validateConcept({
+    const result = validateConcept(new Concept({
       id: '001',
       localizations: { 'english': { terms: [{ type: 'expression', designation: 'x' }] } },
-    });
+    }));
     assert.ok(result.errors.some(e => e.message.includes('Invalid language code')));
   });
 
   it('detects unknown designation types', () => {
-    const result = validateConcept({
+    const result = validateConcept(new Concept({
       id: '001',
       localizations: { eng: { terms: [{ type: 'unknown_type', designation: 'x' }] } },
-    });
+    }));
     assert.ok(result.errors.some(e => e.message.includes('Unknown designation type')));
   });
 
   it('detects unknown entry statuses', () => {
-    const result = validateConcept({
+    const result = validateConcept(new Concept({
       id: '001',
       localizations: { eng: { terms: [{ type: 'expression', designation: 'x' }], entry_status: 'banana' } },
-    });
+    }));
     assert.ok(result.errors.some(e => e.message.includes('Unknown entry status')));
   });
 });
@@ -90,7 +90,7 @@ describe('createConceptValidator', () => {
       severity: 'error',
       validate: (_value, _path, _result) => { called = true; },
     });
-    v.validate({ id: '001', localizations: {} });
+    v.validate(new Concept({ id: '001', localizations: {} }));
     assert.equal(called, true);
   });
 });

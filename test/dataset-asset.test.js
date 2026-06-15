@@ -136,7 +136,7 @@ describe('GcrPackage dataset assets', () => {
     assert.deepEqual(ids, ['001']);
     const c = await pkg.concept('001');
     assert.equal(c.termid, '001');
-    assert.equal(c.localizations.eng.terms[0].designation, 'latitude');
+    assert.equal(c.localization('eng').terms[0].designation, 'latitude');
   });
 
   it('datasetAssetEntries discovers all assets', async () => {

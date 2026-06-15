@@ -131,20 +131,6 @@ export class LocalizedConcept extends GlossaristModel {
     return obj;
   }
 
-  _lazy(cacheKey, rawKey, wrapFn) {
-    if (this[cacheKey] === null) {
-      this[cacheKey] = this[rawKey].map(wrapFn);
-    }
-    return this[cacheKey];
-  }
-
-  _serialize(obj, jsonKey, cacheKey, rawKey) {
-    const items = this[cacheKey] ?? (this[rawKey].length > 0 ? this[rawKey] : []);
-    if (items.length > 0) {
-      obj[jsonKey] = items.map(i => (typeof i.toJSON === 'function') ? i.toJSON() : i);
-    }
-  }
-
   static fromJSON(data) {
     return new LocalizedConcept(data);
   }

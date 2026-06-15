@@ -71,7 +71,7 @@ describe('parseConceptYaml edge cases', () => {
     const raw = 'termid: "999"';
     const concept = parseConceptYaml(raw);
     assert.equal(concept.termid, '999');
-    assert.deepEqual(concept.localizations, {});
+    assert.equal(concept.languages.length, 0);
     assert.equal(concept.term, null);
   });
 
@@ -86,7 +86,7 @@ describe('parseConceptYaml edge cases', () => {
     ].join('\n');
     const concept = parseConceptYaml(raw);
     assert.equal(concept.termid, 'empty');
-    assert.deepEqual(concept.localizations, {});
+    assert.equal(concept.languages.length, 0);
   });
 
   it('discovers non-standard language codes dynamically', () => {
@@ -106,11 +106,11 @@ describe('parseConceptYaml edge cases', () => {
       '      designation: परीक्षण',
     ].join('\n');
     const concept = parseConceptYaml(raw);
-    assert.ok(concept.localizations.eng);
-    assert.ok(concept.localizations.tha);
-    assert.ok(concept.localizations.hin);
-    assert.equal(concept.localizations.tha.terms[0].designation, 'ทดสอบ');
-    assert.equal(concept.localizations.hin.terms[0].designation, 'परीक्षण');
+    assert.ok(concept.localization('eng'));
+    assert.ok(concept.localization('tha'));
+    assert.ok(concept.localization('hin'));
+    assert.equal(concept.localization('tha').terms[0].designation, 'ทดสอบ');
+    assert.equal(concept.localization('hin').terms[0].designation, 'परीक्षण');
   });
 });
 
@@ -301,8 +301,8 @@ describe('readConcepts edge cases', () => {
       '    - content: データ処理の基本概念',
     ].join('\n'));
     const concepts = readConcepts(dir);
-    assert.equal(concepts[0].localizations.eng.terms[0].designation, '你好世界');
-    assert.equal(concepts[0].localizations.eng.definition[0].content, 'データ処理の基本概念');
+    assert.equal(concepts[0].localization('eng').terms[0].designation, '你好世界');
+    assert.equal(concepts[0].localization('eng').definition[0].content, 'データ処理の基本概念');
   });
 });
 

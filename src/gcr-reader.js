@@ -418,7 +418,7 @@ export class GcrPackage {
  *
  * @example
  * const concept = parseConceptYaml('termid: "001"\neng:\n  terms:\n    - designation: test', '001');
- * console.log(concept.localizations.eng.terms[0].designation); // "test"
+ * console.log(concept.localization('eng').terms[0].designation); // "test"
  */
 export function parseConceptYaml(raw, context) {
   return conceptParser.parse(raw, context);

@@ -198,7 +198,7 @@ describe('GcrPackage compiled formats', () => {
     assert.deepEqual(ids, ['001', '002']);
     const c = await pkg.concept('001');
     assert.equal(c.termid, '001');
-    assert.equal(c.localizations.eng.terms[0].designation, 'entity');
+    assert.equal(c.localization('eng').terms[0].designation, 'entity');
   });
 
   it('still reads metadata alongside compiled formats', async () => {

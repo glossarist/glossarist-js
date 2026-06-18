@@ -38,7 +38,9 @@ export class GcrWriter {
     }
 
     if (options.bibliography) {
-      zip.file('bibliography.yaml', options.bibliography);
+      const bib = options.bibliography;
+      const yamlStr = bib.toYAML ? bib.toYAML() : String(bib);
+      zip.file('bibliography.yaml', yamlStr);
     }
 
     if (options.images) {

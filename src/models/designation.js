@@ -1,23 +1,11 @@
-import { GlossaristModel } from './base.js';
+import { RegistrableModel } from './registrable.js';
 import { ConceptSource } from './concept-source.js';
 import { Pronunciation } from './pronunciation.js';
 import { GrammarInfo } from './grammar-info.js';
 import { RelatedConcept } from './related-concept.js';
 import { DesignationRelationship, DESIGNATION_RELATIONSHIP_TYPES } from './designation-relationship.js';
 
-export class Designation extends GlossaristModel {
-  static _registry = new Map();
-
-  static register(type, cls) {
-    Designation._registry.set(type, cls);
-  }
-
-  static fromData(data) {
-    if (data instanceof Designation) return data;
-    const Cls = Designation._registry.get(data?.type) ?? Designation;
-    return new Cls(data);
-  }
-
+export class Designation extends RegistrableModel {
   constructor(data = {}) {
     super();
     this.designation = data.designation ?? '';

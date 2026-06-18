@@ -7,7 +7,7 @@ export { ConceptCollection } from './concept-collection.js';
 export { ManagedConceptCollection } from './managed-concept-collection.js';
 export { validateConcept, validateRegister, validateGcrPackage, createConceptValidator, ValidationError, ValidationRule, ValidationResult, RegisterValidator, GcrValidator } from './validators/index.js';
 export { conceptUuid, localizedConceptUuid, uuidV5 } from './uuid.js';
-export { ReferenceResolver, Reference, referenceResolver, resolveBibliographyRecord } from './reference-resolver.js';
+export { ReferenceResolver, Reference, referenceResolver, resolveBibliographyRecord, findNonVerbalEntity } from './reference-resolver.js';
 export { parseMention } from './reference-mention.js';
 export { ReferenceClassifier } from './render-classification.js';
 export { V1Reader, migrateV1ToV2 } from './v1-reader.js';
@@ -30,12 +30,29 @@ export {
 
 export {
   GlossaristModel,
+  RegistrableModel,
   Register, Section,
   REGISTER_STATUSES, ORDERING_METHODS,
   Concept, LocalizedConcept,
   Designation, Expression, Abbreviation, Symbol, GraphicalSymbol,
   Citation, ConceptRef, ConceptSource, RelatedConcept, DesignationRelationship, ConceptReference, ConceptDate,
-  DetailedDefinition, NonVerbRep,
+  DetailedDefinition, NonVerbRep, NON_VERBAL_TYPES,
+  NonVerbalEntity, SharedNonVerbalEntity,
+  Figure, FigureImage, Table, Formula,
+  NonVerbalReference, FigureReference, TableReference, FormulaReference,
+  BibliographyEntry, BibliographyData,
+  fetchLocalizedString, localizedStringIsEmpty, localizedStringIsPresent,
   GcrMetadata, GcrStatistics,
   RELATIONSHIP_TYPES, DESIGNATION_RELATIONSHIP_TYPES, DATE_TYPES,
 } from './models/index.js';
+
+export { AssetIndex } from './validators/asset-index.js';
+
+export {
+  ENTITY_DIRECTORIES,
+  ENTITY_TYPES,
+  entityDir,
+  entityPath,
+  isKnownEntityType,
+  parseEntityPath,
+} from './entity-directory.js';

@@ -3,7 +3,7 @@ import { Concept } from './models/concept.js';
 import { RelatedConcept } from './models/related-concept.js';
 import { InvalidInputError, YamlParseError } from './errors.js';
 
-const STRUCTURAL_KEYS = new Set(['termid', 'term']);
+const STRUCTURAL_KEYS = new Set(['termid', 'term', 'figures', 'tables', 'formulas']);
 
 export class ConceptParser {
   parse(raw, context) {
@@ -51,6 +51,9 @@ export class ConceptParser {
       id: String(doc.termid),
       term: doc.term || null,
       localizations,
+      figures: doc.figures,
+      tables: doc.tables,
+      formulas: doc.formulas,
       raw: doc,
     });
   }
@@ -76,6 +79,9 @@ export class ConceptParser {
       groups: mc.data.groups,
       dates: mc.dates ?? mc.data?.dates,
       sources: mc.sources ?? mc.data?.sources,
+      figures: mc.data?.figures,
+      tables: mc.data?.tables,
+      formulas: mc.data?.formulas,
       status: mc.status,
       schemaVersion: mc.schema_version,
       raw: mc,

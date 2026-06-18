@@ -14,6 +14,8 @@ export {
   UuidFormatRule,
   SourceUrnFormatRule,
   CiteRefIntegrityRule,
+  NonVerbalRefIntegrityRule,
+  OrphanedImagesRule,
 } from './v3-rules.js';
 
 import { ConceptValidator, LanguageCodeRule, DesignationTypeRule, EntryStatusRule } from './concept-validator.js';
@@ -29,6 +31,7 @@ import {
   UuidFormatRule,
   SourceUrnFormatRule,
   CiteRefIntegrityRule,
+  NonVerbalRefIntegrityRule,
 } from './v3-rules.js';
 
 const _default = new ConceptValidator()
@@ -43,7 +46,8 @@ const _default = new ConceptValidator()
   .addRule(new UuidFormatRule())
   .addRule(new SourceUrnFormatRule())
   .addRule(new RelationshipTypeRule())
-  .addRule(new CiteRefIntegrityRule());
+  .addRule(new CiteRefIntegrityRule())
+  .addRule(new NonVerbalRefIntegrityRule());
 
 export function validateConcept(concept) {
   return _default.validate(concept);

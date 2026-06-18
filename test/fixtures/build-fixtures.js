@@ -331,12 +331,15 @@ async function buildAssetsGcr() {
     '  entry_status: valid',
   ].join('\n'));
 
-  // Bibliography
+  // Bibliography (V3 format: single-key mapping with typed entries)
   zip.file('bibliography.yaml', [
-    'ISO_19111_2019:',
+    'bibliography:',
+    '- id: ISO_19111_2019',
+    '  reference: ISO 19111:2019',
     '  type: standard',
     '  title: Geographic information — Referencing by coordinates',
-    'ISO_8601_2019:',
+    '- id: ISO_8601_2019',
+    '  reference: ISO 8601:2019',
     '  type: standard',
     '  title: Date and time — Representations for information interchange',
   ].join('\n'));

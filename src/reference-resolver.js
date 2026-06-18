@@ -13,6 +13,21 @@ export class Reference {
     this.resolution = extras.resolution ?? null;
     this.lookupKey = extras.lookupKey ?? null;
   }
+
+  get dedupKey() {
+    if (this.type === 'bibliography') {
+      return ['bibliography',
+        this.sourceId ?? this.citation?.ref?.id ?? this.target];
+    }
+    if (this.type === 'figure' || this.type === 'table' || this.type === 'formula') {
+      return [this.type, this.lookupKey?.entityId ?? this.target];
+    }
+    if (this.type === 'concept') {
+      return ['concept',
+        this.lookupKey?.id ?? this.lookupKey?.designation ?? this.target];
+    }
+    return [this.type, this.target];
+  }
 }
 
 function refTarget(rc) {
@@ -33,6 +48,18 @@ export function resolveBibliographyRecord(citationRef, registry) {
   return bioColl.byId(citationRef.id);
 }
 
+export function findNonVerbalEntity(ref, registry) {
+  const { entityType, entityId } = ref.lookupKey ?? {};
+  if (!entityType || !entityId) return null;
+  const collection = registry[`nvr:${entityType}`];
+  if (!collection) return null;
+  for (const entity of collection) {
+    const found = entity.findById(entityId);
+    if (found) return found;
+  }
+  return null;
+}
+
 export class ReferenceResolver {
   extractReferences(concept) {
     const refs = [];
@@ -44,6 +71,22 @@ export class ReferenceResolver {
           lookupKey: { id: target },
         }));
       }
+    }
+
+    for (const ref of concept.figures) {
+      refs.push(new Reference('figure', ref.display ?? ref.entityId, 'structural', 'figures', {
+        lookupKey: { entityType: 'figure', entityId: ref.entityId },
+      }));
+    }
+    for (const ref of concept.tables) {
+      refs.push(new Reference('table', ref.display ?? ref.entityId, 'structural', 'tables', {
+        lookupKey: { entityType: 'table', entityId: ref.entityId },
+      }));
+    }
+    for (const ref of concept.formulas) {
+      refs.push(new Reference('formula', ref.display ?? ref.entityId, 'structural', 'formulas', {
+        lookupKey: { entityType: 'formula', entityId: ref.entityId },
+      }));
     }
 
     for (const lang of concept.languages) {
@@ -66,7 +109,17 @@ export class ReferenceResolver {
       }
     }
 
-    return refs;
+    return this._dedup(refs);
+  }
+
+  _dedup(refs) {
+    const seen = new Set();
+    return refs.filter(ref => {
+      const key = JSON.stringify(ref.dedupKey);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   _collectTexts(lc, lang) {
@@ -112,6 +165,21 @@ export class ReferenceResolver {
           refs.push(new Reference('concept', parsed.label ?? parsed.uri, 'embedded', source, {
             uri: parsed.uri,
             resolution: null,
+          }));
+          break;
+        case 'fig-ref':
+          refs.push(new Reference('figure', parsed.label ?? parsed.key, 'embedded', source, {
+            lookupKey: { entityType: 'figure', entityId: parsed.key },
+          }));
+          break;
+        case 'table-ref':
+          refs.push(new Reference('table', parsed.label ?? parsed.key, 'embedded', source, {
+            lookupKey: { entityType: 'table', entityId: parsed.key },
+          }));
+          break;
+        case 'formula-ref':
+          refs.push(new Reference('formula', parsed.label ?? parsed.key, 'embedded', source, {
+            lookupKey: { entityType: 'formula', entityId: parsed.key },
           }));
           break;
         case 'numeric':
@@ -168,11 +236,18 @@ export class ReferenceResolver {
     switch (ref.type) {
       case 'concept':      return this._resolveConcept(ref, registry);
       case 'bibliography': return this._resolveBibliography(ref, registry);
+      case 'figure':
+      case 'table':
+      case 'formula':      return this._resolveNonVerbal(ref, registry);
       case 'dataset':      return this._resolveDataset(ref, registry);
       case 'typed-ref':    return this._resolveTypedRef(ref, registry);
       case 'standard':     return this._resolveStandard(ref, registry);
       default:             return null;
     }
+  }
+
+  _resolveNonVerbal(ref, registry) {
+    return findNonVerbalEntity(ref, registry);
   }
 
   _resolveConcept(ref, registry) {
@@ -218,7 +293,8 @@ export class ReferenceResolver {
   resolveAll(concept, registry) {
     const resolved = new Map();
     for (const ref of this.extractReferences(concept)) {
-      if (ref.type === 'concept' || ref.type === 'bibliography') {
+      if (ref.type === 'concept' || ref.type === 'bibliography'
+          || ref.type === 'figure' || ref.type === 'table' || ref.type === 'formula') {
         const target = this.resolveReference(ref, registry);
         if (target != null) {
           const key = ref.target ?? ref.uri ?? ref.sourceId;

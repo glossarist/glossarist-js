@@ -12,6 +12,9 @@
 const DATASET_ASSETS = Object.freeze([
   { path: 'bibliography.yaml', type: 'file' },
   { path: 'images', type: 'directory' },
+  { path: 'figures', type: 'directory' },
+  { path: 'tables', type: 'directory' },
+  { path: 'formulas', type: 'directory' },
 ]);
 
 const FILE_ASSETS = Object.freeze(

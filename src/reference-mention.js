@@ -27,6 +27,12 @@
 
 const NUMERIC_RE = /^\d+(?:[.-]\d+)+$/;
 
+const NVR_PREFIXES = Object.freeze([
+  { prefix: 'fig:', kind: 'fig-ref' },
+  { prefix: 'table:', kind: 'table-ref' },
+  { prefix: 'formula:', kind: 'formula-ref' },
+]);
+
 /**
  * Parse the body of a {{...}} mention (without the braces).
  *
@@ -63,7 +69,17 @@ export function parseMention(raw) {
     };
   }
 
-  // 3. Comma-separated form: {{id, render}}.
+  // 3. NVR prefixes (fig:/table:/formula:) — config-driven dispatch.
+  for (const { prefix, kind } of NVR_PREFIXES) {
+    const escPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = body.match(new RegExp(`^${escPrefix}([^,}]+)(?:,(.*))?$`));
+    if (match) {
+      const label = match[2] !== undefined ? unquoteLabel(match[2].trim()) : null;
+      return { kind, key: match[1].trim(), label, raw: body };
+    }
+  }
+
+  // 4. Comma-separated form: {{id, render}}.
   //    ID always comes first, render text always comes last.
   const commaIdx = body.indexOf(',');
   if (commaIdx !== -1) {
@@ -76,12 +92,12 @@ export function parseMention(raw) {
     return { kind: 'designation', id, label, raw: body };
   }
 
-  // 4. Bare numeric id.
+  // 5. Bare numeric id.
   if (NUMERIC_RE.test(body)) {
     return { kind: 'numeric', id: body, label: null, raw: body };
   }
 
-  // 5. Anything else is unresolved at the parse layer.
+  // 6. Anything else is unresolved at the parse layer.
   return { kind: 'unresolved', raw: body };
 }
 

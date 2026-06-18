@@ -1,4 +1,6 @@
 import { ValidationRule } from './validation-rule.js';
+import { parseMention } from '../reference-mention.js';
+import { GraphicalSymbol } from '../models/designation.js';
 
 const _eachLocalization = (concept, fn) => {
   for (const lang of concept.languages) {
@@ -265,5 +267,150 @@ export class CiteRefIntegrityRule extends ValidationRule {
           `inline {{cite:${key}}} does not resolve to any source in concept "${concept.id ?? ''}"`);
       }
     }
+  }
+}
+
+
+// ── NonVerbalRefIntegrityRule ────────────────────────────────────────
+// Uses parseMention for classification (no regex duplication).
+
+
+const NVR_ARRAYS = Object.freeze([
+  { name: 'figures', entityType: 'figure' },
+  { name: 'tables', entityType: 'table' },
+  { name: 'formulas', entityType: 'formula' },
+]);
+
+function _findNvrMentions(concept) {
+  const mentions = [];
+  const walkText = (text, source) => {
+    if (typeof text !== 'string' || text.length === 0) return;
+    const re = /\{\{([^{}]*?)\}\}/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const parsed = parseMention(m[1]);
+      if (parsed.kind === 'fig-ref' ||
+          parsed.kind === 'table-ref' ||
+          parsed.kind === 'formula-ref') {
+        mentions.push({ key: parsed.key, source });
+      }
+    }
+  };
+
+  for (const lang of concept.languages) {
+    const lc = concept.localization(lang);
+    if (!lc) continue;
+    for (let i = 0; i < lc.definitions.length; i++) {
+      walkText(lc.definitions[i]?.content,
+        `localizations.${lang}.definitions[${i}].content`);
+    }
+    for (let i = 0; i < lc.notes.length; i++) {
+      walkText(lc.notes[i]?.content,
+        `localizations.${lang}.notes[${i}].content`);
+    }
+    for (let i = 0; i < lc.examples.length; i++) {
+      walkText(lc.examples[i]?.content,
+        `localizations.${lang}.examples[${i}].content`);
+    }
+    for (let i = 0; i < lc.annotations.length; i++) {
+      walkText(lc.annotations[i]?.content,
+        `localizations.${lang}.annotations[${i}].content`);
+    }
+  }
+  return mentions;
+}
+
+export class NonVerbalRefIntegrityRule extends ValidationRule {
+  constructor() {
+    super('nvr-integrity', 'warning');
+  }
+
+  validate(concept, path, result) {
+    for (const { name } of NVR_ARRAYS) {
+      const counts = new Map();
+      for (const ref of concept[name]) {
+        if (ref.entityId == null) continue;
+        counts.set(ref.entityId, (counts.get(ref.entityId) ?? 0) + 1);
+      }
+      for (const [id, count] of counts) {
+        if (count > 1) {
+          this.addIssue(result, `${path}${name}`,
+            `duplicate ${name} reference id "${id}" appears ${count} times`);
+        }
+      }
+    }
+
+    const mentions = _findNvrMentions(concept);
+    if (mentions.length === 0) return;
+
+    const knownIds = new Set();
+    for (const { name } of NVR_ARRAYS) {
+      for (const ref of concept[name]) {
+        if (ref.entityId != null) knownIds.add(ref.entityId);
+      }
+    }
+
+    for (const { key, source } of mentions) {
+      if (!knownIds.has(key)) {
+        this.addIssue(result, source,
+          `inline NVR mention "${key}" does not resolve to any figures/tables/formulas entry`);
+      }
+    }
+  }
+}
+
+// ── OrphanedImagesRule ───────────────────────────────────────────────
+// Collection-scope rule: needs AssetIndex + all concepts. Called
+// directly by GcrValidator (not in concept validator chain).
+
+export class OrphanedImagesRule {
+  constructor() {
+    this.name = 'orphaned-images';
+    this.severity = 'warning';
+  }
+
+  check(context) {
+    const { assetIndex, concepts, resolver } = context;
+    if (!assetIndex || assetIndex.size === 0) return [];
+
+    const referenced = new Set();
+
+    for (const concept of concepts) {
+      if (resolver) {
+        for (const ref of resolver.extractReferences(concept)) {
+          if (ref.target && ref.target.includes('images/')) {
+            referenced.add(ref.target.replace(/^\//, ''));
+          }
+        }
+      }
+
+      for (const lang of concept.languages) {
+        const lc = concept.localization(lang);
+        if (!lc) continue;
+
+        for (const nvr of lc.nonVerbalRep) {
+          for (const img of nvr.images) {
+            if (img.src) referenced.add(img.src.replace(/^\//, ''));
+          }
+        }
+        for (const term of lc.terms) {
+          if (term instanceof GraphicalSymbol && term.image) {
+            referenced.add(term.image.replace(/^\//, ''));
+          }
+        }
+      }
+    }
+
+    const issues = [];
+    for (const imgPath of assetIndex.paths) {
+      if (!referenced.has(imgPath)) {
+        issues.push({
+          path: imgPath,
+          severity: 'warning',
+          message: `orphaned image: ${imgPath} (not referenced by any concept)`,
+        });
+      }
+    }
+    return issues;
   }
 }

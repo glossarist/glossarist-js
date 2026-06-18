@@ -216,20 +216,32 @@ describe('ReferenceResolver — cite-ref extraction', () => {
   });
 
   it('walks examples and annotations text in addition to definitions and notes', () => {
-    const source = new ConceptSource({
+    const sourceA = new ConceptSource({
       id: 'a',
       origin: new Citation({ ref: { source: 'X' } }),
     });
+    const sourceB = new ConceptSource({
+      id: 'b',
+      origin: new Citation({ ref: { source: 'Y' } }),
+    });
+    const sourceC = new ConceptSource({
+      id: 'c',
+      origin: new Citation({ ref: { source: 'Z' } }),
+    });
+    const sourceD = new ConceptSource({
+      id: 'd',
+      origin: new Citation({ ref: { source: 'W' } }),
+    });
     const concept = new Concept({
       id: 'c1',
-      sources: [source],
+      sources: [sourceA, sourceB, sourceC, sourceD],
       localizations: {
         eng: {
           terms: [{ designation: 'foo' }],
           definition: [{ content: 'See {{cite:a}} in def.' }],
-          examples: [{ content: 'Example mentions {{cite:a}}.' }],
-          annotations: [{ content: 'Annotation cites {{cite:a}}.' }],
-          notes: [{ content: 'Note references {{cite:a}}.' }],
+          examples: [{ content: 'Example mentions {{cite:b}}.' }],
+          annotations: [{ content: 'Annotation cites {{cite:c}}.' }],
+          notes: [{ content: 'Note references {{cite:d}}.' }],
         },
       },
     });
@@ -274,7 +286,7 @@ describe('ReferenceResolver — cite-ref extraction', () => {
     assert.equal(conceptRefs[0].uri, 'urn:iso:std:iso:7301:2024');
   });
 
-  it('shares a Citation object reference across multiple inline mentions of the same source', () => {
+  it('deduplicates multiple inline mentions of the same source', () => {
     const source = new ConceptSource({
       id: 'a',
       origin: new Citation({ ref: { source: 'X' } }),
@@ -292,8 +304,8 @@ describe('ReferenceResolver — cite-ref extraction', () => {
     const resolver = new ReferenceResolver();
     const refs = resolver.extractReferences(concept);
     const bibRefs = refs.filter(r => r.type === 'bibliography');
-    assert.equal(bibRefs.length, 2);
-    assert.equal(bibRefs[0].citation, bibRefs[1].citation);
+    assert.equal(bibRefs.length, 1);
+    assert.equal(bibRefs[0].sourceId, 'a');
   });
 });
 

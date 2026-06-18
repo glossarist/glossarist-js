@@ -107,11 +107,12 @@ describe('ManagedConceptCollection', () => {
     assert.ok(result instanceof ManagedConceptCollection);
   });
 
-  it('setBibliography stores YAML string', () => {
+  it('setBibliography stores BibliographyData', () => {
     const mcc = new ManagedConceptCollection();
-    const yaml = 'references:\n  - id: ISO-9000\n    title: Quality management';
+    const yaml = 'bibliography:\n  - id: ISO-9000\n    reference: ISO 9000\n    title: Quality management';
     mcc.setBibliography(yaml);
-    assert.equal(mcc.bibliography, yaml);
+    assert.ok(mcc.bibliography);
+    assert.equal(mcc.bibliography.find('ISO-9000').reference, 'ISO 9000');
   });
 
   it('setImages stores Map of image files', () => {

@@ -4,6 +4,9 @@ import { RelatedConcept } from './related-concept.js';
 import { ConceptReference } from './concept-reference.js';
 import { ConceptDate } from './concept-date.js';
 import { ConceptSource } from './concept-source.js';
+import { FigureReference } from './non-verbal-references.js';
+import { TableReference } from './non-verbal-references.js';
+import { FormulaReference } from './non-verbal-references.js';
 
 export class Concept extends GlossaristModel {
   constructor(data = {}) {
@@ -19,6 +22,12 @@ export class Concept extends GlossaristModel {
     this.tags = Array.isArray(data.tags) ? [...data.tags] : [];
     this.dates = _mapInstances(data.dates ?? [], ConceptDate);
     this.sources = _mapInstances(data.sources ?? [], ConceptSource);
+    this._rawFigures = data.figures ?? [];
+    this._rawTables = data.tables ?? [];
+    this._rawFormulas = data.formulas ?? [];
+    this._figures = null;
+    this._tables = null;
+    this._formulas = null;
     this.status = data.status ?? null;
     this.schemaVersion = data.schemaVersion ?? data.schema_version ?? '3';
     this.raw = data.raw ?? null;
@@ -107,6 +116,21 @@ export class Concept extends GlossaristModel {
     return null;
   }
 
+  get figures() {
+    return this._lazy('_figures', '_rawFigures',
+      r => FigureReference.fromJSON(r));
+  }
+
+  get tables() {
+    return this._lazy('_tables', '_rawTables',
+      r => TableReference.fromJSON(r));
+  }
+
+  get formulas() {
+    return this._lazy('_formulas', '_rawFormulas',
+      r => FormulaReference.fromJSON(r));
+  }
+
   toJSON() {
     const obj = { id: this.id };
     if (this.term != null) obj.term = this.term;
@@ -141,6 +165,9 @@ export class Concept extends GlossaristModel {
     if (this.sources.length > 0) {
       obj.sources = this.sources.map(s => s.toJSON());
     }
+    this._serialize(obj, 'figures', '_figures', '_rawFigures');
+    this._serialize(obj, 'tables', '_tables', '_rawTables');
+    this._serialize(obj, 'formulas', '_formulas', '_rawFormulas');
     if (this.status != null) obj.status = this.status;
     obj.schema_version = this.schemaVersion;
     return obj;

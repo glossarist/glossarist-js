@@ -1,4 +1,4 @@
-import { resolveBibliographyRecord } from './reference-resolver.js';
+import { resolveBibliographyRecord, findNonVerbalEntity } from './reference-resolver.js';
 
 export class ReferenceClassifier {
   constructor(registry = {}, sourceDatasetId = null, options = {}) {
@@ -14,6 +14,9 @@ export class ReferenceClassifier {
       case 'concept':      return this._classifyConcept(ref);
       case 'dataset':      return this._classifyDataset(ref);
       case 'bibliography': return this._classifyBibliography(ref);
+      case 'figure':
+      case 'table':
+      case 'formula':      return this._classifyNonVerbal(ref);
       case 'typed-ref':    return this._classifyTypedRef(ref);
       case 'standard':     return 'legacy-standard';
       default:             return 'unknown';
@@ -62,5 +65,11 @@ export class ReferenceClassifier {
 
   _classifyTypedRef(_ref) {
     return 'typed-ref';
+  }
+
+  _classifyNonVerbal(ref) {
+    return findNonVerbalEntity(ref, this.registry)
+      ? 'internal-citation'
+      : 'external-citation';
   }
 }

@@ -1,23 +1,25 @@
-import { GlossaristModel } from './base.js';
-import { ConceptSource } from './concept-source.js';
+import { NonVerbalEntity } from './non-verbal-entity.js';
+import { FigureImage } from './figure.js';
 
-export class NonVerbRep extends GlossaristModel {
+export const NON_VERBAL_TYPES = Object.freeze(['image', 'table', 'formula']);
+
+export class NonVerbRep extends NonVerbalEntity {
   constructor(data = {}) {
-    super();
+    super(data);
     this.type = data.type ?? null;
-    this.ref = data.ref ?? null;
-    this.text = data.text ?? null;
-    this.sources = (data.sources ?? []).map(
-      s => s instanceof ConceptSource ? s : new ConceptSource(s)
-    );
+    this._rawImages = data.images ?? [];
+    this._images = null;
+  }
+
+  get images() {
+    return this._lazy('_images', '_rawImages',
+      i => i instanceof FigureImage ? i : new FigureImage(i));
   }
 
   toJSON() {
-    const obj = {};
+    const obj = super.toJSON();
     if (this.type != null) obj.type = this.type;
-    if (this.ref != null) obj.ref = this.ref;
-    if (this.text != null) obj.text = this.text;
-    if (this.sources.length > 0) obj.sources = this.sources.map(s => s.toJSON());
+    this._serialize(obj, 'images', '_images', '_rawImages');
     return obj;
   }
 

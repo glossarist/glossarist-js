@@ -3,6 +3,7 @@ import { readConcepts, readRegister } from './concept-reader.js';
 import { writeConcepts } from './concept-writer.js';
 import { loadGcr } from './gcr-reader.js';
 import { GcrWriter } from './gcr-writer.js';
+import { BibliographyData } from './models/bibliography-data.js';
 
 export class ManagedConceptCollection {
   constructor() {
@@ -73,8 +74,16 @@ export class ManagedConceptCollection {
     return this;
   }
 
-  setBibliography(yamlString) {
-    this._bibliography = yamlString;
+  setBibliography(bib) {
+    if (bib instanceof BibliographyData) {
+      this._bibliography = bib;
+    } else if (typeof bib === 'string') {
+      this._bibliography = BibliographyData.fromYAML(bib);
+    } else if (bib == null) {
+      this._bibliography = null;
+    } else {
+      this._bibliography = new BibliographyData(bib);
+    }
     return this;
   }
 

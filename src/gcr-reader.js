@@ -6,6 +6,9 @@ import { COMPILED_FORMATS, parseCompiledPath, compiledPath } from './compiled-fo
 import { DATASET_ASSETS, findFileAsset, findDirectoryAssetPath } from './dataset-asset.js';
 import { GcrMetadata } from './models/gcr-metadata.js';
 import { naturalSort } from './sort.js';
+import { NonVerbalEntity } from './models/non-verbal-entity.js';
+import { BibliographyData } from './models/bibliography-data.js';
+import { entityDir, entityPath, ENTITY_TYPES, parseEntityPath } from './entity-directory.js';
 
 export { naturalSort } from './sort.js';
 
@@ -283,12 +286,13 @@ export class GcrPackage {
   }
 
   /**
-   * Read bibliography.yaml from the package as a string (raw YAML).
-   * @returns {Promise<string | null>}
+   * Read and parse bibliography.yaml from the package as a BibliographyData instance.
+   * @returns {Promise<BibliographyData | null>}
    */
   async bibliography() {
-    const fileAsset = DATASET_ASSETS.find((a) => a.type === 'file' && a.path === 'bibliography.yaml');
-    return fileAsset ? this._readText(fileAsset.path) : null;
+    const raw = await this._readText('bibliography.yaml');
+    if (raw === null) return null;
+    return BibliographyData.fromYAML(raw);
   }
 
   /**
@@ -402,6 +406,50 @@ export class GcrPackage {
   /** @private @deprecated Use readText instead */
   async _readText(filePath) {
     return this.readText(filePath);
+  }
+
+  // --- Non-verbal entity directories (figures/, tables/, formulas/) ---
+
+  async entityIds(type) {
+    const prefix = `${entityDir(type)}/`;
+    const ids = [];
+    this._zip.forEach((relativePath, entry) => {
+      if (!entry.dir && relativePath.startsWith(prefix) && relativePath.endsWith('.yaml')) {
+        ids.push(relativePath.slice(prefix.length, -'.yaml'.length));
+      }
+    });
+    return ids.sort(naturalSort);
+  }
+
+  async entity(type, id) {
+    const raw = await this.readText(entityPath(type, id));
+    if (raw === null) return null;
+    const yamlData = yaml.load(raw);
+    return NonVerbalEntity.fromData({ ...yamlData, type });
+  }
+
+  async eachEntity(type, callback) {
+    for (const id of await this.entityIds(type)) {
+      const entity = await this.entity(type, id);
+      if (entity) await callback(entity, id);
+    }
+  }
+
+  async allEntities(type) {
+    const entities = [];
+    await this.eachEntity(type, (e) => { entities.push(e); });
+    return entities;
+  }
+
+  async entityTypes() {
+    const seen = new Set();
+    this._zip.forEach((relativePath, entry) => {
+      if (!entry.dir) {
+        const parsed = parseEntityPath(relativePath);
+        if (parsed) seen.add(parsed.type);
+      }
+    });
+    return ENTITY_TYPES.filter((t) => seen.has(t));
   }
 }
 

@@ -306,21 +306,29 @@ describe('DetailedDefinition', () => {
 // --- NonVerbRep ---
 
 describe('NonVerbRep', () => {
-  it('stores type, ref, and text', () => {
-    const n = new NonVerbRep({ type: 'image', ref: 'diagram.png', text: 'A diagram' });
+  it('stores type and images', () => {
+    const n = new NonVerbRep({
+      type: 'image',
+      images: [{ src: 'diagram.png', format: 'png' }],
+      alt: { eng: 'A diagram' },
+    });
     assert.equal(n.type, 'image');
-    assert.equal(n.ref, 'diagram.png');
-    assert.equal(n.text, 'A diagram');
+    assert.equal(n.images[0].src, 'diagram.png');
+    assert.equal(n.alt.eng, 'A diagram');
   });
 
   it('stores formula type', () => {
-    const n = new NonVerbRep({ type: 'formula', ref: 'E=mc^2' });
+    const n = new NonVerbRep({ type: 'formula' });
     assert.equal(n.type, 'formula');
-    assert.equal(n.ref, 'E=mc^2');
+    assert.deepEqual(n.images, []);
   });
 
   it('round-trips', () => {
-    const n = new NonVerbRep({ type: 'image', ref: 'x.png', sources: [{ ref: { source: 'S' } }] });
+    const n = new NonVerbRep({
+      type: 'image',
+      images: [{ src: 'x.png', format: 'png' }],
+      sources: [{ ref: { source: 'S' } }],
+    });
     assert.ok(n.equals(NonVerbRep.fromJSON(n.toJSON())));
   });
 });

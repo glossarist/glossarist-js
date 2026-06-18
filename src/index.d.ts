@@ -1,12 +1,18 @@
 // Models
 export {
   GlossaristModel,
+  RegistrableModel,
   Concept, LocalizedConcept,
-  Designation, Expression, Abbreviation, Symbol, GraphicalSymbol,
-  Citation, ConceptRef, ConceptSource, RelatedConcept, ConceptDate,
-  DetailedDefinition, NonVerbRep,
+  Designation, Expression, Abbreviation, Symbol, LetterSymbol, GraphicalSymbol,
+  Citation, ConceptRef, ConceptSource, RelatedConcept,
+  DesignationRelationship, ConceptReference, ConceptDate,
+  DetailedDefinition, NonVerbRep, NON_VERBAL_TYPES,
+  NonVerbalEntity, SharedNonVerbalEntity,
+  Figure, FigureImage, Table, Formula,
+  NonVerbalReference, FigureReference, TableReference, FormulaReference,
+  BibliographyEntry, BibliographyData,
   GcrMetadata, GcrStatistics,
-  RELATIONSHIP_TYPES, DATE_TYPES,
+  RELATIONSHIP_TYPES, DESIGNATION_RELATIONSHIP_TYPES, DATE_TYPES,
 } from './models/index';
 
 // GCR reader
@@ -26,16 +32,27 @@ export { ConceptCollection } from './concept-collection';
 export { ManagedConceptCollection } from './managed-concept-collection';
 
 // Validators
-export { validateConcept, validateRegister, validateGcrPackage, createConceptValidator, ValidationError, ValidationRule, ValidationResult, RegisterValidator, GcrValidator } from './validators/index';
+export {
+  validateConcept, validateRegister, validateGcrPackage,
+  createConceptValidator,
+  ValidationError, ValidationRule, ValidationResult,
+  RegisterValidator, GcrValidator,
+  NonVerbalRefIntegrityRule, OrphanedImagesRule,
+} from './validators/index';
+export { AssetIndex } from './validators/asset-index';
 
 // UUID
 export { conceptUuid, localizedConceptUuid, uuidV5 } from './uuid';
 
 // Reference resolution
-export { ReferenceResolver, Reference, referenceResolver } from './reference-resolver';
+export {
+  ReferenceResolver, Reference, referenceResolver,
+  resolveBibliographyRecord, findNonVerbalEntity,
+} from './reference-resolver';
 
 export type MentionParseResult = {
-  kind: 'cite-ref' | 'urn-ref' | 'numeric' | 'designation' | 'unresolved';
+  kind: 'cite-ref' | 'urn-ref' | 'fig-ref' | 'table-ref' | 'formula-ref'
+      | 'numeric' | 'designation' | 'unresolved';
   key?: string;
   uri?: string;
   label?: string | null;
@@ -44,6 +61,14 @@ export type MentionParseResult = {
 };
 
 export function parseMention(raw: string): MentionParseResult;
+
+export function fetchLocalizedString(
+  hash: Record<string, string> | null,
+  lang: string,
+  fallback?: string,
+): string | null;
+export function localizedStringIsEmpty(hash: Record<string, string> | null): boolean;
+export function localizedStringIsPresent(hash: Record<string, string> | null): boolean;
 
 // V1 support
 export { V1Reader, migrateV1ToV2 } from './v1-reader';
@@ -66,3 +91,11 @@ export const DIRECTORY_ASSETS: readonly { path: string; type: string }[];
 export function findFileAsset(path: string): { path: string; type: string } | undefined;
 export function findDirectoryAssetPath(zipPath: string): { path: string; type: string } | undefined;
 export function isDatasetAssetPath(zipPath: string): boolean;
+
+// Entity directory registry
+export const ENTITY_DIRECTORIES: ReadonlyMap<string, string>;
+export const ENTITY_TYPES: readonly string[];
+export function entityDir(type: string): string;
+export function entityPath(type: string, id: string): string;
+export function isKnownEntityType(type: string): boolean;
+export function parseEntityPath(zipPath: string): { type: string; id: string } | null;

@@ -15,7 +15,7 @@ import { loadGcr } from '../src/gcr-reader.js';
 import { GcrWriter } from '../src/gcr-writer.js';
 import { GcrMetadata } from '../src/models/gcr-metadata.js';
 import { ManagedConceptCollection } from '../src/managed-concept-collection.js';
-import { Concept } from '../src/models/index.js';
+import { Concept, BibliographyData } from '../src/models/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, 'fixtures');
@@ -74,11 +74,11 @@ describe('GcrPackage dataset assets', () => {
     assert.ok(pkg);
   });
 
-  it('reads bibliography as raw YAML string', async () => {
+  it('reads bibliography as BibliographyData', async () => {
     const bib = await pkg.bibliography();
     assert.ok(bib);
-    assert.ok(bib.includes('ISO_19111_2019'));
-    assert.ok(bib.includes('ISO_8601_2019'));
+    assert.equal(bib.keys.includes('ISO_19111_2019'), true);
+    assert.equal(bib.keys.includes('ISO_8601_2019'), true);
   });
 
   it('hasImages returns true', async () => {
@@ -192,7 +192,9 @@ describe('GcrPackage without dataset assets', () => {
 
 describe('GcrWriter with dataset assets', () => {
   it('writes bibliography into GCR', async () => {
-    const bib = 'ISO_9000:\n  type: standard\n  title: Quality management';
+    const bib = new BibliographyData({
+      bibliography: [{ id: 'ISO_9000', reference: 'ISO 9000', type: 'standard', title: 'Quality management' }],
+    });
     const buf = await GcrWriter.createBuffer({
       concepts: [],
       metadata: { shortname: 'test' },
@@ -201,7 +203,7 @@ describe('GcrWriter with dataset assets', () => {
 
     const pkg = await loadGcr(buf);
     const readBib = await pkg.bibliography();
-    assert.equal(readBib, bib);
+    assert.equal(readBib.find('ISO_9000').title, 'Quality management');
   });
 
   it('writes images into GCR with object', async () => {
@@ -255,14 +257,16 @@ describe('ManagedConceptCollection with assets', () => {
 
     assert.equal(mcc.concepts.length, 1);
     assert.ok(mcc.bibliography);
-    assert.ok(mcc.bibliography.includes('ISO_19111_2019'));
+    assert.ok(mcc.bibliography.find('ISO_19111_2019'));
     assert.ok(mcc.images instanceof Map);
     assert.equal(mcc.images.size, 2);
   });
 
   it('round-trips assets through save/load GCR', async () => {
     const concept = new Concept({ id: '100', localizations: {} });
-    const bib = 'STD_1:\n  title: Test Standard';
+    const bib = new BibliographyData({
+      bibliography: [{ id: 'STD_1', reference: 'STD 1', title: 'Test Standard' }],
+    });
     const pngData = Uint8Array.from([0x89, 0x50]);
 
     const mcc = new ManagedConceptCollection();
@@ -275,7 +279,7 @@ describe('ManagedConceptCollection with assets', () => {
     const mcc2 = new ManagedConceptCollection();
     await mcc2.loadFromGcr(buf);
 
-    assert.equal(mcc2.bibliography, bib);
+    assert.equal(mcc2.bibliography.find('STD_1').title, 'Test Standard');
     assert.ok(mcc2.images instanceof Map);
     assert.deepEqual(mcc2.images.get('images/test.png'), pngData);
   });

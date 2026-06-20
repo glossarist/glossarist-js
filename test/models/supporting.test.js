@@ -301,6 +301,62 @@ describe('DetailedDefinition', () => {
     const d = new DetailedDefinition({ content: 'test', sources: [{ ref: { source: 'X' } }] });
     assert.ok(d.equals(DetailedDefinition.fromJSON(d.toJSON())));
   });
+
+  it('defaults examples to an empty array', () => {
+    const d = new DetailedDefinition({ content: 'note' });
+    assert.deepEqual(d.examples, []);
+  });
+
+  it('wraps raw examples as DetailedDefinition instances (recursive)', () => {
+    const d = new DetailedDefinition({
+      content: 'note with scoped examples',
+      examples: [
+        { content: 'first example' },
+        { content: 'second example' },
+      ],
+    });
+    assert.equal(d.examples.length, 2);
+    assert.ok(d.examples[0] instanceof DetailedDefinition);
+    assert.equal(d.examples[0].content, 'first example');
+    assert.equal(d.examples[1].content, 'second example');
+  });
+
+  it('round-trips scoped examples inside a note', () => {
+    const note = new DetailedDefinition({
+      content: 'Resistance depends on dimensions and material.',
+      examples: [
+        { content: 'copper resistivity ≈ 1.68e-8 Ω·m at 20 °C' },
+        { content: '1 m of 1 mm² copper wire ≈ 0.017 Ω' },
+      ],
+    });
+    const roundTripped = DetailedDefinition.fromJSON(note.toJSON());
+    assert.equal(roundTripped.content, note.content);
+    assert.equal(roundTripped.examples.length, 2);
+    assert.ok(roundTripped.examples[0] instanceof DetailedDefinition);
+    assert.equal(roundTripped.examples[0].content, 'copper resistivity ≈ 1.68e-8 Ω·m at 20 °C');
+    assert.equal(roundTripped.examples[1].content, '1 m of 1 mm² copper wire ≈ 0.017 Ω');
+  });
+
+  it('preserves examples-of-examples (bounded recursion)', () => {
+    const note = new DetailedDefinition({
+      content: 'outer',
+      examples: [
+        {
+          content: 'inner-note',
+          examples: [{ content: 'innermost' }],
+        },
+      ],
+    });
+    const roundTripped = DetailedDefinition.fromJSON(note.toJSON());
+    assert.equal(roundTripped.examples[0].content, 'inner-note');
+    assert.equal(roundTripped.examples[0].examples[0].content, 'innermost');
+  });
+
+  it('omits examples from toJSON when empty', () => {
+    const d = new DetailedDefinition({ content: 'just content' });
+    const json = d.toJSON();
+    assert.deepEqual(json, { content: 'just content' });
+  });
 });
 
 // --- NonVerbRep ---

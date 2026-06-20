@@ -243,6 +243,7 @@ export class ConceptDate extends GlossaristModel {
 export class DetailedDefinition extends GlossaristModel {
   readonly content: string;
   readonly sources: ConceptSource[];
+  readonly examples: DetailedDefinition[];
 }
 
 export class NonVerbRep extends GlossaristModel {

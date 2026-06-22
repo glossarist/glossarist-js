@@ -42,6 +42,8 @@ export class GlossaristModel {
   static fromJSON(data: Record<string, unknown>): GlossaristModel;
   equals(other: GlossaristModel): boolean;
   clone(): GlossaristModel;
+  protected _lazy<T>(cacheKey: string, rawKey: string, wrapFn: (item: any) => T): T[];
+  protected _serialize(obj: Record<string, unknown>, jsonKey: string, cacheKey: string, rawKey: string): void;
 }
 
 export class Concept extends GlossaristModel {
@@ -250,12 +252,124 @@ export class DetailedDefinition extends GlossaristModel {
   static fromJSON(data: Record<string, unknown>): DetailedDefinition;
 }
 
-export class NonVerbRep extends GlossaristModel {
-  readonly type: string | null;
-  readonly ref: string | null;
-  readonly text: string | null;
-  readonly sources: ConceptSource[];
+export class RegistrableModel extends GlossaristModel {
+  static register(type: string, cls: typeof RegistrableModel): void;
+  static fromData(data: Record<string, unknown>): RegistrableModel;
 }
+
+export class FigureImage extends GlossaristModel {
+  constructor(data?: Record<string, unknown>);
+  readonly src: string | null;
+  readonly format: string | null;
+  readonly role: string | null;
+  readonly width: number | null;
+  readonly height: number | null;
+  readonly scale: number | null;
+  static fromJSON(data: Record<string, unknown>): FigureImage;
+}
+
+export class NonVerbalEntity extends RegistrableModel {
+  constructor(data?: Record<string, unknown>);
+  readonly caption: Record<string, string> | null;
+  readonly description: Record<string, string> | null;
+  readonly alt: Record<string, string> | null;
+  readonly sources: ConceptSource[];
+  findById(targetId: string): NonVerbalEntity | null;
+  allIds(): string[];
+  static fromJSON(data: Record<string, unknown>): NonVerbalEntity;
+}
+
+export class SharedNonVerbalEntity extends NonVerbalEntity {
+  constructor(data?: Record<string, unknown>);
+  readonly id: string | null;
+  readonly identifier: string | null;
+  findById(targetId: string): SharedNonVerbalEntity | null;
+  allIds(): string[];
+  static fromJSON(data: Record<string, unknown>): SharedNonVerbalEntity;
+}
+
+export class Figure extends SharedNonVerbalEntity {
+  constructor(data?: Record<string, unknown>);
+  readonly images: FigureImage[];
+  readonly subfigures: Figure[];
+  findById(targetId: string): Figure | null;
+  allIds(): string[];
+  static fromJSON(data: Record<string, unknown>): Figure;
+}
+
+export class Table extends SharedNonVerbalEntity {
+  constructor(data?: Record<string, unknown>);
+  readonly content: Record<string, unknown> | null;
+  readonly format: string | null;
+  static fromJSON(data: Record<string, unknown>): Table;
+}
+
+export class Formula extends SharedNonVerbalEntity {
+  constructor(data?: Record<string, unknown>);
+  readonly expression: Record<string, string> | null;
+  readonly notation: string | null;
+  static fromJSON(data: Record<string, unknown>): Formula;
+}
+
+export const NON_VERBAL_TYPES: readonly string[];
+
+export class NonVerbRep extends NonVerbalEntity {
+  readonly type: string | null;
+  readonly images: FigureImage[];
+  static fromJSON(data: Record<string, unknown>): NonVerbRep;
+}
+
+export class NonVerbalReference extends RegistrableModel {
+  constructor(data?: Record<string, unknown>);
+  readonly entityId: string | null;
+  readonly display: string | null;
+  readonly dedupKey: readonly [string, string | null];
+  static fromJSON(data: Record<string, unknown> | string): NonVerbalReference;
+  static register(type: string, cls: typeof NonVerbalReference): void;
+}
+
+export class FigureReference extends NonVerbalReference {
+  static fromJSON(data: Record<string, unknown> | string): FigureReference;
+}
+
+export class TableReference extends NonVerbalReference {
+  static fromJSON(data: Record<string, unknown> | string): TableReference;
+}
+
+export class FormulaReference extends NonVerbalReference {
+  static fromJSON(data: Record<string, unknown> | string): FormulaReference;
+}
+
+export class BibliographyEntry extends GlossaristModel {
+  constructor(data?: Record<string, unknown>);
+  readonly id: string | null;
+  readonly reference: string | null;
+  readonly title: string | null;
+  readonly link: string | null;
+  readonly type: string | null;
+  static fromJSON(data: Record<string, unknown>): BibliographyEntry;
+}
+
+export class BibliographyData extends GlossaristModel {
+  constructor(data?: Record<string, unknown>);
+  readonly entries: BibliographyEntry[];
+  find(id: string): BibliographyEntry | null;
+  readonly keys: string[];
+  toYAML(): string;
+  toJSON(): { bibliography: BibliographyEntry[] };
+  static fromYAML(yamlString: string): BibliographyData;
+  static fromJSON(data: Record<string, unknown>): BibliographyData;
+}
+
+export function fetchLocalizedString(
+  hash: Record<string, string> | null,
+  lang: string,
+  fallback?: string | null,
+): string | null;
+
+export function localizedStringIsEmpty(hash: Record<string, string> | null): boolean;
+
+export function localizedStringIsPresent(hash: Record<string, string> | null): boolean;
 
 export class GcrStatistics extends GlossaristModel {
   readonly totalConcepts: number;

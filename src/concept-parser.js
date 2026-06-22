@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import { Concept } from './models/concept.js';
 import { RelatedConcept } from './models/related-concept.js';
 import { InvalidInputError, YamlParseError } from './errors.js';

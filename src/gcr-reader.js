@@ -37,7 +37,7 @@ const BASE64_RE = /^[A-Za-z0-9+/]{100,}={0,2}$/;
  * @property {Term[]} terms - term designations
  * @property {Definition[]} [definition] - definition content
  * @property {{ content: string }[]} [notes] - editorial notes
- * @property {{ content: string }[]} [examples] - usage examples
+ * @property {Array<{ content: string, examples?: object[], sources?: object[] }>} [examples] - usage examples (may themselves nest examples)
  * @property {Source[]} [sources] - bibliographic sources
  * @property {string} [entry_status] - e.g. 'valid', 'draft'
  * @property {string} [normative_status] - e.g. 'preferred', 'admitted'

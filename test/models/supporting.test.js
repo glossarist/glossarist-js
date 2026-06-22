@@ -301,6 +301,104 @@ describe('DetailedDefinition', () => {
     const d = new DetailedDefinition({ content: 'test', sources: [{ ref: { source: 'X' } }] });
     assert.ok(d.equals(DetailedDefinition.fromJSON(d.toJSON())));
   });
+
+  it('defaults examples to an empty array', () => {
+    const d = new DetailedDefinition({ content: 'note' });
+    assert.deepEqual(d.examples, []);
+  });
+
+  it('wraps raw examples as DetailedDefinition instances (recursive)', () => {
+    const d = new DetailedDefinition({
+      content: 'note with scoped examples',
+      examples: [
+        { content: 'first example' },
+        { content: 'second example' },
+      ],
+    });
+    assert.equal(d.examples.length, 2);
+    assert.ok(d.examples[0] instanceof DetailedDefinition);
+    assert.equal(d.examples[0].content, 'first example');
+    assert.equal(d.examples[1].content, 'second example');
+  });
+
+  it('round-trips scoped examples inside a note', () => {
+    const note = new DetailedDefinition({
+      content: 'Resistance depends on dimensions and material.',
+      examples: [
+        { content: 'copper resistivity ≈ 1.68e-8 Ω·m at 20 °C' },
+        { content: '1 m of 1 mm² copper wire ≈ 0.017 Ω' },
+      ],
+    });
+    const roundTripped = DetailedDefinition.fromJSON(note.toJSON());
+    assert.equal(roundTripped.content, note.content);
+    assert.equal(roundTripped.examples.length, 2);
+    assert.ok(roundTripped.examples[0] instanceof DetailedDefinition);
+    assert.equal(roundTripped.examples[0].content, 'copper resistivity ≈ 1.68e-8 Ω·m at 20 °C');
+    assert.equal(roundTripped.examples[1].content, '1 m of 1 mm² copper wire ≈ 0.017 Ω');
+  });
+
+  it('preserves examples nested inside examples', () => {
+    const note = new DetailedDefinition({
+      content: 'outer',
+      examples: [
+        {
+          content: 'inner-note',
+          examples: [{ content: 'innermost' }],
+        },
+      ],
+    });
+    const roundTripped = DetailedDefinition.fromJSON(note.toJSON());
+    assert.equal(roundTripped.examples[0].content, 'inner-note');
+    assert.equal(roundTripped.examples[0].examples[0].content, 'innermost');
+  });
+
+  it('omits examples from toJSON when empty', () => {
+    const d = new DetailedDefinition({ content: 'just content' });
+    const json = d.toJSON();
+    assert.deepEqual(json, { content: 'just content' });
+  });
+
+  it('walkTexts yields own content with a path-rooted source', () => {
+    const d = new DetailedDefinition({ content: 'hello' });
+    const out = [...d.walkTexts('localizations.eng.notes[0]')];
+    assert.deepEqual(out, [
+      { text: 'hello', source: 'localizations.eng.notes[0].content' },
+    ]);
+  });
+
+  it('walkTexts skips empty content but still descends into examples', () => {
+    const d = new DetailedDefinition({
+      content: '',
+      examples: [{ content: 'inner' }],
+    });
+    const out = [...d.walkTexts('note')];
+    assert.deepEqual(out, [{ text: 'inner', source: 'note.examples[0].content' }]);
+  });
+
+  it('walkTexts recurses through arbitrarily nested examples', () => {
+    const d = new DetailedDefinition({
+      content: 'outer',
+      examples: [
+        {
+          content: 'mid',
+          examples: [
+            { content: 'deep' },
+          ],
+        },
+      ],
+    });
+    const out = [...d.walkTexts('root')];
+    assert.deepEqual(out, [
+      { text: 'outer', source: 'root.content' },
+      { text: 'mid', source: 'root.examples[0].content' },
+      { text: 'deep', source: 'root.examples[0].examples[0].content' },
+    ]);
+  });
+
+  it('walkTexts yields nothing for a content-less definition', () => {
+    const d = new DetailedDefinition({});
+    assert.deepEqual([...d.walkTexts('root')], []);
+  });
 });
 
 // --- NonVerbRep ---

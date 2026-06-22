@@ -13,6 +13,7 @@ import {
   DomainRefRule,
   UuidFormatRule,
   SourceUrnFormatRule,
+  NonVerbalRefIntegrityRule,
 } from '../../src/validators/v3-rules.js';
 import { validateConcept } from '../../src/validators/index.js';
 
@@ -326,4 +327,68 @@ test('CiteRefIntegrityRule: has the correct rule name and warning level', () => 
   const rule = new CiteRefIntegrityRule();
   assert.equal(rule.name, 'cite-ref-integrity');
   assert.equal(rule.severity, 'warning');
+});
+
+test('CiteRefIntegrityRule: warns about unresolved cites nested inside examples', () => {
+  const concept = new Concept({
+    id: 'c1',
+    localizations: {
+      eng: {
+        terms: [{ designation: 'foo' }],
+        notes: [{
+          content: 'Outer note.',
+          examples: [{ content: 'Nested example cites {{cite:ghost}}.' }],
+        }],
+      },
+    },
+  });
+  const issues = runCiteRule(concept);
+  assert.equal(issues.length, 1);
+  assert.match(issues[0].message, /does not resolve/);
+  assert.match(issues[0].path, /notes\[0\]\.examples\[0\]\.content/);
+});
+
+test('CiteRefIntegrityRule: resolves cites nested inside examples when source exists', () => {
+  const source = new ConceptSource({
+    id: 'good',
+    origin: new Citation({ ref: { source: 'X' } }),
+  });
+  const concept = new Concept({
+    id: 'c1',
+    sources: [source],
+    localizations: {
+      eng: {
+        terms: [{ designation: 'foo' }],
+        notes: [{
+          content: 'Outer note.',
+          examples: [{ content: 'Nested example cites {{cite:good}}.' }],
+        }],
+      },
+    },
+  });
+  const issues = runCiteRule(concept);
+  assert.equal(issues.length, 0);
+});
+
+test('NonVerbalRefIntegrityRule: flags NVR mentions nested inside examples', () => {
+  const concept = new Concept({
+    id: 'c1',
+    figures: [{ entityId: 'fig-1', display: 'Fig 1' }],
+    localizations: {
+      eng: {
+        terms: [{ designation: 'foo' }],
+        notes: [{
+          content: 'Outer note.',
+          examples: [{
+            content: 'See {{fig:fig-missing}} in the wild.',
+          }],
+        }],
+      },
+    },
+  });
+  const result = new ValidationResult();
+  const rule = new NonVerbalRefIntegrityRule();
+  rule.validate(concept, '', result);
+  const warnings = [...result.warnings, ...result.errors];
+  assert.ok(warnings.some(w => /fig-missing/.test(w.message)));
 });

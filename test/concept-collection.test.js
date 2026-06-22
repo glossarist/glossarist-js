@@ -143,6 +143,22 @@ describe('ConceptCollection', () => {
     assert.equal(result.at(0).id, '200');
   });
 
+  it('search finds text inside a nested example', () => {
+    const lc = new LocalizedConcept({
+      language_code: 'eng',
+      terms: [{ type: 'expression', designation: 'term' }],
+      notes: [{
+        content: 'Resistance depends on material.',
+        examples: [{ content: 'Copper resistivity is the canonical case.' }],
+      }],
+    });
+    const c = new Concept({ id: '400', localizations: { eng: lc.toJSON() } });
+    const cc = new ConceptCollection([c]);
+    const result = cc.search('copper');
+    assert.equal(result.length, 1);
+    assert.equal(result.at(0).id, '400');
+  });
+
   it('search finds by annotation text', () => {
     const lc = new LocalizedConcept({
       language_code: 'eng',

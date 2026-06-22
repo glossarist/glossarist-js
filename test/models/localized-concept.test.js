@@ -131,4 +131,43 @@ describe('LocalizedConcept', () => {
     const lc = new LocalizedConcept({ language_code: 'eng' });
     assert.equal(lc.toJSON().annotations, undefined);
   });
+
+  it('walkTexts yields every slot in canonical order with rooted paths', () => {
+    const lc = new LocalizedConcept({
+      language_code: 'eng',
+      definition: [{ content: 'def' }],
+      notes: [{ content: 'note' }],
+      examples: [{ content: 'ex' }],
+      annotations: [{ content: 'ann' }],
+    });
+    const out = [...lc.walkTexts('localizations.eng')];
+    assert.deepEqual(out, [
+      { text: 'def', source: 'localizations.eng.definitions[0].content' },
+      { text: 'note', source: 'localizations.eng.notes[0].content' },
+      { text: 'ex', source: 'localizations.eng.examples[0].content' },
+      { text: 'ann', source: 'localizations.eng.annotations[0].content' },
+    ]);
+  });
+
+  it('walkTexts recurses into nested examples inside any slot', () => {
+    const lc = new LocalizedConcept({
+      language_code: 'eng',
+      notes: [{
+        content: 'outer note',
+        examples: [
+          { content: 'scoped example inside note' },
+        ],
+      }],
+    });
+    const out = [...lc.walkTexts('localizations.eng')];
+    assert.deepEqual(out, [
+      { text: 'outer note', source: 'localizations.eng.notes[0].content' },
+      { text: 'scoped example inside note', source: 'localizations.eng.notes[0].examples[0].content' },
+    ]);
+  });
+
+  it('walkTexts yields nothing for an empty localized concept', () => {
+    const lc = new LocalizedConcept({ language_code: 'eng' });
+    assert.deepEqual([...lc.walkTexts('localizations.eng')], []);
+  });
 });

@@ -131,6 +131,23 @@ export class Concept extends GlossaristModel {
       r => FormulaReference.fromJSON(r));
   }
 
+  /**
+   * Yield every content-text fragment in this concept across all
+   * localizations, recursing through nested examples. Each yielded
+   * `{ text, source }` carries a dotted path rooted at
+   * `localizations.<lang>.<slot>[i]...content`.
+   *
+   * Designations are not included; they live on `LocalizedConcept.terms`
+   * and have a different shape.
+   */
+  *walkTexts() {
+    for (const lang of this.languages) {
+      const lc = this.localization(lang);
+      if (!lc) continue;
+      yield* lc.walkTexts(`localizations.${lang}`);
+    }
+  }
+
   toJSON() {
     const obj = { id: this.id };
     if (this.term != null) obj.term = this.term;

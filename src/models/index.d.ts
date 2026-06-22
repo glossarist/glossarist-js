@@ -65,6 +65,7 @@ export class Concept extends GlossaristModel {
   definition(lang: string): string | null;
   setLocalization(lang: string, lc: LocalizedConcept | Record<string, unknown>): this;
   hasLocalization(lang: string): boolean;
+  walkTexts(): Iterable<{ text: string; source: string }>;
   static fromJSON(data: Record<string, unknown>): Concept;
 }
 
@@ -96,6 +97,7 @@ export class LocalizedConcept extends GlossaristModel {
   readonly related: RelatedConcept[];
   readonly primaryDesignation: string | null;
   readonly primaryDefinition: string | null;
+  walkTexts(basePath: string): Iterable<{ text: string; source: string }>;
   static fromJSON(data: Record<string, unknown>): LocalizedConcept;
 }
 
@@ -243,6 +245,9 @@ export class ConceptDate extends GlossaristModel {
 export class DetailedDefinition extends GlossaristModel {
   readonly content: string;
   readonly sources: ConceptSource[];
+  readonly examples: DetailedDefinition[];
+  walkTexts(path: string): Iterable<{ text: string; source: string }>;
+  static fromJSON(data: Record<string, unknown>): DetailedDefinition;
 }
 
 export class NonVerbRep extends GlossaristModel {

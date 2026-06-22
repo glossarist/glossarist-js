@@ -137,6 +137,38 @@ describe('Concept model', () => {
     const c2 = Concept.fromJSON(json);
     assert.equal(c2.localization('eng').annotations[0].content, 'Usage note.');
   });
+
+  it('walkTexts walks every localization and recurses through nested examples', () => {
+    const c = new Concept({
+      id: 'walk-001',
+      localizations: {
+        eng: {
+          terms: [{ designation: 'english term' }],
+          definition: [{ content: 'eng def' }],
+          notes: [{
+            content: 'eng note',
+            examples: [{ content: 'eng nested example' }],
+          }],
+        },
+        fra: {
+          terms: [{ designation: 'terme français' }],
+          definition: [{ content: 'fra def' }],
+        },
+      },
+    });
+    const out = [...c.walkTexts()];
+    assert.deepEqual(out, [
+      { text: 'eng def', source: 'localizations.eng.definitions[0].content' },
+      { text: 'eng note', source: 'localizations.eng.notes[0].content' },
+      { text: 'eng nested example', source: 'localizations.eng.notes[0].examples[0].content' },
+      { text: 'fra def', source: 'localizations.fra.definitions[0].content' },
+    ]);
+  });
+
+  it('walkTexts yields nothing for a concept without localizations', () => {
+    const c = new Concept({ id: 'empty' });
+    assert.deepEqual([...c.walkTexts()], []);
+  });
 });
 
 describe('LocalizedConcept model', () => {

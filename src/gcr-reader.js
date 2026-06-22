@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import { conceptParser } from './concept-parser.js';
 import { InvalidInputError } from './errors.js';
 import { COMPILED_FORMATS, parseCompiledPath, compiledPath } from './compiled-format.js';

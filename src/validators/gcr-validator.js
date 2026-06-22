@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import * as yaml from 'js-yaml';
 import { DATASET_ASSETS } from '../dataset-asset.js';
 import { ValidationResult } from './validation-result.js';
 

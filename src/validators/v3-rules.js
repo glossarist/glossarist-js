@@ -162,36 +162,14 @@ const CITE_MENTION_RE = /\{\{\s*cite:([^,}\s]+)[^}]*?\}\}/g;
 
 function _findCiteMentions(concept) {
   const mentions = [];
-  const walkText = (text, source) => {
-    if (typeof text !== 'string' || text.length === 0) return;
+  for (const { text, source } of concept.walkTexts()) {
+    if (typeof text !== 'string' || text.length === 0) continue;
     CITE_MENTION_RE.lastIndex = 0;
     let m;
     while ((m = CITE_MENTION_RE.exec(text)) !== null) {
       mentions.push({ key: m[1].trim(), source });
     }
-  };
-
-  for (const lang of concept.languages) {
-    const lc = concept.localization(lang);
-    if (!lc) continue;
-
-    for (let i = 0; lc.definitions[i]; i++) {
-      walkText(lc.definitions[i]?.content, `localizations.${lang}.definitions[${i}].content`);
-    }
-    for (let i = 0; lc.notes[i]; i++) {
-      const content = typeof lc.notes[i] === 'object'
-        ? (lc.notes[i]?.content ?? '')
-        : String(lc.notes[i] ?? '');
-      walkText(content, `localizations.${lang}.notes[${i}].content`);
-    }
-    for (let i = 0; lc.examples[i]; i++) {
-      walkText(lc.examples[i]?.content, `localizations.${lang}.examples[${i}].content`);
-    }
-    for (let i = 0; lc.annotations[i]; i++) {
-      walkText(lc.annotations[i]?.content, `localizations.${lang}.annotations[${i}].content`);
-    }
   }
-
   return mentions;
 }
 
@@ -297,25 +275,8 @@ function _findNvrMentions(concept) {
     }
   };
 
-  for (const lang of concept.languages) {
-    const lc = concept.localization(lang);
-    if (!lc) continue;
-    for (let i = 0; i < lc.definitions.length; i++) {
-      walkText(lc.definitions[i]?.content,
-        `localizations.${lang}.definitions[${i}].content`);
-    }
-    for (let i = 0; i < lc.notes.length; i++) {
-      walkText(lc.notes[i]?.content,
-        `localizations.${lang}.notes[${i}].content`);
-    }
-    for (let i = 0; i < lc.examples.length; i++) {
-      walkText(lc.examples[i]?.content,
-        `localizations.${lang}.examples[${i}].content`);
-    }
-    for (let i = 0; i < lc.annotations.length; i++) {
-      walkText(lc.annotations[i]?.content,
-        `localizations.${lang}.annotations[${i}].content`);
-    }
+  for (const { text, source } of concept.walkTexts()) {
+    walkText(text, source);
   }
   return mentions;
 }

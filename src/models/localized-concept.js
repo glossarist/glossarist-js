@@ -99,6 +99,27 @@ export class LocalizedConcept extends GlossaristModel {
     return this.definitions[0]?.content ?? null;
   }
 
+  *_textSlots() {
+    yield ['definitions', this.definitions];
+    yield ['notes', this.notes];
+    yield ['examples', this.examples];
+    yield ['annotations', this.annotations];
+  }
+
+  /**
+   * Yield every content-text fragment in this localization, recursing
+   * through nested examples. `basePath` prefixes every emitted
+   * `source` path; pass `localizations.<lang>` to get paths consistent
+   * with the rest of the codebase. Designations are not included.
+   */
+  *walkTexts(basePath) {
+    for (const [name, arr] of this._textSlots()) {
+      for (let i = 0; i < arr.length; i++) {
+        yield* arr[i].walkTexts(`${basePath}.${name}[${i}]`);
+      }
+    }
+  }
+
   toJSON() {
     const obj = {};
     if (this.languageCode) obj.language_code = this.languageCode;

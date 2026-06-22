@@ -101,8 +101,7 @@ export class ReferenceResolver {
         }
       }
 
-      const texts = this._collectTexts(lc, lang);
-      for (const { text, source } of texts) {
+      for (const { text, source } of lc.walkTexts(`localizations.${lang}`)) {
         for (const ref of this._extractFromText(text, source, concept)) {
           refs.push(ref);
         }
@@ -120,35 +119,6 @@ export class ReferenceResolver {
       seen.add(key);
       return true;
     });
-  }
-
-  _collectTexts(lc, lang) {
-    const out = [];
-    for (let i = 0; i < lc.definitions.length; i++) {
-      const content = lc.definitions[i]?.content;
-      if (typeof content === 'string') {
-        out.push({ text: content, source: `localizations.${lang}.definitions[${i}].content` });
-      }
-    }
-    for (let i = 0; i < lc.notes.length; i++) {
-      const content = lc.notes[i]?.content;
-      if (content) {
-        out.push({ text: content, source: `localizations.${lang}.notes[${i}].content` });
-      }
-    }
-    for (let i = 0; i < lc.examples.length; i++) {
-      const content = lc.examples[i]?.content;
-      if (typeof content === 'string') {
-        out.push({ text: content, source: `localizations.${lang}.examples[${i}].content` });
-      }
-    }
-    for (let i = 0; i < lc.annotations.length; i++) {
-      const content = lc.annotations[i]?.content;
-      if (typeof content === 'string') {
-        out.push({ text: content, source: `localizations.${lang}.annotations[${i}].content` });
-      }
-    }
-    return out;
   }
 
   _extractFromText(text, source, concept) {

@@ -251,6 +251,34 @@ describe('ReferenceResolver — cite-ref extraction', () => {
     assert.equal(bibRefs.length, 4);
   });
 
+  it('extracts mentions from text nested inside examples', () => {
+    const sourceA = new ConceptSource({
+      id: 'nested',
+      origin: new Citation({ ref: { source: 'NESTED' } }),
+    });
+    const concept = new Concept({
+      id: 'c1',
+      sources: [sourceA],
+      localizations: {
+        eng: {
+          terms: [{ designation: 'foo' }],
+          notes: [{
+            content: 'Outer note text.',
+            examples: [{
+              content: 'Nested example mentions {{cite:nested}}.',
+            }],
+          }],
+        },
+      },
+    });
+    const resolver = new ReferenceResolver();
+    const refs = resolver.extractReferences(concept);
+    const bibRefs = refs.filter(r => r.type === 'bibliography');
+    assert.equal(bibRefs.length, 1);
+    assert.equal(bibRefs[0].sourceId, 'nested');
+    assert.equal(bibRefs[0].source, 'localizations.eng.notes[0].examples[0].content');
+  });
+
   it('emits a Concept Reference with uri for a URN mention', () => {
     const concept = new Concept({
       id: 'c1',

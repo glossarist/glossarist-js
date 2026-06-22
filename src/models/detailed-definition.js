@@ -28,6 +28,20 @@ export class DetailedDefinition extends GlossaristModel {
     return obj;
   }
 
+  /**
+   * Yield this definition's content and the content of every nested
+   * example (recursively). Each item carries `{ text, source }` where
+   * `source` is `<path>.content` rooted at the `path` argument.
+   */
+  *walkTexts(path) {
+    if (typeof this.content === 'string' && this.content.length > 0) {
+      yield { text: this.content, source: `${path}.content` };
+    }
+    for (let i = 0; i < this.examples.length; i++) {
+      yield* this.examples[i].walkTexts(`${path}.examples[${i}]`);
+    }
+  }
+
   static fromJSON(data) {
     return new DetailedDefinition(data);
   }

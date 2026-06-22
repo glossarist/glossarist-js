@@ -337,7 +337,7 @@ describe('DetailedDefinition', () => {
     assert.equal(roundTripped.examples[1].content, '1 m of 1 mm² copper wire ≈ 0.017 Ω');
   });
 
-  it('preserves examples-of-examples (bounded recursion)', () => {
+  it('preserves examples nested inside examples', () => {
     const note = new DetailedDefinition({
       content: 'outer',
       examples: [
@@ -356,6 +356,48 @@ describe('DetailedDefinition', () => {
     const d = new DetailedDefinition({ content: 'just content' });
     const json = d.toJSON();
     assert.deepEqual(json, { content: 'just content' });
+  });
+
+  it('walkTexts yields own content with a path-rooted source', () => {
+    const d = new DetailedDefinition({ content: 'hello' });
+    const out = [...d.walkTexts('localizations.eng.notes[0]')];
+    assert.deepEqual(out, [
+      { text: 'hello', source: 'localizations.eng.notes[0].content' },
+    ]);
+  });
+
+  it('walkTexts skips empty content but still descends into examples', () => {
+    const d = new DetailedDefinition({
+      content: '',
+      examples: [{ content: 'inner' }],
+    });
+    const out = [...d.walkTexts('note')];
+    assert.deepEqual(out, [{ text: 'inner', source: 'note.examples[0].content' }]);
+  });
+
+  it('walkTexts recurses through arbitrarily nested examples', () => {
+    const d = new DetailedDefinition({
+      content: 'outer',
+      examples: [
+        {
+          content: 'mid',
+          examples: [
+            { content: 'deep' },
+          ],
+        },
+      ],
+    });
+    const out = [...d.walkTexts('root')];
+    assert.deepEqual(out, [
+      { text: 'outer', source: 'root.content' },
+      { text: 'mid', source: 'root.examples[0].content' },
+      { text: 'deep', source: 'root.examples[0].examples[0].content' },
+    ]);
+  });
+
+  it('walkTexts yields nothing for a content-less definition', () => {
+    const d = new DetailedDefinition({});
+    assert.deepEqual([...d.walkTexts('root')], []);
   });
 });
 

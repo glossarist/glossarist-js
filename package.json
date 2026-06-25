@@ -1,7 +1,7 @@
 {
   "name": "glossarist",
   "version": "0.3.3",
-  "description": "JavaScript SDK for Glossarist GCR packages \u2014 read, write, validate, and manage terminology concepts",
+  "description": "JavaScript SDK for Glossarist GCR packages — read, write, validate, and manage terminology concepts",
   "type": "module",
   "main": "src/index.js",
   "types": "src/index.d.ts",
@@ -86,6 +86,7 @@
     "@rdfjs/data-model": "^2.0.0",
     "@rdfjs/dataset": "^2.0.0",
     "js-yaml": "^5.0.0",
+    "jsonld": "^8.3.3",
     "jszip": "^3.10.1",
     "n3": "^1.17.0",
     "rdf-validate-shacl": "^0.4.0"

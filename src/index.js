@@ -66,7 +66,7 @@ export {
   designationToQuads, skosLabelPredicate, skosxlLabelPredicate,
   detailedDefinitionToQuads,
   conceptSourceToQuads,
-  collectQuads, writeTurtle, writeNTriples, sortQuads,
+  collectQuads, writeTurtle, writeNTriples, writeJsonld, sortQuads,
   validateShacl, loadShapes, quadsToDataset,
 } from './rdf/index.js';
 

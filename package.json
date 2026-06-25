@@ -34,6 +34,16 @@
       "types": "./src/validators/index.d.ts",
       "import": "./src/validators/index.js",
       "default": "./src/validators/index.js"
+    },
+    "./rdf": {
+      "types": "./src/rdf/index.d.ts",
+      "import": "./src/rdf/index.js",
+      "default": "./src/rdf/index.js"
+    },
+    "./transforms": {
+      "types": "./src/transforms/index.d.ts",
+      "import": "./src/transforms/index.js",
+      "default": "./src/transforms/index.js"
     }
   },
   "scripts": {
@@ -68,12 +78,17 @@
     "access": "public"
   },
   "dependencies": {
+    "@glossarist/concept-model": "file:../concept-model",
+    "@rdfjs/data-model": "^2.0.0",
+    "@rdfjs/dataset": "^2.0.0",
     "js-yaml": "^5.0.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "n3": "^1.17.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.3.0",
-    "globals": "^17.6.0"
+    "globals": "^17.6.0",
+    "rdf-validate-shacl": "^0.4.0"
   }
 }

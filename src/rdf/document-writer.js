@@ -1,10 +1,10 @@
 // Quads → canonical Turtle / N-Triples / JSON-LD document.
 //
-// Turtle is produced via N3.Writer. JSON-LD is intentionally deferred to a
-// follow-up PR (it requires a separate serializer dependency and frame
-// strategy). N-Triples is provided as a stable fallback that doesn't depend
-// on prefix maps.
+// Turtle is produced via N3.Writer. JSON-LD via the `jsonld` package
+// (fromRDF + compact against the canonical context). N-Triples is provided
+// as a stable fallback that doesn't depend on prefix maps.
 import { Writer as N3Writer } from 'n3';
+import jsonld from 'jsonld';
 import { PREFIXES } from './predicates.js';
 
 // Collects all quads yielded by an emitter into an array. Useful for tests
@@ -43,6 +43,25 @@ export function writeNTriples(quads) {
       else resolve(result);
     });
   });
+}
+
+// Returns a compacted JSON-LD serialization of `quads`. The context defaults
+// to the canonical glossarist JSON-LD context derived from the vendored
+// PREFIXES. Quads are sorted first for deterministic output.
+export async function writeJsonld(quads, { context = defaultJsonldContext() } = {}) {
+  const sorted = sortQuads(quads);
+  const nquads = await writeNTriples(sorted);
+  const expanded = await jsonld.fromRDF(nquads, { format: 'application/n-quads' });
+  const compacted = await jsonld.compact(expanded, context);
+  return JSON.stringify(compacted, null, 2);
+}
+
+function defaultJsonldContext() {
+  const ctx = {};
+  for (const [prefix, uri] of Object.entries(PREFIXES)) {
+    ctx[prefix] = uri;
+  }
+  return ctx;
 }
 
 // Sort by (subject.value, predicate.value, object.termType, object.value,

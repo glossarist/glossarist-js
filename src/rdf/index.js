@@ -20,6 +20,7 @@ export {
   collectQuads,
   writeTurtle,
   writeNTriples,
+  writeJsonld,
   sortQuads,
 } from './document-writer.js';
 export { validateShacl, loadShapes, quadsToDataset } from './shacl.js';

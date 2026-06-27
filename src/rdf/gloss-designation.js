@@ -4,7 +4,7 @@
 // and the principal subtypes — additional subtypes can be added in
 // follow-ups without breaking the public `designationToQuads` entry point.
 import { DataFactory } from 'n3';
-import { PRED } from '@glossarist/concept-model';
+import { PRED } from './predicates.js';
 import { SKOSXL, WELL_KNOWN } from './prefixes.js';
 import { deterministicBnode } from './deterministic-id.js';
 

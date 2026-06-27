@@ -29,7 +29,7 @@ function buildConcept() {
 }
 
 describe('validateShacl', () => {
-  it('loads the canonical shapes from @glossarist/concept-model', async () => {
+  it('loads the vendored canonical shapes', async () => {
     const shapes = await loadShapes();
     assert.ok(shapes.size > 0, 'shapes dataset should be non-empty');
   });

@@ -7,7 +7,7 @@
 // PRED.gloss.hasNote, PRED.gloss.hasExample) so callers can reuse it for
 // any role.
 import { DataFactory } from 'n3';
-import { PRED } from '@glossarist/concept-model';
+import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { deterministicBnode } from './deterministic-id.js';
 

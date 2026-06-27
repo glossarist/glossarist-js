@@ -3,7 +3,7 @@
 // URI shape: `<uriBase>/<registerId>/concept/<conceptId>`.
 // Localized concepts: `<uriBase>/<registerId>/concept/<conceptId>/<lang>`.
 import { DataFactory } from 'n3';
-import { PRED } from '@glossarist/concept-model';
+import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { localizedConceptToQuads } from './gloss-localized-concept.js';
 import { conceptSourceToQuads } from './gloss-source.js';

@@ -7,7 +7,9 @@
   "types": "src/index.d.ts",
   "sideEffects": false,
   "files": [
-    "src"
+    "src",
+    "data/concept-model/shapes/glossarist.shacl.ttl",
+    "data/concept-model/README.md"
   ],
   "exports": {
     ".": {
@@ -48,6 +50,9 @@
   },
   "scripts": {
     "lint": "eslint src/ test/",
+    "sync:model": "node scripts/sync-concept-model.mjs",
+    "gen:predicates": "node scripts/gen-predicates.mjs",
+    "prebuild": "npm run gen:predicates",
     "pretest": "node test/fixtures/build-fixtures.js",
     "test": "find test -name '*.test.js' | sort | xargs node --test",
     "test:verbose": "find test -name '*.test.js' | sort | xargs node --test --test-reporter spec",
@@ -78,17 +83,16 @@
     "access": "public"
   },
   "dependencies": {
-    "@glossarist/concept-model": "file:../concept-model",
     "@rdfjs/data-model": "^2.0.0",
     "@rdfjs/dataset": "^2.0.0",
     "js-yaml": "^5.0.0",
     "jszip": "^3.10.1",
-    "n3": "^1.17.0"
+    "n3": "^1.17.0",
+    "rdf-validate-shacl": "^0.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.3.0",
-    "globals": "^17.6.0",
-    "rdf-validate-shacl": "^0.4.0"
+    "globals": "^17.6.0"
   }
 }

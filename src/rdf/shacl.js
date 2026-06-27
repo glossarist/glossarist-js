@@ -1,7 +1,9 @@
-// SHACL validator wrapper. Loads concept-model shapes once and validates
-// any RDFJS Dataset against them. Mirrors the mechanics of
+// SHACL validator wrapper. Loads vendored concept-model shapes once and
+// validates any RDFJS Dataset against them. Mirrors the mechanics of
 // glossarist-ruby's `Glossarist::Validation::ShaclValidator`.
 import { readFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import rdfDatasetFactory from '@rdfjs/dataset';
 import { DataFactory, Parser as N3Parser } from 'n3';
 import { default as ShaclValidator } from 'rdf-validate-shacl';
@@ -22,15 +24,22 @@ const COMBINED_FACTORY = {
 const createDataset = COMBINED_FACTORY.dataset;
 const ShaclValidatorCtor = ShaclValidator.default ?? ShaclValidator;
 
-// Path to the canonical SHACL shapes inside the @glossarist/concept-model
-// package. The path is resolved lazily so consumers that don't use SHACL
-// don't pay the import cost.
-let CACHED_SHAPES = null;
+// Path to the vendored SHACL shapes (synced from glossarist/concept-model
+// via `npm run sync:model`). Resolved relative to this source file so it
+// works regardless of the consumer's cwd.
+const SHAPES_PATH = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '..', '..',
+  'data', 'concept-model', 'shapes', 'glossarist.shacl.ttl',
+);
 
-async function loadShapesPath() {
-  const metaUrl = await import.meta.resolve('@glossarist/concept-model/ontologies/shapes/glossarist.shacl.ttl');
-  return new URL(metaUrl);
-}
+// Note: SHAPES_PATH resolves relative to this source file. When the package
+// is installed, npm packs `data/concept-model/shapes/glossarist.shacl.ttl`
+// (see `files` in package.json) into `node_modules/glossarist/data/...`, so
+// the relative climb (`../..`) from `src/rdf/shacl.js` still lands on the
+// installed package root.
+
+let CACHED_SHAPES = null;
 
 async function parseTurtle(text, baseIri) {
   const parser = new N3Parser({ baseIRI: baseIri });
@@ -46,9 +55,8 @@ async function parseTurtle(text, baseIri) {
 
 export async function loadShapes() {
   if (CACHED_SHAPES) return CACHED_SHAPES;
-  const url = await loadShapesPath();
-  const text = await readFile(url, 'utf8');
-  CACHED_SHAPES = await parseTurtle(text, url.href);
+  const text = await readFile(SHAPES_PATH, 'utf8');
+  CACHED_SHAPES = await parseTurtle(text, `file://${SHAPES_PATH}`);
   return CACHED_SHAPES;
 }
 

@@ -6,7 +6,7 @@
 // as plain literals. This is the same shape glossarist-ruby emits after
 // WS-B Phase 1.
 import { DataFactory } from 'n3';
-import { PRED, PREFIXES } from '@glossarist/concept-model';
+import { PRED, PREFIXES } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { designationToQuads, skosLabelPredicate } from './gloss-designation.js';
 import { detailedDefinitionToQuads } from './gloss-detailed-definition.js';

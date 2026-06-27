@@ -3,7 +3,7 @@
 // resources linked from their parent (concept or localized concept or
 // definition) via `gloss:hasSource`.
 import { DataFactory } from 'n3';
-import { PRED } from '@glossarist/concept-model';
+import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { deterministicBnode } from './deterministic-id.js';
 

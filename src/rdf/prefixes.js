@@ -1,12 +1,12 @@
-// Re-export prefix map and predicate constants from the canonical SSOT
-// (@glossarist/concept-model). Downstream code should never duplicate
+// Re-export prefix map and predicate constants generated from the vendored
+// concept-model JSON-LD context. Downstream code should never duplicate
 // prefix bindings — always import from here.
 //
 // The JSON-LD context deliberately omits some "well-known" RDF and SKOS
 // constants (`rdf:type`, `skos:Concept`) because JSON-LD handles them via
 // the `@type` keyword. We construct those from the namespace URIs here so
 // downstream emitters don't have to repeat the construction.
-import { PRED, PREFIXES } from '@glossarist/concept-model';
+import { PRED, PREFIXES } from './predicates.js';
 
 export { PRED, PREFIXES };
 

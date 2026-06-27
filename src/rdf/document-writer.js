@@ -5,7 +5,7 @@
 // strategy). N-Triples is provided as a stable fallback that doesn't depend
 // on prefix maps.
 import { Writer as N3Writer } from 'n3';
-import { PREFIXES } from '@glossarist/concept-model';
+import { PREFIXES } from './predicates.js';
 
 // Collects all quads yielded by an emitter into an array. Useful for tests
 // and for callers that want to inspect the quad stream directly.
@@ -16,8 +16,9 @@ export function collectQuads(quadsIterable) {
 }
 
 // Returns a Turtle serialization of `quads` using the canonical prefix map
-// from @glossarist/concept-model. Quads are sorted deterministically so
-// the same input always produces byte-equivalent output across runs.
+// generated from the vendored concept-model JSON-LD context. Quads are
+// sorted deterministically so the same input always produces byte-equivalent
+// output across runs.
 export function writeTurtle(quads, { prefixes = PREFIXES } = {}) {
   const sorted = sortQuads(quads);
   return new Promise((resolve, reject) => {

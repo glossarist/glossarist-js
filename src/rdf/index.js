@@ -27,6 +27,7 @@ export {
   vocabularyToQuads,
   resolveIri,
 } from './vocabulary-emitter.js';
+export { datasetToQuads } from './dataset-emitter.js';
 export {
   collectQuads,
   writeTurtle,

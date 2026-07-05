@@ -41,4 +41,5 @@ export {
   writeJsonld,
   sortQuads,
 } from './document-writer.js';
+export { writeTurtleSync } from './write-turtle-sync.js';
 export { validateShacl, loadShapes, clearShapesCache, quadsToDataset } from './shacl.js';

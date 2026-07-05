@@ -41,7 +41,7 @@ export function* detailedDefinitionToQuads(definition, {
   let exampleIndex = 0;
   for (const example of definition.examples ?? []) {
     yield* detailedDefinitionToQuads(example, {
-      subjectUri: defSubject, language, index: exampleIndex, role: 'hasExample',
+      subjectUri: defSubject, language, index: exampleIndex, role: 'hasScopedExample',
     });
     exampleIndex += 1;
   }
@@ -52,6 +52,7 @@ function linkPredicateFor(role) {
     case 'hasDefinition': return PRED.gloss.hasDefinition;
     case 'hasNote': return PRED.gloss.hasNote;
     case 'hasExample': return PRED.gloss.hasExample;
+    case 'hasScopedExample': return PRED.gloss.hasScopedExample;
     case 'hasAnnotation': return PRED.gloss.hasAnnotation;
     default: throw new Error(`Unknown detailed-definition role: ${role}`);
   }
@@ -62,6 +63,7 @@ function directSkosPredicateFor(role) {
     case 'hasDefinition': return PRED.skos.definition;
     case 'hasNote': return PRED.skos.scopeNote;
     case 'hasExample': return PRED.skos.example;
+    case 'hasScopedExample': return PRED.skos.example;
     // No direct SKOS counterpart for annotations.
     case 'hasAnnotation': return null;
     default: return null;

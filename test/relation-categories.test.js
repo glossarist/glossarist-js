@@ -41,9 +41,9 @@ describe('categoryOf', () => {
     assert.equal(categoryOf('narrower_generic'), 'hierarchical');
   });
 
-  it('maps ISO 19135 concept-instance types to "conceptInstance"', () => {
-    assert.equal(categoryOf('has_part'), 'conceptInstance');
-    assert.equal(categoryOf('is_part_of'), 'conceptInstance');
+  it('maps ISO 19135 concept-instance types to "definitional"', () => {
+    assert.equal(categoryOf('has_part'), 'definitional');
+    assert.equal(categoryOf('is_part_of'), 'definitional');
   });
 
   it('maps SKOS mapping types to "mapping"', () => {
@@ -132,14 +132,14 @@ describe('categoryColorPair', () => {
 });
 
 describe('RELATION_CATEGORIES shape', () => {
-  it('exposes exactly nine categories', () => {
+  it('exposes exactly eight categories', () => {
     const keys = Object.keys(RELATION_CATEGORIES);
     assert.deepEqual(
       [...keys].sort(),
-      ['associative', 'comparative', 'conceptInstance', 'hierarchical',
-       'lexical', 'lifecycle', 'mapping', 'spatiotemporal', 'versioning'],
+      ['associative', 'comparative', 'definitional', 'hierarchical',
+       'lexical', 'lifecycle', 'mapping', 'spatiotemporal'],
     );
-    assert.equal(keys.length, 9);
+    assert.equal(keys.length, 8);
   });
 
   it('every category has a label, description, and non-empty types', () => {
@@ -148,5 +148,19 @@ describe('RELATION_CATEGORIES shape', () => {
       assert.ok(def.description, `${key} missing description`);
       assert.ok(def.types.length > 0, `${key} has empty types`);
     }
+  });
+});
+
+describe('backward-compat aliases', () => {
+  it('categoryDefinition("conceptInstance") returns the definitional category', () => {
+    const def = categoryDefinition('conceptInstance');
+    assert.equal(def.label, 'Definitional');
+    assert.ok(def.types.includes('has_part'));
+  });
+
+  it('categoryDefinition("versioning") returns the definitional category', () => {
+    const def = categoryDefinition('versioning');
+    assert.equal(def.label, 'Definitional');
+    assert.ok(def.types.includes('has_version'));
   });
 });

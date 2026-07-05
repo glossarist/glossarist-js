@@ -10,7 +10,7 @@
 // to its relatives (the ontology declares these as owl:TransitiveProperty
 // for cascading section membership).
 
-import { namedNode, literal, quad } from './terms.js';
+import { namedNode, blankNode, literal, quad } from './terms.js';
 
 // Prefix namespaces used by this emitter. Hard-coded (not via PREFIXES)
 // because dcat and prov are absent from the JSON-LD context that
@@ -138,8 +138,10 @@ export function* datasetToQuads(input) {
 
 function* distributionToQuads(ds, dist) {
   // Distributions are blank nodes — they don't have stable identity
-  // outside their parent dataset.
-  const distSubject = namedNode(`_:b${deterministicId('dist', dist.id, dist.downloadUrl)}`);
+  // outside their parent dataset. Using blankNode() (not namedNode with
+  // a "_:..." string) so the n3 writer serializes them as _:bXXXX
+  // rather than <_:bXXXX> which would be an invalid IRI.
+  const distSubject = blankNode(`b${deterministicId('dist', dist.id, dist.downloadUrl)}`);
   yield quad(ds, namedNode(DCAT.distribution), distSubject);
   yield quad(distSubject, namedNode(RDF_TYPE), namedNode(DCAT.Distribution));
   yield quad(distSubject, namedNode(DCTERMS.title), literal(dist.title));

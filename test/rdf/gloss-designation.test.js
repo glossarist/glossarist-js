@@ -133,4 +133,20 @@ describe('designationToQuads', () => {
       assert.equal(skosxlLabelPredicate(d), `${SKOSXL}altLabel`);
     });
   });
+
+  describe('OCP: subtype determines rdfClass without editing emitter', () => {
+    it('a fresh subtype that extends Designation emits its own rdfClass', () => {
+      class FakeEmoji extends Designation {
+        rdfClass() { return 'FakeEmoji'; }
+      }
+      const d = new FakeEmoji({ type: 'fake-emoji', designation: '🎉', normative_status: 'preferred' });
+      const quads = emitted(d);
+      const desigSubject = quads.find(q => q.predicate.value === `${SKOSXL}prefLabel`)?.object?.value;
+      const types = rdfType(quads, desigSubject);
+      assert.ok(
+        types.includes(`${GLOSS}FakeEmoji`),
+        'a subtype that overrides rdfClass() should drive emission without touching gloss-designation.js',
+      );
+    });
+  });
 });

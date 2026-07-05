@@ -1,10 +1,10 @@
 // Designation → RDF quads. Mirrors glossarist-ruby's
 // `Rdf::GlossDesignation` + the per-subtype classes (GlossExpression,
-// GlossAbbreviation, etc.). For now we model the common case (Expression)
-// and the principal subtypes — additional subtypes can be added in
-// follow-ups without breaking the public `designationToQuads` entry point.
+// GlossAbbreviation, etc.). The ontology class for each subtype is
+// provided by the model itself via Designation#rdfClass (OCP: new
+// subtypes register without editing this emitter).
 import { DataFactory } from 'n3';
-import { PRED } from './predicates.js';
+import { PRED, PREFIXES } from './predicates.js';
 import { SKOSXL, WELL_KNOWN } from './prefixes.js';
 import { deterministicBnode } from './deterministic-id.js';
 import { normalizeEnum } from './normalize-enum.js';
@@ -12,13 +12,6 @@ import { normalizeEnum } from './normalize-enum.js';
 const { namedNode, literal, quad } = DataFactory;
 
 const XSD_BOOLEAN = 'http://www.w3.org/2001/XMLSchema#boolean';
-
-const TYPE_BY_NORMATIVE_STATUS = {
-  preferred: 'prefLabel',
-  deprecated: 'hiddenLabel',
-  admitted: 'altLabel',
-  deprecated_: 'altLabel',
-};
 
 // Boolean flag fields on designation subtypes. Each entry maps a model
 // field name to its ontology predicate. Only emitted when the value is
@@ -33,36 +26,16 @@ const BOOLEAN_FLAGS = [
 
 // Returns the SKOS-XL predicate (as a string URI) appropriate for this
 // designation's normative status. Mirrors `skosxl_label_for` in Ruby.
+// The dispatch lives on the Designation model so a new status requires
+// a single edit there, not here.
 export function skosxlLabelPredicate(designation) {
-  const status = normalizeEnum(designation.normativeStatus);
-  const label = TYPE_BY_NORMATIVE_STATUS[status] ?? 'altLabel';
-  return SKOSXL[label];
+  return designation.skosxlLabelPredicate(PREFIXES.skosxl);
 }
 
 // Returns the matching plain-SKOS predicate URI (skos:prefLabel etc.).
 // Used when emitting direct SKOS alongside reified SKOS-XL.
 export function skosLabelPredicate(designation) {
-  const status = normalizeEnum(designation.normativeStatus);
-  const label = TYPE_BY_NORMATIVE_STATUS[status] ?? 'altLabel';
-  return PRED.skos[label];
-}
-
-// RDF class URI for the designation subtype.
-function designationClassUri(type) {
-  const CLASS_BY_TYPE = {
-    expression: 'Expression',
-    abbreviation: 'Abbreviation',
-    symbol: 'Symbol',
-    // Accept both underscore and hyphen forms — model registers with
-    // underscore but consumers may pass either.
-    'letter-symbol': 'LetterSymbol',
-    'letter_symbol': 'LetterSymbol',
-    'graphical-symbol': 'GraphicalSymbol',
-    'graphical_symbol': 'GraphicalSymbol',
-    'graphical symbol': 'GraphicalSymbol',
-  };
-  const cls = CLASS_BY_TYPE[type] ?? 'Expression';
-  return PRED.gloss[cls];
+  return designation.skosLabelPredicate(PREFIXES.skos);
 }
 
 // Emits quads for one designation. Yields them lazily so callers can
@@ -78,7 +51,7 @@ export function* designationToQuads(designation, { subjectUri, language, index }
   const labelPredicate = namedNode(skosxlLabelPredicate(designation));
   yield quad(namedNode(subjectUri), labelPredicate, namedNode(desigSubject));
 
-  yield quad(namedNode(desigSubject), namedNode(WELL_KNOWN.rdfType), namedNode(designationClassUri(designation.type)));
+  yield quad(namedNode(desigSubject), namedNode(WELL_KNOWN.rdfType), namedNode(`${PRED.gloss.$ns}${designation.rdfClass()}`));
   yield quad(namedNode(desigSubject), namedNode(WELL_KNOWN.rdfType), namedNode(WELL_KNOWN.skosxlLabel));
   yield quad(namedNode(desigSubject), namedNode(SKOSXL.literalForm), literal(designation.designation ?? '', language));
 

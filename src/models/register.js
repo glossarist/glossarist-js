@@ -91,6 +91,31 @@ export class Register extends GlossaristModel {
     return [sectionId, ...this.sectionAncestorIds(sectionId)];
   }
 
+  // Walks the section tree DOWNWARD from `sectionId`, returning all
+  // descendant section IDs in pre-order (immediate children first,
+  // then their children). The returned array does NOT include
+  // sectionId itself. Returns [] when sectionId is unknown or is a
+  // leaf section. Useful for filtering concepts by parent section
+  // (include descendants) — the inverse direction of sectionClosure.
+  sectionDescendantIds(sectionId) {
+    if (!sectionId) return [];
+    const section = this.sectionById(sectionId);
+    if (!section) return [];
+    const out = [];
+    for (const child of section.children ?? []) {
+      out.push(child.id);
+      out.push(...this.sectionDescendantIds(child.id));
+    }
+    return out;
+  }
+
+  // Returns the descendant closure of `sectionId`: the section plus
+  // all of its descendants. Useful for "show me everything in section
+  // X or below" queries.
+  sectionDescendantClosure(sectionId) {
+    return [sectionId, ...this.sectionDescendantIds(sectionId)];
+  }
+
   // Returns all section IDs the concept belongs to: the concept's own
   // sections plus every ancestor of each. Concept-side section
   // membership comes from `concept.sections` if set, otherwise from

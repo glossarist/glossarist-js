@@ -70,6 +70,43 @@ describe('Register.sectionClosure', () => {
   });
 });
 
+describe('Register.sectionDescendantIds', () => {
+  const reg = buildRegister();
+
+  it('returns all descendants in pre-order for a top-level section', () => {
+    assert.deepEqual(reg.sectionDescendantIds('3'), ['3.1', '3.1.1']);
+  });
+
+  it('returns only leaf descendants for a mid-level section', () => {
+    assert.deepEqual(reg.sectionDescendantIds('3.1'), ['3.1.1']);
+  });
+
+  it('returns [] for a leaf section', () => {
+    assert.deepEqual(reg.sectionDescendantIds('3.1.1'), []);
+  });
+
+  it('returns [] for an unknown section id', () => {
+    assert.deepEqual(reg.sectionDescendantIds('nope'), []);
+  });
+
+  it('returns [] for null/undefined input', () => {
+    assert.deepEqual(reg.sectionDescendantIds(null), []);
+    assert.deepEqual(reg.sectionDescendantIds(undefined), []);
+  });
+});
+
+describe('Register.sectionDescendantClosure', () => {
+  const reg = buildRegister();
+
+  it('returns [sectionId, ...descendants] for a top-level section', () => {
+    assert.deepEqual(reg.sectionDescendantClosure('3'), ['3', '3.1', '3.1.1']);
+  });
+
+  it('returns [sectionId] alone for a leaf section', () => {
+    assert.deepEqual(reg.sectionDescendantClosure('3.1.1'), ['3.1.1']);
+  });
+});
+
 describe('Register.conceptSectionIds', () => {
   const reg = buildRegister();
 

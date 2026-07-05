@@ -18,8 +18,7 @@ export const RELATION_COLOR_DEFAULTS = Object.freeze({
     spatiotemporal: { light: '#0D9488', dark: '#5EEAD4' },
     lexical:        { light: '#D97706', dark: '#FBBF24' },
     mapping:        { light: '#2563EB', dark: '#93BBFD' },
-    conceptInstance:{ light: '#65A30D', dark: '#A3E635' },
-    versioning:     { light: '#9333EA', dark: '#C4B5FD' },
+    definitional:   { light: '#65A30D', dark: '#A3E635' },
   }),
 
   // Per-type overrides. Use the same { light, dark } shape. Keys are

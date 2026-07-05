@@ -142,6 +142,25 @@ export interface DatasetEmitterInput {
 }
 export declare function datasetToQuads(input: DatasetEmitterInput): Generator<Quad, void, unknown>;
 
+// Group emitter (dcat:DatasetSeries or dcat:Catalog)
+export type DatasetGroupKind = 'lineage' | 'topic' | 'family' | 'collection' | 'default';
+export interface GroupEmitInput {
+  groupId: string;
+  groupIri: string;
+  kind: DatasetGroupKind;
+  title: string;
+  description?: string;
+  memberIris: readonly string[];
+  currentMemberIri?: string;
+  subject?: string;
+  themes?: readonly string[];
+  keywords?: readonly string[];
+  publisher?: string;
+  contact?: string;
+  sourceRepo?: string;
+}
+export declare function groupToQuads(input: GroupEmitInput): Generator<Quad, void, unknown>;
+
 export declare function collectQuads(quadsIterable: Iterable<Quad>): Quad[];
 
 export interface WriteTurtleOptions {

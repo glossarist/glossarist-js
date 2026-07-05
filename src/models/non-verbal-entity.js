@@ -16,6 +16,13 @@ export class NonVerbalEntity extends RegistrableModel {
       s => s instanceof ConceptSource ? s : new ConceptSource(s));
   }
 
+  // Ontology class local-name. Subtypes override to return their specific
+  // class (Figure/Table/Formula). Used by the RDF emitter so a new subtype
+  // registers without editing the emitter (OCP).
+  rdfClass() {
+    return 'NonVerbalEntity';
+  }
+
   findById(_targetId) {
     return null;
   }

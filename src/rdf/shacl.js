@@ -91,8 +91,9 @@ export function quadsToDataset(quads) {
   return ds;
 }
 
-// Test-only: clears the shapes cache. Exported so tests can verify
-// independent caching per path without reaching into module internals.
-export function __clearShapesCacheForTests() {
+// Clears the in-memory shapes cache. Exposed as part of the public API
+// so callers (including tests) can force a fresh load when the
+// underlying shapes file changes during a process's lifetime.
+export function clearShapesCache() {
   SHAPES_CACHE.clear();
 }

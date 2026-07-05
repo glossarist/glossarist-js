@@ -1,5 +1,6 @@
 import { GlossaristModel } from './base.js';
 import { Section } from './section.js';
+import { resolveColor } from './dataset-color.js';
 
 export const REGISTER_STATUSES = Object.freeze([
   'current',
@@ -27,6 +28,7 @@ export class Register extends GlossaristModel {
     this.languageOrder = data.languageOrder ?? data.language_order ?? [];
     this.ordering = data.ordering ?? null;
     this.logo = data.logo ?? null;
+    this.color = data.color ?? null;
     this.description = data.description ?? {};
     this.about = data.about ?? {};
     this.provenance = data.provenance ?? [];
@@ -45,7 +47,7 @@ export class Register extends GlossaristModel {
       'status', 'supersedes', 'owner',
       'sourceRepo', 'source_repo', 'tags',
       'languages', 'languageOrder', 'language_order',
-      'ordering', 'logo', 'description', 'about',
+      'ordering', 'logo', 'color', 'description', 'about',
       'provenance', 'contributors', 'sections',
     ]);
     const extra = {};
@@ -111,6 +113,13 @@ export class Register extends GlossaristModel {
     return section ? section.name(lang) : null;
   }
 
+  // Returns the hex color for the requested UI mode, falling back to
+  // the single hex when the spec is a string. Returns null when no
+  // color is set or when the requested mode is missing.
+  resolvedColor(mode) {
+    return resolveColor(this.color, mode);
+  }
+
   toJSON() {
     const obj = { ...this._raw, schema_version: this.schemaVersion };
     if (this.id != null) obj.id = this.id;
@@ -128,6 +137,11 @@ export class Register extends GlossaristModel {
     if (this.languageOrder.length > 0) obj.languageOrder = [...this.languageOrder];
     if (this.ordering != null) obj.ordering = this.ordering;
     if (this.logo != null) obj.logo = { ...this.logo };
+    if (this.color != null) {
+      obj.color = (typeof this.color === 'object' && this.color !== null)
+        ? { ...this.color }
+        : this.color;
+    }
     if (Object.keys(this.description).length > 0) obj.description = { ...this.description };
     if (Object.keys(this.about).length > 0) obj.about = { ...this.about };
     if (this.provenance.length > 0) obj.provenance = this.provenance.map(p => ({ ...p }));

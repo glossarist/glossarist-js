@@ -1,5 +1,6 @@
 export { Register, REGISTER_STATUSES } from './register.js';
 export { Section, ORDERING_METHODS } from './section.js';
+export { resolveColor, isColorPair, validateColor, COLOR_MODES } from './dataset-color.js';
 export { GlossaristModel } from './base.js';
 export { Concept } from './concept.js';
 export { LocalizedConcept } from './localized-concept.js';

@@ -8,6 +8,10 @@ export class Table extends SharedNonVerbalEntity {
     this.format = data.format ?? null;
   }
 
+  rdfClass() {
+    return 'Table';
+  }
+
   toJSON() {
     const obj = super.toJSON();
     if (this.content != null) obj.content = this.content;

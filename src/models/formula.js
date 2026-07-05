@@ -8,6 +8,10 @@ export class Formula extends SharedNonVerbalEntity {
     this.notation = data.notation ?? null;
   }
 
+  rdfClass() {
+    return 'Formula';
+  }
+
   toJSON() {
     const obj = super.toJSON();
     if (this.expression != null) obj.expression = this.expression;

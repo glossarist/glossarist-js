@@ -3,7 +3,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  RELATIONSHIP_TYPES,
   RELATION_CATEGORIES,
   categoryOf,
   categoryDefinition,

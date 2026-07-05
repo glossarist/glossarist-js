@@ -67,7 +67,8 @@ export function categoryColorPair(categoryKey, overrides = {}) {
   if (!def) return null;
   const fromOverride = overrides.byCategory?.[categoryKey];
   const fromDefault = RELATION_COLOR_DEFAULTS.byCategory[categoryKey];
-  return { ...(fromDefault ?? {}), ...(fromOverride ?? {}) } || null;
+  if (!fromDefault && !fromOverride) return null;
+  return { ...(fromDefault ?? {}), ...(fromOverride ?? {}) };
 }
 
 function pickMode(pair, mode) {

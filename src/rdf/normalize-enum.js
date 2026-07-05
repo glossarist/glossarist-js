@@ -13,7 +13,7 @@ export function normalizeEnum(value) {
   if (value == null) return '';
   const s = String(value).trim();
   if (!s) return '';
-  const parts = s.split(/[\/#]/);
+  const parts = s.split(/[/#]/);
   return parts[parts.length - 1];
 }
 

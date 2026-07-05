@@ -85,7 +85,7 @@ export class Designation extends RegistrableModel {
 
   _skosLabelLocalName() {
     const status = String(this.normativeStatus ?? '')
-      .split(/[\/#]/)
+      .split(/[/#]/)
       .pop()
       .trim();
     return SKOS_LABEL_BY_NORMATIVE_STATUS[status] ?? 'altLabel';

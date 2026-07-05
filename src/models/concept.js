@@ -19,6 +19,12 @@ export class Concept extends GlossaristModel {
 
     this.relatedConcepts = _mapInstances(data.relatedConcepts ?? data.related ?? data.related_concepts ?? [], RelatedConcept);
     this.domains = _normalizeDomains(data.domains, data.groups);
+    this.groups = Array.isArray(data.groups)
+      ? data.groups.map(g => typeof g === 'string' ? g : (g?.id ?? g?.sectionId ?? null)).filter(Boolean)
+      : [];
+    this.sections = Array.isArray(data.sections)
+      ? data.sections.map(s => typeof s === 'string' ? s : (s?.id ?? s?.sectionId ?? null)).filter(Boolean)
+      : [];
     this.tags = Array.isArray(data.tags) ? [...data.tags] : [];
     this.dates = _mapInstances(data.dates ?? [], ConceptDate);
     this.sources = _mapInstances(data.sources ?? [], ConceptSource);

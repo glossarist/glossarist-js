@@ -5,6 +5,16 @@ import { GrammarInfo } from './grammar-info.js';
 import { RelatedConcept } from './related-concept.js';
 import { DesignationRelationship, DESIGNATION_RELATIONSHIP_TYPES } from './designation-relationship.js';
 
+// Maps a normative-status local-name to the matching SKOS/SKOS-XL label
+// predicate local-name. Lives on the model so a new status requires a
+// single edit here, not edits in every emitter.
+const SKOS_LABEL_BY_NORMATIVE_STATUS = Object.freeze({
+  preferred: 'prefLabel',
+  deprecated: 'hiddenLabel',
+  admitted: 'altLabel',
+  deprecated_: 'altLabel',
+});
+
 export class Designation extends RegistrableModel {
   constructor(data = {}) {
     super();
@@ -53,6 +63,34 @@ export class Designation extends RegistrableModel {
     return obj;
   }
 
+  // RDF class local-name for this designation subtype. Override in
+  // subclasses that map to a different ontology class.
+  rdfClass() {
+    return 'Expression';
+  }
+
+  // SKOS label predicate URI (skos:prefLabel / skos:altLabel / skos:hiddenLabel)
+  // appropriate for this designation's normative status. Falls back to
+  // skos:altLabel for unknown statuses.
+  skosLabelPredicate(skosNs) {
+    const label = this._skosLabelLocalName();
+    return `${skosNs}${label}`;
+  }
+
+  // SKOS-XL label predicate URI (skosxl:prefLabel / etc.).
+  skosxlLabelPredicate(skosxlNs) {
+    const label = this._skosLabelLocalName();
+    return `${skosxlNs}${label}`;
+  }
+
+  _skosLabelLocalName() {
+    const status = String(this.normativeStatus ?? '')
+      .split(/[/#]/)
+      .pop()
+      .trim();
+    return SKOS_LABEL_BY_NORMATIVE_STATUS[status] ?? 'altLabel';
+  }
+
   static fromJSON(data) {
     return Designation.fromData(data);
   }
@@ -87,6 +125,10 @@ export class Abbreviation extends Expression {
     this.truncation = data.truncation ?? false;
   }
 
+  rdfClass() {
+    return 'Abbreviation';
+  }
+
   toJSON() {
     const obj = super.toJSON();
     if (this.acronym) obj.acronym = true;
@@ -101,6 +143,10 @@ export class Abbreviation extends Expression {
 Designation.register('abbreviation', Abbreviation);
 
 export class Symbol extends Designation {
+  rdfClass() {
+    return 'Symbol';
+  }
+
   static fromJSON(data) { return new Symbol(data); }
 }
 
@@ -110,6 +156,10 @@ export class LetterSymbol extends Symbol {
   constructor(data = {}) {
     super(data);
     this.text = data.text ?? null;
+  }
+
+  rdfClass() {
+    return 'LetterSymbol';
   }
 
   toJSON() {
@@ -128,6 +178,10 @@ export class GraphicalSymbol extends Symbol {
     super(data);
     this.text = data.text ?? null;
     this.image = data.image ?? null;
+  }
+
+  rdfClass() {
+    return 'GraphicalSymbol';
   }
 
   toJSON() {

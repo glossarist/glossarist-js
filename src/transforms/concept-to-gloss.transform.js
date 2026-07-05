@@ -16,7 +16,8 @@ import {
   writeJsonld,
 } from '../rdf/document-writer.js';
 
-const DEFAULT_URI_BASE = 'https://glossarist.org';
+// No hardcoded default URI base. Callers MUST pass options.uriBase so
+// concept IRIs reflect the consumer's domain.
 
 // Writer registry. Each entry is `{ write: (quads, transform) => Promise<string> }`.
 // Adding a new output format is a single entry here, not six new methods.
@@ -29,7 +30,8 @@ const WRITERS = Object.freeze({
 export class ConceptToGlossTransform {
   constructor(options = {}) {
     this.registerId = options.registerId;
-    this.uriBase = (options.uriBase ?? DEFAULT_URI_BASE).replace(/\/+$/, '');
+    this.uriBase = options.uriBase?.replace(/\/+$/, '');
+    if (!this.uriBase) throw new Error('ConceptToGlossTransform requires options.uriBase — the deployment canonical URI root.');
     this.jsonldContext = options.jsonldContext;
   }
 

@@ -28,7 +28,7 @@ const DCAT = {
 };
 const XSD_INTEGER = `${XSD_NS}integer`;
 
-const DEFAULT_BASE_URI = 'https://glossarist.org';
+// No hardcoded default base URI. Callers MUST pass baseUri explicitly.
 
 /**
  * @typedef {'svg' | 'png' | 'webp' | 'jpg' | 'gif'} ImageFormat
@@ -55,7 +55,8 @@ const MIME_BY_FORMAT = Object.freeze({
  * Returns the canonical IRI for an image variant. Includes the lang
  * segment when the variant is localized, otherwise omits it.
  */
-export function imageVariantIri(input, baseUri = DEFAULT_BASE_URI) {
+export function imageVariantIri(input, baseUri) {
+  if (!baseUri) throw new Error('imageVariantIri requires baseUri — the deployment canonical URI root.');
   const langSuffix = input.lang ? `${input.lang}.` : '';
   return `${baseUri}/${input.registerId}/image/${input.figureId}/${langSuffix}${input.format}`;
 }
@@ -63,7 +64,8 @@ export function imageVariantIri(input, baseUri = DEFAULT_BASE_URI) {
 /**
  * Emits foaf:Image quads for one image variant.
  */
-export function* imageVariantToQuads(input, baseUri = DEFAULT_BASE_URI) {
+export function* imageVariantToQuads(input, baseUri) {
+  if (!baseUri) throw new Error('imageVariantToQuads requires baseUri — the deployment canonical URI root.');
   const img = namedNode(imageVariantIri(input, baseUri));
   yield quad(img, namedNode(RDF_TYPE), namedNode(FOAF.Image));
   yield quad(img, namedNode(DCTERMS.format), literal(MIME_BY_FORMAT[input.format] ?? 'application/octet-stream'));

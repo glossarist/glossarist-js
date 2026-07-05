@@ -111,6 +111,37 @@ export declare function resolveIri(iri: string): string;
 export declare function vocabularySchemeToQuads(scheme: VocabScheme): Generator<Quad, void, unknown>;
 export declare function vocabularyToQuads(schemes: readonly VocabScheme[]): Generator<Quad, void, unknown>;
 
+// Dataset emitter (dcat:Dataset + skos:ConceptScheme per register)
+export interface DatasetDistribution {
+  id: string;
+  title: string;
+  mediaType: string;
+  downloadUrl: string;
+  byteSize?: number;
+}
+export interface DatasetSection {
+  collectionIri: string;
+  title: string;
+  memberUris: readonly string[];
+  parentCollectionIri?: string;
+  childCollectionIris?: readonly string[];
+}
+export interface DatasetEmitterInput {
+  datasetIri: string;
+  registerId: string;
+  title: string;
+  description?: string;
+  modified: string;
+  languages: readonly string[];
+  distributions: readonly DatasetDistribution[];
+  topConceptUris: readonly string[];
+  sections: readonly DatasetSection[];
+  sourceRepoUrl?: string;
+  publisherIri?: string;
+  contactIri?: string;
+}
+export declare function datasetToQuads(input: DatasetEmitterInput): Generator<Quad, void, unknown>;
+
 export declare function collectQuads(quadsIterable: Iterable<Quad>): Quad[];
 
 export interface WriteTurtleOptions {

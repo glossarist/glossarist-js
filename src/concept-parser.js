@@ -24,7 +24,11 @@ export class ConceptParser {
 
     let docs;
     try {
-      docs = yaml.loadAll(raw, null, { schema: yaml.DEFAULT_SCHEMA });
+      // js-yaml 5.x dropped the explicit DEFAULT_SCHEMA export; the
+      // default schema is applied automatically when no `schema`
+      // option is passed. Passing CORE_SCHEMA reproduces the historical
+      // behavior (yaml.org core schema).
+      docs = yaml.loadAll(raw, { schema: yaml.CORE_SCHEMA ?? yaml.JSON_SCHEMA });
     } catch (err) {
       throw new YamlParseError(label, err);
     }

@@ -42,8 +42,6 @@ export class GlossaristModel {
   static fromJSON(data: Record<string, unknown>): GlossaristModel;
   equals(other: GlossaristModel): boolean;
   clone(): GlossaristModel;
-  protected _lazy<T>(cacheKey: string, rawKey: string, wrapFn: (item: any) => T): T[];
-  protected _serialize(obj: Record<string, unknown>, jsonKey: string, cacheKey: string, rawKey: string): void;
 }
 
 export class Concept extends GlossaristModel {

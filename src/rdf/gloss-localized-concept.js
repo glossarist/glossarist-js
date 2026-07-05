@@ -5,14 +5,12 @@
 // that don't implement SKOS-XL still see labels/definitions/notes/examples
 // as plain literals. This is the same shape glossarist-ruby emits after
 // WS-B Phase 1.
-import { DataFactory } from 'n3';
 import { PRED, PREFIXES } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { designationToQuads, skosLabelPredicate } from './gloss-designation.js';
 import { detailedDefinitionToQuads } from './gloss-detailed-definition.js';
 import { conceptSourceToQuads } from './gloss-source.js';
-
-const { namedNode, literal, quad } = DataFactory;
+import { namedNode, literal, quad } from './terms.js';
 const DCTERMS_LANGUAGE = `${PREFIXES.dcterms}language`;
 
 export function localizedConceptUri(parentUri, language) {
@@ -52,7 +50,7 @@ export function* localizedConceptToQuads(localizedConcept, { parentUri, language
     desigIndex += 1;
   }
 
-  yield* definitionsToQuads(localizedConcept.definition, { subjectUri, language, role: 'hasDefinition' });
+  yield* definitionsToQuads(localizedConcept.definitions, { subjectUri, language, role: 'hasDefinition' });
   yield* definitionsToQuads(localizedConcept.notes, { subjectUri, language, role: 'hasNote' });
   yield* definitionsToQuads(localizedConcept.examples, { subjectUri, language, role: 'hasExample' });
   yield* definitionsToQuads(localizedConcept.annotations, { subjectUri, language, role: 'hasAnnotation' });

@@ -3,13 +3,11 @@
 // GlossAbbreviation, etc.). The ontology class for each subtype is
 // provided by the model itself via Designation#rdfClass (OCP: new
 // subtypes register without editing this emitter).
-import { DataFactory } from 'n3';
 import { PRED, PREFIXES } from './predicates.js';
 import { SKOSXL, WELL_KNOWN } from './prefixes.js';
 import { deterministicBnode } from './deterministic-id.js';
 import { normalizeEnum } from './normalize-enum.js';
-
-const { namedNode, literal, quad } = DataFactory;
+import { namedNode, literal, quad } from './terms.js';
 
 const XSD_BOOLEAN = 'http://www.w3.org/2001/XMLSchema#boolean';
 

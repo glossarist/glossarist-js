@@ -1,6 +1,7 @@
 // Public RDF layer. Mirrors lib/glossarist/rdf/ in glossarist-ruby.
 export { PRED, PREFIXES, SKOSXL, WELL_KNOWN } from './prefixes.js';
 export { deterministicId, deterministicBnode } from './deterministic-id.js';
+export { namedNode, blankNode, literal, defaultGraph, quad } from './terms.js';
 export {
   conceptUri,
   conceptToQuads,

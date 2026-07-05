@@ -2,13 +2,11 @@
 // `Rdf::GlossConceptSource` + `Rdf::GlossCitation`. Sources are reified
 // resources linked from their parent (concept or localized concept or
 // definition) via `gloss:hasSource`.
-import { DataFactory } from 'n3';
 import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { deterministicBnode } from './deterministic-id.js';
 import { normalizeEnum } from './normalize-enum.js';
-
-const { namedNode, literal, quad } = DataFactory;
+import { namedNode, literal, quad } from './terms.js';
 
 export function* conceptSourceToQuads(source, { subjectUri, index }) {
   const srcSubject = deterministicBnode(subjectUri, 'source', index);

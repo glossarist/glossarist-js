@@ -6,12 +6,10 @@
 // The emitter takes a `linkPredicate` (e.g. PRED.gloss.hasDefinition,
 // PRED.gloss.hasNote, PRED.gloss.hasExample) so callers can reuse it for
 // any role.
-import { DataFactory } from 'n3';
 import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { deterministicBnode } from './deterministic-id.js';
-
-const { namedNode, literal, quad } = DataFactory;
+import { namedNode, literal, quad } from './terms.js';
 
 export function* detailedDefinitionToQuads(definition, {
   subjectUri, language, index, role,

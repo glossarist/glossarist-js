@@ -2,13 +2,11 @@
 //
 // URI shape: `<uriBase>/<registerId>/concept/<conceptId>`.
 // Localized concepts: `<uriBase>/<registerId>/concept/<conceptId>/<lang>`.
-import { DataFactory } from 'n3';
 import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { localizedConceptToQuads } from './gloss-localized-concept.js';
 import { conceptSourceToQuads } from './gloss-source.js';
-
-const { namedNode, literal, quad } = DataFactory;
+import { namedNode, literal, quad } from './terms.js';
 
 export function conceptUri(concept, { registerId, uriBase }) {
   const id = String(concept.id ?? concept.termid ?? '');

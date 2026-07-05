@@ -256,6 +256,7 @@ export interface WriteTurtleOptions {
 }
 
 export declare function writeTurtle(quads: Iterable<Quad>, options?: WriteTurtleOptions): Promise<string>;
+export declare function writeTurtleSync(quads: Iterable<Quad>, options?: WriteTurtleOptions): string;
 export declare function writeNTriples(quads: Iterable<Quad>): Promise<string>;
 
 export interface WriteJsonldOptions {

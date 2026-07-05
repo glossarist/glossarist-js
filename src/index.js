@@ -58,16 +58,13 @@ export {
 } from './entity-directory.js';
 
 // RDF serialization layer (WS C). Mirrors lib/glossarist/rdf/.
-export {
-  PRED, PREFIXES, SKOSXL, WELL_KNOWN,
-  deterministicId, deterministicBnode,
-  conceptUri, conceptToQuads,
-  localizedConceptUri, localizedConceptToQuads,
-  designationToQuads, skosLabelPredicate, skosxlLabelPredicate,
-  detailedDefinitionToQuads,
-  conceptSourceToQuads,
-  collectQuads, writeTurtle, writeNTriples, writeJsonld, sortQuads,
-  validateShacl, loadShapes, quadsToDataset,
-} from './rdf/index.js';
-
-export { ConceptToGlossTransform } from './transforms/concept-to-gloss.transform.js';
+//
+// NOTE: RDF and transforms are intentionally NOT re-exported from the
+// main entry. They use Node-specific APIs (node:crypto for deterministic
+// IDs) and pulling them in here would break browser builds. Consumers
+// import them via the dedicated subpaths:
+//
+//   import { conceptToQuads, writeTurtle } from 'glossarist/rdf';
+//   import { ConceptToGlossTransform } from 'glossarist/transforms';
+//
+// Both subpaths are declared in package.json `exports`.

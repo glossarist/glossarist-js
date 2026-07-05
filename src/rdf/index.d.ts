@@ -178,6 +178,77 @@ export declare function bibliographyEntryIri(registerId: string, entryId: string
 export declare function bibliographyToQuads(input: BibliographyInput): Generator<Quad, void, unknown>;
 export declare function normalizeBibliographyData(raw: unknown): BibliographyEntry[];
 
+// Build activity emitter (prov:Activity per build run)
+export interface BuildActivityInput {
+  runId: string;
+  startedAt: string;
+  endedAt: string;
+  gitSha?: string;
+  gitBranch?: string;
+  toolId: string;
+  toolVersion: string;
+  datasetRegisters: readonly string[];
+  conceptCount: number;
+  associatedAgentIri?: string;
+  baseUri?: string;
+}
+export declare function buildActivityIri(input: Pick<BuildActivityInput, 'runId'>): string;
+export declare function buildActivityToQuads(input: BuildActivityInput): Generator<Quad, void, unknown>;
+
+// Agents emitter (foaf:Person / prov:Organization)
+export interface Contributor {
+  name: string;
+  role?: string;
+  organization?: string;
+  url?: string;
+  email?: string;
+}
+export interface AgentInput extends Contributor {
+  slug: string;
+  agentIri: string;
+}
+export declare function slugify(input: string): string;
+export declare function agentsFromContributors(contributors: readonly Contributor[], agentBase?: string): AgentInput[];
+export declare function agentsToQuads(agents: readonly AgentInput[], options?: { orgBase?: string }): Generator<Quad, void, unknown>;
+
+// Version emitter (prov:Entity version chain)
+export interface DatasetVersionInput {
+  registerId: string;
+  version: string;
+  versionIri: string;
+  datasetIri: string;
+  generatedAt: string;
+  previousVersionIri?: string;
+  changeSummary?: string;
+  associatedAgentIri?: string;
+}
+export interface VersionHistoryEntry {
+  version: string;
+  generatedAt: string;
+  changeSummary?: string;
+}
+export interface VersionEmitAllInput {
+  registerId: string;
+  datasetIri: string;
+  versions: readonly VersionHistoryEntry[];
+  associatedAgentIri?: string;
+}
+export declare function versionToQuads(input: DatasetVersionInput): Generator<Quad, void, unknown>;
+export declare function versionHistoryToQuads(input: VersionEmitAllInput): Generator<Quad, void, unknown>;
+
+// Image variant emitter (foaf:Image per format/language variant)
+export type ImageFormat = 'svg' | 'png' | 'webp' | 'jpg' | 'gif';
+export interface ImageVariantInput {
+  registerId: string;
+  figureId: string;
+  lang?: string;
+  format: ImageFormat;
+  byteSize?: number;
+  downloadUrl: string;
+}
+export declare function imageVariantIri(input: ImageVariantInput, baseUri?: string): string;
+export declare function imageVariantToQuads(input: ImageVariantInput, baseUri?: string): Generator<Quad, void, unknown>;
+
 export declare function collectQuads(quadsIterable: Iterable<Quad>): Quad[];
 
 export interface WriteTurtleOptions {

@@ -30,6 +30,10 @@ export {
 export { datasetToQuads } from './dataset-emitter.js';
 export { groupToQuads } from './group-emitter.js';
 export { bibliographyToQuads, bibliographyEntryIri, normalizeBibliographyData } from './bibliography-emitter.js';
+export { buildActivityIri, buildActivityToQuads } from './build-activity-emitter.js';
+export { agentsFromContributors, agentsToQuads, slugify } from './agents-emitter.js';
+export { versionToQuads, versionHistoryToQuads } from './version-emitter.js';
+export { imageVariantIri, imageVariantToQuads } from './image-variant-emitter.js';
 export {
   collectQuads,
   writeTurtle,

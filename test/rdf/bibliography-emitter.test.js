@@ -17,7 +17,7 @@ const GLOSS = 'https://www.glossarist.org/ontologies/';
 describe('bibliographyEntryIri', () => {
   it('builds the canonical IRI from register + entry id', () => {
     assert.equal(
-      bibliographyEntryIri('iso', 'ref1'),
+      bibliographyEntryIri('iso', 'ref1', 'https://glossarist.org'),
       'https://glossarist.org/iso/bib/ref1',
     );
   });
@@ -32,7 +32,7 @@ describe('bibliographyEntryIri', () => {
 
 describe('bibliographyToQuads', () => {
   it('emits dcterms:BibliographicResource type and required fields', () => {
-    const quads = collectQuads(bibliographyToQuads({
+    const quads = collectQuads(bibliographyToQuads({ baseUri: 'https://glossarist.org',
       registerId: 'iso',
       entries: [{ id: 'ref1', reference: 'ISO 1234:2020' }],
     }));
@@ -44,7 +44,7 @@ describe('bibliographyToQuads', () => {
   });
 
   it('emits optional title, foaf:page, dcterms:type when provided', () => {
-    const quads = collectQuads(bibliographyToQuads({
+    const quads = collectQuads(bibliographyToQuads({ baseUri: 'https://glossarist.org',
       registerId: 'iso',
       entries: [{
         id: 'ref1',
@@ -61,7 +61,7 @@ describe('bibliographyToQuads', () => {
   });
 
   it('skips entries without id or reference', () => {
-    const quads = collectQuads(bibliographyToQuads({
+    const quads = collectQuads(bibliographyToQuads({ baseUri: 'https://glossarist.org',
       registerId: 'iso',
       entries: [
         { id: '', reference: 'x' },          // empty id
@@ -76,7 +76,7 @@ describe('bibliographyToQuads', () => {
   });
 
   it('emits multiple entries', () => {
-    const quads = collectQuads(bibliographyToQuads({
+    const quads = collectQuads(bibliographyToQuads({ baseUri: 'https://glossarist.org',
       registerId: 'iso',
       entries: [
         { id: 'a', reference: 'A' },
@@ -98,7 +98,7 @@ describe('bibliographyToQuads', () => {
   });
 
   it('handles empty entries array', () => {
-    assert.deepEqual(collectQuads(bibliographyToQuads({ registerId: 'iso', entries: [] })), []);
+    assert.deepEqual(collectQuads(bibliographyToQuads({ baseUri: 'https://glossarist.org', registerId: 'iso', entries: [] })), []);
   });
 });
 

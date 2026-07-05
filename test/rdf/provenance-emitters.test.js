@@ -34,6 +34,7 @@ describe('buildActivityIri', () => {
 describe('buildActivityToQuads', () => {
   const input = {
     runId: 'r1',
+    baseUri: 'https://glossarist.org',
     startedAt: '2026-07-05T01:00:00Z',
     endedAt: '2026-07-05T01:05:00Z',
     gitSha: 'abc123',
@@ -111,7 +112,7 @@ describe('agentsFromContributors', () => {
   it('builds AgentInput from raw contributor declarations', () => {
     const out = agentsFromContributors([
       { name: 'Ronald Tse', organization: 'Ribose' },
-    ]);
+    ], 'https://glossarist.org/agent');
     assert.equal(out.length, 1);
     assert.equal(out[0].slug, 'ronald-tse');
     assert.equal(out[0].agentIri, 'https://glossarist.org/agent/ronald-tse');
@@ -120,8 +121,8 @@ describe('agentsFromContributors', () => {
 
 describe('agentsToQuads', () => {
   it('emits foaf:Person + prov:Person + prov:Agent types per contributor', () => {
-    const agents = agentsFromContributors([{ name: 'Ronald Tse' }]);
-    const quads = collectQuads(agentsToQuads(agents));
+    const agents = agentsFromContributors([{ name: 'Ronald Tse' }], 'https://glossarist.org/agent');
+    const quads = collectQuads(agentsToQuads(agents, { orgBase: 'https://glossarist.org/org' }));
     const types = quads
       .filter(q => q.subject.value === 'https://glossarist.org/agent/ronald-tse' && q.predicate.value === RDF_TYPE)
       .map(q => q.object.value);
@@ -136,8 +137,8 @@ describe('agentsToQuads', () => {
       email: 'r@example.org',
       url: 'https://example.org/r',
       role: 'Editor',
-    }]);
-    const quads = collectQuads(agentsToQuads(agents));
+    }], 'https://glossarist.org/agent');
+    const quads = collectQuads(agentsToQuads(agents, { orgBase: 'https://glossarist.org/org' }));
     const person = 'https://glossarist.org/agent/ronald-tse';
     assert.ok(quads.some(q => q.subject.value === person && q.predicate.value === `${FOAF}name` && q.object.value === 'Ronald Tse'));
     assert.ok(quads.some(q => q.subject.value === person && q.predicate.value === `${FOAF}mbox` && q.object.value === 'mailto:r@example.org'));
@@ -149,8 +150,8 @@ describe('agentsToQuads', () => {
     const agents = agentsFromContributors([
       { name: 'A', organization: 'Ribose' },
       { name: 'B', organization: 'Ribose' },
-    ]);
-    const quads = collectQuads(agentsToQuads(agents));
+    ], 'https://glossarist.org/agent');
+    const quads = collectQuads(agentsToQuads(agents, { orgBase: 'https://glossarist.org/org' }));
     const orgTypes = quads.filter(q =>
       q.subject.value === 'https://glossarist.org/org/ribose' && q.predicate.value === RDF_TYPE
     );
@@ -159,8 +160,8 @@ describe('agentsToQuads', () => {
   });
 
   it('links person to org via prov:actedOnBehalfOf', () => {
-    const agents = agentsFromContributors([{ name: 'X', organization: 'Ribose' }]);
-    const quads = collectQuads(agentsToQuads(agents));
+    const agents = agentsFromContributors([{ name: 'X', organization: 'Ribose' }], 'https://glossarist.org/agent');
+    const quads = collectQuads(agentsToQuads(agents, { orgBase: 'https://glossarist.org/org' }));
     assert.ok(quads.some(q => q.predicate.value === `${PROV}actedOnBehalfOf` && q.object.value === 'https://glossarist.org/org/ribose'));
   });
 });
@@ -210,14 +211,14 @@ describe('versionHistoryToQuads', () => {
 describe('imageVariantIri', () => {
   it('includes the lang segment when provided', () => {
     assert.equal(
-      imageVariantIri({ registerId: 'iso', figureId: 'fig1', lang: 'eng', format: 'svg' }),
+      imageVariantIri({ registerId: 'iso', figureId: 'fig1', lang: 'eng', format: 'svg'  }, 'https://glossarist.org'),
       'https://glossarist.org/iso/image/fig1/eng.svg',
     );
   });
 
   it('omits the lang segment when not provided', () => {
     assert.equal(
-      imageVariantIri({ registerId: 'iso', figureId: 'fig1', format: 'png' }),
+      imageVariantIri({ registerId: 'iso', figureId: 'fig1', format: 'png'  }, 'https://glossarist.org'),
       'https://glossarist.org/iso/image/fig1/png',
     );
   });
@@ -232,7 +233,7 @@ describe('imageVariantToQuads', () => {
       format: 'svg',
       byteSize: 456,
       downloadUrl: 'https://example.org/fig1.eng.svg',
-    }));
+    }, 'https://glossarist.org'));
     const iri = 'https://glossarist.org/iso/image/fig1/eng.svg';
     assert.ok(quads.some(q => q.subject.value === iri && q.predicate.value === RDF_TYPE && q.object.value === `${FOAF}Image`));
     assert.ok(quads.some(q => q.subject.value === iri && q.predicate.value === `${DCTERMS}format` && q.object.value === 'image/svg+xml'));
@@ -245,7 +246,7 @@ describe('imageVariantToQuads', () => {
     for (const [fmt, expected] of [['png','image/png'], ['jpg','image/jpeg'], ['webp','image/webp'], ['gif','image/gif']]) {
       const quads = collectQuads(imageVariantToQuads({
         registerId: 'iso', figureId: 'f', format: fmt, downloadUrl: 'https://example.org/x',
-      }));
+      }, 'https://glossarist.org'));
       assert.ok(quads.some(q => q.predicate.value === `${DCTERMS}format` && q.object.value === expected), `expected ${expected} for ${fmt}`);
     }
   });

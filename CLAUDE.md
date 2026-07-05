@@ -74,3 +74,26 @@ ESLint 10 with flat config (`eslint.config.js`). Uses `@eslint/js` recommended c
 - **CI** (`.github/workflows/ci.yml`): lint + test on Node 20/22/24 + coverage
 - **Release** (`.github/workflows/release.yml`): publish to npm + create GitHub release on `v*` tag push
 - **Dependabot** (`.github/dependabot.yml`): weekly npm + GitHub Actions dependency updates
+
+## ABSOLUTE RULE: NEVER HARDCODE DEPLOYMENT CONFIGURATION
+
+### What happened
+glossarist-js emitter functions had hardcoded `'https://glossarist.org'` as a default base URI. When a consumer (oimlsmart/vocab, iala-vocab, geolexica sites) called an emitter without explicitly passing their domain, all instance IRIs said `glossarist.org` instead of the consumer's own domain. This is an identity leak and a configuration hardcoding violation.
+
+### Why this is wrong
+- **Breaks encapsulation.** Deployment configuration (domain, basePath, uriBase) is the CONSUMER's decision, not the library's. Hardcoding it forces every consumer to override or patch.
+- **Violates OCP.** Adding a new deployment should NOT require editing source code. It should only require configuration.
+- **Silent failure.** The hardcoded defaults don't throw — they silently produce wrong-namespace IRIs.
+- **Configuration is NOT code.** `uriBase`, `basePath`, `domain` belong in the consumer's configuration, not in `.js` files as string literals.
+
+### THE RULES
+
+1. **NEVER hardcode deployment-specific values** (domain names, hostnames, base paths, URI roots) in source code. These are configuration, not code.
+
+2. **NEVER use a hostname string as a default fallback.** If a configuration value is missing, THROW with a descriptive error. Do not silently substitute a hardcoded default.
+
+3. **ALL URI construction must derive the base from an explicit parameter** passed by the caller. No `'https://glossarist.org'` as a `??` or `||` fallback.
+
+4. **The ontology namespace** `https://www.glossarist.org/ontologies/` is NOT a deployment URL — it's the canonical ontology identity and IS correct to hardcode. The rule applies to INSTANCE DATA URIs only.
+
+5. **When in doubt, throw.** A missing `baseUri` should produce a clear error message pointing at the required parameter, not silently emit wrong data.

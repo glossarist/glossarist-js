@@ -28,7 +28,8 @@ const FOAF = {
   page: `${FOAF_NS}page`,
 };
 
-const DEFAULT_BASE_URI = 'https://glossarist.org';
+// No hardcoded default base URI. Callers MUST pass baseUri explicitly
+// so instance IRIs reflect the consumer's domain, not the library's.
 
 /**
  * @typedef {Object} BibliographyEntry
@@ -52,7 +53,8 @@ const DEFAULT_BASE_URI = 'https://glossarist.org';
  * @param {string} entryId
  * @param {string} [baseUri]
  */
-export function bibliographyEntryIri(registerId, entryId, baseUri = DEFAULT_BASE_URI) {
+export function bibliographyEntryIri(registerId, entryId, baseUri) {
+  if (!baseUri) throw new Error('bibliographyEntryIri requires baseUri — the deployment canonical URI root. glossarist-js does NOT default to glossarist.org because instance data identity must reflect the consumer domain.');
   return `${baseUri}/${registerId}/bib/${entryId}`;
 }
 
@@ -64,7 +66,8 @@ export function bibliographyEntryIri(registerId, entryId, baseUri = DEFAULT_BASE
  * @returns {Generator<Quad, void, unknown>}
  */
 export function* bibliographyToQuads(input) {
-  const baseUri = input.baseUri ?? DEFAULT_BASE_URI;
+  const baseUri = input.baseUri;
+  if (!baseUri) throw new Error('bibliographyToQuads requires input.baseUri — the deployment canonical URI root.');
   const parentIri = `${baseUri}/${input.registerId}/`;
 
   for (const entry of input.entries ?? []) {

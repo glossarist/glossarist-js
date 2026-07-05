@@ -76,7 +76,8 @@ export function buildActivityIri(input) {
  * @returns {Generator<Quad, void, unknown>}
  */
 export function* buildActivityToQuads(input) {
-  const baseUri = input.baseUri ?? 'https://glossarist.org';
+  const baseUri = input.baseUri;
+  if (!baseUri) throw new Error('buildActivityToQuads requires input.baseUri — the deployment canonical URI root. glossarist-js does NOT default to glossarist.org because instance data identity must reflect the consumer domain.');
   const activityIri = `${baseUri}/${buildActivityIri(input)}`;
   const activity = namedNode(activityIri);
 

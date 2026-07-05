@@ -33,8 +33,8 @@ const RDFS = {
   seeAlso: `${RDFS_NS}seeAlso`,
 };
 
-const DEFAULT_AGENT_BASE = 'https://glossarist.org/agent';
-const DEFAULT_ORG_BASE = 'https://glossarist.org/org';
+// No hardcoded default agent/org base URIs. Callers MUST pass agentBase
+// explicitly so agent IRIs reflect the consumer's domain.
 
 /**
  * @typedef {Object} Contributor
@@ -64,7 +64,8 @@ export function slugify(input) {
  * Builds AgentInput records from raw contributor declarations.
  * Useful for callers that want to inspect the IRIs before emission.
  */
-export function agentsFromContributors(contributors, agentBase = DEFAULT_AGENT_BASE) {
+export function agentsFromContributors(contributors, agentBase) {
+  if (!agentBase) throw new Error('agentsFromContributors requires agentBase — the deployment canonical URI root for agents (e.g. https://www.example.org/agent). glossarist-js does NOT default to glossarist.org.');
   return (contributors ?? []).map(c => {
     const slug = slugify(c.name);
     return {
@@ -92,7 +93,8 @@ export function agentsFromContributors(contributors, agentBase = DEFAULT_AGENT_B
  * @returns {Generator<Quad, void, unknown>}
  */
 export function* agentsToQuads(agents, options = {}) {
-  const orgBase = options.orgBase ?? DEFAULT_ORG_BASE;
+  const orgBase = options.orgBase;
+  if (!orgBase) throw new Error('agentsToQuads requires options.orgBase — the deployment canonical URI root for organizations.');
   const emittedOrgs = new Set();
 
   for (const a of agents ?? []) {

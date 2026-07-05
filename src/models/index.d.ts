@@ -1,4 +1,49 @@
 export const ORDERING_METHODS: readonly string[];
+
+// Dataset color spec (light/dark variants)
+export type DatasetColorSpec = string;
+export interface DatasetColorPair {
+  light: string;
+  dark: string;
+}
+export type DatasetColor = DatasetColorSpec | DatasetColorPair;
+export const COLOR_MODES: readonly ['light', 'dark'];
+export function resolveColor(color: DatasetColor | null | undefined, mode: 'light' | 'dark'): string | null;
+export function isColorPair(color: unknown): color is DatasetColorPair;
+export function validateColor(color: unknown): string | null;
+
+// Relation categories + color registry
+export interface RelationCategoryDef {
+  readonly label: string;
+  readonly description: string;
+  readonly types: readonly string[];
+}
+export const RELATION_CATEGORIES: Readonly<Record<string, RelationCategoryDef>>;
+export function categoryOf(type: string): string | null;
+export function categoryDefinition(categoryKey: string): RelationCategoryDef | null;
+export function uncategorizedTypes(): string[];
+export function duplicatedTypes(): Array<{ type: string; count: number }>;
+
+export interface RelationColorPair {
+  light: string;
+  dark: string;
+}
+export const RELATION_COLOR_DEFAULTS: Readonly<{
+  byCategory: Readonly<Record<string, RelationColorPair>>;
+  byType: Readonly<Record<string, RelationColorPair>>;
+}>;
+export function resolveRelationColor(
+  type: string,
+  options?: {
+    overrides?: { byType?: Record<string, RelationColorPair | string>; byCategory?: Record<string, RelationColorPair | string> };
+    mode?: 'light' | 'dark';
+  },
+): string | null;
+export function categoryColorPair(
+  categoryKey: string,
+  overrides?: { byCategory?: Record<string, RelationColorPair | string> },
+): RelationColorPair | null;
+
 export class Section extends GlossaristModel {
   readonly id: string | null;
   readonly names: Record<string, string>;

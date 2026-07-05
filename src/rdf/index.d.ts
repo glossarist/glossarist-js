@@ -161,6 +161,23 @@ export interface GroupEmitInput {
 }
 export declare function groupToQuads(input: GroupEmitInput): Generator<Quad, void, unknown>;
 
+// Bibliography emitter (dcterms:BibliographicResource)
+export interface BibliographyEntry {
+  id: string;
+  reference: string;
+  title?: string;
+  link?: string;
+  type?: string;
+}
+export interface BibliographyInput {
+  registerId: string;
+  entries: readonly BibliographyEntry[];
+  baseUri?: string;
+}
+export declare function bibliographyEntryIri(registerId: string, entryId: string, baseUri?: string): string;
+export declare function bibliographyToQuads(input: BibliographyInput): Generator<Quad, void, unknown>;
+export declare function normalizeBibliographyData(raw: unknown): BibliographyEntry[];
+
 export declare function collectQuads(quadsIterable: Iterable<Quad>): Quad[];
 
 export interface WriteTurtleOptions {

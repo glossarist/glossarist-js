@@ -76,7 +76,9 @@ function compareQuad(a, b) {
   if (cmp !== 0) return cmp;
   cmp = cmpTerm(a.predicate, b.predicate);
   if (cmp !== 0) return cmp;
-  return cmpTerm(a.object, b.object);
+  cmp = cmpTerm(a.object, b.object);
+  if (cmp !== 0) return cmp;
+  return cmpTerm(a.graph, b.graph);
 }
 
 function cmpTerm(a, b) {

@@ -6,6 +6,7 @@ import { DataFactory } from 'n3';
 import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { deterministicBnode } from './deterministic-id.js';
+import { normalizeEnum } from './normalize-enum.js';
 
 const { namedNode, literal, quad } = DataFactory;
 
@@ -15,11 +16,13 @@ export function* conceptSourceToQuads(source, { subjectUri, index }) {
   yield quad(namedNode(subjectUri), namedNode(PRED.gloss.hasSource), namedNode(srcSubject));
   yield quad(namedNode(srcSubject), namedNode(WELL_KNOWN.rdfType), namedNode(PRED.gloss.ConceptSource));
 
-  if (source.status) {
-    yield quad(namedNode(srcSubject), namedNode(PRED.gloss.sourceStatus), namedNode(`${PRED.gloss.$ns}srcstatus/${source.status}`));
+  const statusToken = normalizeEnum(source.status);
+  if (statusToken) {
+    yield quad(namedNode(srcSubject), namedNode(PRED.gloss.sourceStatus), namedNode(`${PRED.gloss.$ns}srcstatus/${statusToken}`));
   }
-  if (source.type) {
-    yield quad(namedNode(srcSubject), namedNode(PRED.gloss.sourceType), namedNode(`${PRED.gloss.$ns}srctype/${source.type}`));
+  const typeToken = normalizeEnum(source.type);
+  if (typeToken) {
+    yield quad(namedNode(srcSubject), namedNode(PRED.gloss.sourceType), namedNode(`${PRED.gloss.$ns}srctype/${typeToken}`));
   }
   if (source.modification) {
     yield quad(namedNode(srcSubject), namedNode(PRED.gloss.modification), literal(source.modification));

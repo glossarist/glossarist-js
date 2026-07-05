@@ -7,6 +7,7 @@ import { DataFactory } from 'n3';
 import { PRED } from './predicates.js';
 import { SKOSXL, WELL_KNOWN } from './prefixes.js';
 import { deterministicBnode } from './deterministic-id.js';
+import { normalizeEnum } from './normalize-enum.js';
 
 const { namedNode, literal, quad } = DataFactory;
 
@@ -20,7 +21,7 @@ const TYPE_BY_NORMATIVE_STATUS = {
 // Returns the SKOS-XL predicate (as a string URI) appropriate for this
 // designation's normative status. Mirrors `skosxl_label_for` in Ruby.
 export function skosxlLabelPredicate(designation) {
-  const status = String(designation.normativeStatus ?? '').split('/').pop();
+  const status = normalizeEnum(designation.normativeStatus);
   const label = TYPE_BY_NORMATIVE_STATUS[status] ?? 'altLabel';
   return SKOSXL[label];
 }
@@ -28,7 +29,7 @@ export function skosxlLabelPredicate(designation) {
 // Returns the matching plain-SKOS predicate URI (skos:prefLabel etc.).
 // Used when emitting direct SKOS alongside reified SKOS-XL.
 export function skosLabelPredicate(designation) {
-  const status = String(designation.normativeStatus ?? '').split('/').pop();
+  const status = normalizeEnum(designation.normativeStatus);
   const label = TYPE_BY_NORMATIVE_STATUS[status] ?? 'altLabel';
   return PRED.skos[label];
 }
@@ -64,7 +65,10 @@ export function* designationToQuads(designation, { subjectUri, language, index }
   yield quad(namedNode(desigSubject), namedNode(SKOSXL.literalForm), literal(designation.designation ?? '', language));
 
   if (designation.normativeStatus) {
-    const statusUri = `${PRED.gloss.$ns}norm/${designation.normativeStatus}`;
-    yield quad(namedNode(desigSubject), namedNode(PRED.gloss.normativeStatus), namedNode(statusUri));
+    const statusToken = normalizeEnum(designation.normativeStatus);
+    if (statusToken) {
+      const statusUri = `${PRED.gloss.$ns}norm/${statusToken}`;
+      yield quad(namedNode(desigSubject), namedNode(PRED.gloss.normativeStatus), namedNode(statusUri));
+    }
   }
 }

@@ -64,6 +64,48 @@ export class Register extends GlossaristModel {
     return null;
   }
 
+  // Walks the section tree upward from `sectionId`, returning the
+  // ancestor chain in immediate-parent-first order. The returned array
+  // does NOT include sectionId itself. Returns [] when sectionId is
+  // unknown or is a top-level section.
+  //
+  // Mirrors glossarist-ruby's section-cascading walk (commit 43dca6b)
+  // and the ontology's owl:TransitiveProperty declaration on
+  // gloss:hasParentSection.
+  sectionAncestorIds(sectionId) {
+    if (!sectionId) return [];
+    for (const root of this.sections) {
+      const chain = _ancestorChain(root, sectionId);
+      if (chain) return chain;
+    }
+    return [];
+  }
+
+  // Returns the closure of `sectionId`: the section plus all of its
+  // ancestors. Concept-section membership tests should intersect the
+  // concept's section list with this closure so a concept in section
+  // "3.1.1" matches a filter on "3.1" or "3".
+  sectionClosure(sectionId) {
+    return [sectionId, ...this.sectionAncestorIds(sectionId)];
+  }
+
+  // Returns all section IDs the concept belongs to: the concept's own
+  // sections plus every ancestor of each. Concept-side section
+  // membership comes from `concept.sections` if set, otherwise from
+  // `concept.groups` (a flat list of section IDs as strings).
+  //
+  // Returns the union (deduped) so callers can do a single
+  // intersection test.
+  conceptSectionIds(concept) {
+    const own = conceptSectionIdList(concept);
+    if (own.length === 0) return [];
+    const closure = new Set();
+    for (const id of own) {
+      for (const ancestor of this.sectionClosure(id)) closure.add(ancestor);
+    }
+    return [...closure];
+  }
+
   sectionName(sectionId, lang) {
     const section = this.sectionById(sectionId);
     return section ? section.name(lang) : null;
@@ -107,4 +149,46 @@ export class Register extends GlossaristModel {
       },
     });
   }
+}
+
+// Recursive walk: returns the ancestor chain of `targetId` within the
+// subtree rooted at `section`, or null if targetId is not in this
+// subtree. The chain is immediate-parent-first; the section itself is
+// not included. Built root-first, then reversed for the documented order.
+function _ancestorChain(section, targetId, ancestors = []) {
+  if (section.id === targetId) return [...ancestors].reverse();
+  for (const child of section.children) {
+    const found = _ancestorChain(child, targetId, [...ancestors, section.id]);
+    if (found) return found;
+  }
+  return null;
+}
+
+// Returns the list of section IDs a concept claims membership in.
+// Concepts may carry section IDs via either `sections` (preferred) or
+// `groups` (legacy). Each entry may be a string or an object with an
+// `id` field; both forms are flattened to a string list.
+function conceptSectionIdList(concept) {
+  if (!concept) return [];
+  const fromSections = concept.sections
+    ? _flattenSectionIds(concept.sections)
+    : [];
+  const fromGroups = concept.groups
+    ? _flattenSectionIds(concept.groups)
+    : [];
+  return [...fromSections, ...fromGroups];
+}
+
+function _flattenSectionIds(value) {
+  if (!Array.isArray(value)) return [];
+  const out = [];
+  for (const entry of value) {
+    if (typeof entry === 'string') {
+      out.push(entry);
+    } else if (entry && typeof entry === 'object') {
+      const id = entry.id ?? entry.sectionId ?? entry.ref?.id;
+      if (id) out.push(String(id));
+    }
+  }
+  return out;
 }

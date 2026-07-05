@@ -65,6 +65,43 @@ export class ConceptCollection {
     }));
   }
 
+  /**
+   * Cascading section membership filter. Returns concepts whose
+   * section closure includes `sectionId`.
+   *
+   * A concept in section "3.1.1" matches `bySection('3.1')` and
+   * `bySection('3')` because the section closure walks ancestors
+   * transitively (mirrors owl:TransitiveProperty on
+   * gloss:hasParentSection in the concept-model ontology).
+   *
+   * Two calling conventions:
+   *
+   *   bySection('3.1', { register })          // register expands each concept's section closure
+   *   bySection(['3.1', '3'])                  // pre-expanded target set (any of these must match)
+   *
+   * Concept-side membership is read from `concept.sections` if set,
+   * otherwise from `concept.groups` (a flat list of section IDs).
+   */
+  bySection(sectionId, options = {}) {
+    if (Array.isArray(sectionId)) {
+      const targetSet = new Set(sectionId);
+      return new ConceptCollection(this[_items].filter(c => {
+        const ids = options.register
+          ? options.register.conceptSectionIds(c)
+          : _flatConceptSectionIds(c);
+        return ids.some(id => targetSet.has(id));
+      }));
+    }
+    if (!options.register) {
+      throw new Error('bySection(sectionId) requires { register } to expand the concept section closures');
+    }
+    const target = sectionId;
+    return new ConceptCollection(this[_items].filter(c => {
+      const ids = options.register.conceptSectionIds(c);
+      return ids.includes(target);
+    }));
+  }
+
   index() {
     const map = new Map();
     for (const c of this[_items]) map.set(c.id, c);
@@ -105,4 +142,24 @@ export class ConceptCollection {
   filter(fn) { return new ConceptCollection(this[_items].filter(fn)); }
   slice(...args) { return new ConceptCollection(this[_items].slice(...args)); }
   concat(...args) { return new ConceptCollection(this[_items].concat(...args)); }
+}
+
+// Standalone helper for the array-closure case where no register is
+// available. Mirrors the lookup done inside Register#conceptSectionIds
+// but without ancestor expansion (the closure is already provided).
+function _flatConceptSectionIds(concept) {
+  if (!concept) return [];
+  const out = [];
+  for (const source of [concept.sections, concept.groups]) {
+    if (!Array.isArray(source)) continue;
+    for (const entry of source) {
+      if (typeof entry === 'string') {
+        out.push(entry);
+      } else if (entry && typeof entry === 'object') {
+        const id = entry.id ?? entry.sectionId ?? entry.ref?.id;
+        if (id) out.push(String(id));
+      }
+    }
+  }
+  return out;
 }

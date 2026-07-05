@@ -14,70 +14,66 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const CTX_PATH = resolve(ROOT, 'data', 'concept-model', 'glossarist.context.jsonld');
-const OUT_JS = resolve(ROOT, 'src', 'rdf', 'predicates.js');
-const OUT_TS = resolve(ROOT, 'src', 'rdf', 'predicates.d.ts');
+export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+export const CTX_PATH = resolve(ROOT, 'data', 'concept-model', 'glossarist.context.jsonld');
+export const OUT_JS = resolve(ROOT, 'src', 'rdf', 'predicates.js');
+export const OUT_TS = resolve(ROOT, 'src', 'rdf', 'predicates.d.ts');
 
 // ── Parse JSON-LD context ───────────────────────────────────────────────
 
-const ctx = JSON.parse(readFileSync(CTX_PATH, 'utf8'))['@context'];
-if (!ctx || typeof ctx !== 'object') {
-  console.error('FATAL: @context missing or not an object in', CTX_PATH);
-  process.exit(1);
-}
-
-const isAbsoluteIri = (s) => typeof s === 'string' && /^https?:\/\//.test(s);
-const isNamespaceBinding = (val) =>
-  typeof val === 'string' && isAbsoluteIri(val) && (val.endsWith('/') || val.endsWith('#'));
-
-// Partition: namespace bindings (prefix → URI) vs term definitions.
-const namespaces = {};
-const terms = {};
-for (const [key, val] of Object.entries(ctx)) {
-  if (key.startsWith('@')) continue;
-  if (isNamespaceBinding(val)) {
-    namespaces[key] = val;
-  } else if (typeof val === 'string') {
-    terms[key] = { '@id': val };
-  } else if (val && typeof val === 'object' && val['@id']) {
-    terms[key] = val;
+function parseContext(ctx) {
+  if (!ctx || typeof ctx !== 'object') {
+    throw new Error('@context missing or not an object');
   }
-}
 
-function resolveCurie(curie) {
-  if (!isString(curie)) return null;
-  if (isAbsoluteIri(curie)) return curie;
-  const idx = curie.indexOf(':');
-  if (idx === -1) return null;
-  const prefix = curie.slice(0, idx);
-  const local = curie.slice(idx + 1);
-  const base = namespaces[prefix];
-  return base ? base + local : null;
-}
-function isString(x) { return typeof x === 'string'; }
+  const isAbsoluteIri = (s) => typeof s === 'string' && /^https?:\/\//.test(s);
+  const isNamespaceBinding = (val) =>
+    typeof val === 'string' && isAbsoluteIri(val) && (val.endsWith('/') || val.endsWith('#'));
 
-// Group terms by their owning namespace.
-const grouped = {};
-const allUris = [];
-for (const [term, def] of Object.entries(terms)) {
-  const curie = typeof def === 'string' ? def : def['@id'];
-  if (!curie || curie.startsWith('@')) continue;
-  const idx = curie.indexOf(':');
-  if (idx === -1) continue;
-  const prefix = curie.slice(0, idx);
-  const uri = resolveCurie(curie);
-  if (!uri) {
-    console.warn(`WARN: cannot resolve ${term} → ${curie}`);
-    continue;
+  // Partition: namespace bindings (prefix → URI) vs term definitions.
+  const namespaces = {};
+  const terms = {};
+  for (const [key, val] of Object.entries(ctx)) {
+    if (key.startsWith('@')) continue;
+    if (isNamespaceBinding(val)) {
+      namespaces[key] = val;
+    } else if (typeof val === 'string') {
+      terms[key] = { '@id': val };
+    } else if (val && typeof val === 'object' && val['@id']) {
+      terms[key] = val;
+    }
   }
-  (grouped[prefix] ||= {})[term] = uri;
-  allUris.push(uri);
+
+  function resolveCurie(curie) {
+    if (typeof curie !== 'string') return null;
+    if (isAbsoluteIri(curie)) return curie;
+    const idx = curie.indexOf(':');
+    if (idx === -1) return null;
+    const prefix = curie.slice(0, idx);
+    const local = curie.slice(idx + 1);
+    const base = namespaces[prefix];
+    return base ? base + local : null;
+  }
+
+  const grouped = {};
+  const allUris = [];
+  for (const [term, def] of Object.entries(terms)) {
+    const curie = typeof def === 'string' ? def : def['@id'];
+    if (!curie || curie.startsWith('@')) continue;
+    const idx = curie.indexOf(':');
+    if (idx === -1) continue;
+    const prefix = curie.slice(0, idx);
+    const uri = resolveCurie(curie);
+    if (!uri) continue;
+    (grouped[prefix] ||= {})[term] = uri;
+    allUris.push(uri);
+  }
+
+  return { namespaces, grouped, allUris };
 }
 
-// ── Build PRED + PREFIXES object literals ───────────────────────────────
-
-function predObject({ asConst = false, declare = false } = {}) {
+function predObject(parsed, { asConst = false, declare = false } = {}) {
+  const { grouped, namespaces } = parsed;
   const kw = declare ? 'export declare const' : 'export const';
   const tail = asConst ? ' as const' : '';
   const lines = [`${kw} PRED = {`];
@@ -96,25 +92,23 @@ function predObject({ asConst = false, declare = false } = {}) {
   return lines.join('\n');
 }
 
-function prefixObject({ declare = false } = {}) {
+function prefixObject(parsed, { declare = false } = {}) {
   const kw = declare ? 'export declare const' : 'export const';
   const sig = declare ? ': Record<string, string>' : '';
   const lines = [`${kw} PREFIXES${sig} = {`];
-  for (const [prefix, uri] of Object.entries(namespaces)) {
+  for (const [prefix, uri] of Object.entries(parsed.namespaces)) {
     lines.push(`  ${JSON.stringify(prefix)}: ${JSON.stringify(uri)},`);
   }
   lines.push('};');
   return lines.join('\n');
 }
 
-function predicateUnion() {
+function predicateUnion(parsed) {
   const lines = ['export type Predicate ='];
-  for (const uri of allUris) lines.push(`  | ${JSON.stringify(uri)}`);
+  for (const uri of parsed.allUris) lines.push(`  | ${JSON.stringify(uri)}`);
   lines.push(';');
   return lines.join('\n');
 }
-
-// ── Emit ────────────────────────────────────────────────────────────────
 
 const HEADER = [
   '// AUTO-GENERATED by scripts/gen-predicates.mjs. Do not edit.',
@@ -123,19 +117,43 @@ const HEADER = [
   '',
 ].join('\n');
 
-const jsBody = `${predObject()}\n\n${prefixObject()}\n`;
-writeFileSync(OUT_JS, `${HEADER}${jsBody}`);
+// Pure: takes a context object, returns the file contents that gen-predicates
+// would write. Exposed for the drift test.
+export function generatePredicates(context) {
+  const parsed = parseContext(context);
+  const jsBody = `${predObject(parsed)}\n\n${prefixObject(parsed)}\n`;
+  const tsBody = [
+    predObject(parsed, { asConst: true, declare: true }),
+    '',
+    prefixObject(parsed, { declare: true }),
+    '',
+    predicateUnion(parsed),
+    '',
+  ].join('\n');
+  return {
+    js: `${HEADER}${jsBody}`,
+    ts: `${HEADER}${tsBody}\n`,
+    stats: {
+      namespaces: Object.keys(parsed.namespaces).length,
+      terms: parsed.allUris.length,
+    },
+  };
+}
 
-const tsBody = [
-  predObject({ asConst: true, declare: true }),
-  '',
-  prefixObject({ declare: true }),
-  '',
-  predicateUnion(),
-  '',
-].join('\n');
-writeFileSync(OUT_TS, `${HEADER}${tsBody}\n`);
+// Side-effecting entry point used by `npm run gen:predicates`.
+export function writePredicates({ ctxPath = CTX_PATH, outJs = OUT_JS, outTs = OUT_TS } = {}) {
+  const ctx = JSON.parse(readFileSync(ctxPath, 'utf8'))['@context'];
+  const { js, ts, stats } = generatePredicates(ctx);
+  writeFileSync(outJs, js);
+  writeFileSync(outTs, ts);
+  return stats;
+}
 
-console.log(`Generated ${OUT_JS.replace(ROOT + '/', '')}`);
-console.log(`Generated ${OUT_TS.replace(ROOT + '/', '')}`);
-console.log(`  ${Object.keys(namespaces).length} namespaces, ${allUris.length} terms.`);
+// Run only when invoked directly, not when imported by tests.
+const invokedDirectly = process.argv[1] === fileURLToPath(import.meta.url);
+if (invokedDirectly) {
+  const stats = writePredicates();
+  console.log(`Generated ${OUT_JS.replace(ROOT + '/', '')}`);
+  console.log(`Generated ${OUT_TS.replace(ROOT + '/', '')}`);
+  console.log(`  ${stats.namespaces} namespaces, ${stats.terms} terms.`);
+}

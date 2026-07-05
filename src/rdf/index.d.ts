@@ -10,6 +10,7 @@ import type { LocalizedConcept } from '../models/index';
 import type { Designation } from '../models/index';
 import type { DetailedDefinition } from '../models/index';
 import type { ConceptSource } from '../models/index';
+import type { NonVerbRep, Figure, Table, Formula } from '../models/index';
 
 export { PRED, PREFIXES } from './predicates';
 export type PredicateMap = typeof PRED;
@@ -76,6 +77,26 @@ export interface ConceptSourceEmitOptions {
 
 export declare function conceptSourceToQuads(source: ConceptSource, options: ConceptSourceEmitOptions): Generator<Quad, void, unknown>;
 
+// ── Non-verbal representation emitters ─────────────────────────────────
+
+export interface NonVerbalRepEmitOptions {
+  parentUri: string;
+  index: number;
+  language?: string | null;
+}
+
+export declare function nonVerbalRepToQuads(nvr: NonVerbRep, options: NonVerbalRepEmitOptions): Generator<Quad, void, unknown>;
+
+export interface NonVerbalEntityEmitOptions {
+  registerId: string;
+  uriBase?: string;
+}
+
+export type NonVerbalEntity = Figure | Table | Formula;
+
+export declare function nonVerbalEntityUri(entity: NonVerbalEntity, options: NonVerbalEntityEmitOptions): string;
+export declare function nonVerbalEntityToQuads(entity: NonVerbalEntity, options: NonVerbalEntityEmitOptions): Generator<Quad, void, unknown>;
+
 export declare function collectQuads(quadsIterable: Iterable<Quad>): Quad[];
 
 export interface WriteTurtleOptions {
@@ -102,6 +123,7 @@ export interface ValidationReport {
   }>;
 }
 
-export declare function loadShapes(): Promise<Dataset>;
-export declare function validateShacl(dataDataset: Dataset, options?: { shapes?: Dataset }): Promise<ValidationReport>;
+export declare function loadShapes(options?: { shapesPath?: string }): Promise<Dataset>;
+export declare function validateShacl(dataDataset: Dataset, options?: { shapes?: Dataset; shapesPath?: string }): Promise<ValidationReport>;
+export declare function clearShapesCache(): void;
 export declare function quadsToDataset(quads: Iterable<Quad>): Dataset;

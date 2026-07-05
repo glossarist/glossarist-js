@@ -34,6 +34,10 @@ export class Figure extends SharedNonVerbalEntity {
     this._subfigures = null;
   }
 
+  rdfClass() {
+    return 'Figure';
+  }
+
   get images() {
     return this._lazy('_images', '_rawImages',
       i => i instanceof FigureImage ? i : new FigureImage(i));

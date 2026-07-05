@@ -10,6 +10,7 @@ import { WELL_KNOWN } from './prefixes.js';
 import { designationToQuads, skosLabelPredicate } from './gloss-designation.js';
 import { detailedDefinitionToQuads } from './gloss-detailed-definition.js';
 import { conceptSourceToQuads } from './gloss-source.js';
+import { nonVerbalRepToQuads } from './gloss-non-verbal-rep.js';
 import { namedNode, literal, quad } from './terms.js';
 const DCTERMS_LANGUAGE = `${PREFIXES.dcterms}language`;
 
@@ -54,6 +55,12 @@ export function* localizedConceptToQuads(localizedConcept, { parentUri, language
   yield* definitionsToQuads(localizedConcept.notes, { subjectUri, language, role: 'hasNote' });
   yield* definitionsToQuads(localizedConcept.examples, { subjectUri, language, role: 'hasExample' });
   yield* definitionsToQuads(localizedConcept.annotations, { subjectUri, language, role: 'hasAnnotation' });
+
+  let nvrIndex = 0;
+  for (const nvr of localizedConcept.nonVerbalRep ?? []) {
+    yield* nonVerbalRepToQuads(nvr, { parentUri: subjectUri, index: nvrIndex, language });
+    nvrIndex += 1;
+  }
 
   let srcIndex = 0;
   for (const source of localizedConcept.sources ?? []) {

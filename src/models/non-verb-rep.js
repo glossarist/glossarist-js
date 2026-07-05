@@ -11,6 +11,10 @@ export class NonVerbRep extends NonVerbalEntity {
     this._images = null;
   }
 
+  rdfClass() {
+    return 'NonVerbalRepresentation';
+  }
+
   get images() {
     return this._lazy('_images', '_rawImages',
       i => i instanceof FigureImage ? i : new FigureImage(i));

@@ -26,6 +26,12 @@ export declare const PRED = {
     "DesignationRelationship": "https://www.glossarist.org/ontologies/DesignationRelationship",
     "ConceptDate": "https://www.glossarist.org/ontologies/ConceptDate",
     "NonVerbalRepresentation": "https://www.glossarist.org/ontologies/NonVerbalRepresentation",
+    "NonVerbalEntity": "https://www.glossarist.org/ontologies/NonVerbalEntity",
+    "SharedNonVerbalEntity": "https://www.glossarist.org/ontologies/SharedNonVerbalEntity",
+    "Figure": "https://www.glossarist.org/ontologies/Figure",
+    "Table": "https://www.glossarist.org/ontologies/Table",
+    "Formula": "https://www.glossarist.org/ontologies/Formula",
+    "FigureImage": "https://www.glossarist.org/ontologies/FigureImage",
     "CustomLocality": "https://www.glossarist.org/ontologies/CustomLocality",
     "Locality": "https://www.glossarist.org/ontologies/Locality",
     "DatasetRegister": "https://www.glossarist.org/ontologies/DatasetRegister",
@@ -69,6 +75,16 @@ export declare const PRED = {
     "isTruncation": "https://www.glossarist.org/ontologies/isTruncation",
     "text": "https://www.glossarist.org/ontologies/text",
     "image": "https://www.glossarist.org/ontologies/image",
+    "caption": "https://www.glossarist.org/ontologies/caption",
+    "altText": "https://www.glossarist.org/ontologies/altText",
+    "description": "https://www.glossarist.org/ontologies/description",
+    "expression": "https://www.glossarist.org/ontologies/expression",
+    "latexForm": "https://www.glossarist.org/ontologies/latexForm",
+    "content": "https://www.glossarist.org/ontologies/content",
+    "hasSubfigure": "https://www.glossarist.org/ontologies/hasSubfigure",
+    "src": "https://www.glossarist.org/ontologies/src",
+    "format": "https://www.glossarist.org/ontologies/format",
+    "role": "https://www.glossarist.org/ontologies/role",
     "pronunciationContent": "https://www.glossarist.org/ontologies/pronunciationContent",
     "pronunciationLanguage": "https://www.glossarist.org/ontologies/pronunciationLanguage",
     "pronunciationScript": "https://www.glossarist.org/ontologies/pronunciationScript",
@@ -268,6 +284,12 @@ export type Predicate =
   | "https://www.glossarist.org/ontologies/DesignationRelationship"
   | "https://www.glossarist.org/ontologies/ConceptDate"
   | "https://www.glossarist.org/ontologies/NonVerbalRepresentation"
+  | "https://www.glossarist.org/ontologies/NonVerbalEntity"
+  | "https://www.glossarist.org/ontologies/SharedNonVerbalEntity"
+  | "https://www.glossarist.org/ontologies/Figure"
+  | "https://www.glossarist.org/ontologies/Table"
+  | "https://www.glossarist.org/ontologies/Formula"
+  | "https://www.glossarist.org/ontologies/FigureImage"
   | "https://www.glossarist.org/ontologies/CustomLocality"
   | "https://www.glossarist.org/ontologies/Locality"
   | "https://www.glossarist.org/ontologies/DatasetRegister"
@@ -311,6 +333,16 @@ export type Predicate =
   | "https://www.glossarist.org/ontologies/isTruncation"
   | "https://www.glossarist.org/ontologies/text"
   | "https://www.glossarist.org/ontologies/image"
+  | "https://www.glossarist.org/ontologies/caption"
+  | "https://www.glossarist.org/ontologies/altText"
+  | "https://www.glossarist.org/ontologies/description"
+  | "https://www.glossarist.org/ontologies/expression"
+  | "https://www.glossarist.org/ontologies/latexForm"
+  | "https://www.glossarist.org/ontologies/content"
+  | "https://www.glossarist.org/ontologies/hasSubfigure"
+  | "https://www.glossarist.org/ontologies/src"
+  | "https://www.glossarist.org/ontologies/format"
+  | "https://www.glossarist.org/ontologies/role"
   | "https://www.glossarist.org/ontologies/pronunciationContent"
   | "https://www.glossarist.org/ontologies/pronunciationLanguage"
   | "https://www.glossarist.org/ontologies/pronunciationScript"

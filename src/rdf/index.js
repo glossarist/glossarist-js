@@ -18,10 +18,15 @@ export {
 export { detailedDefinitionToQuads } from './gloss-detailed-definition.js';
 export { conceptSourceToQuads } from './gloss-source.js';
 export {
+  nonVerbalRepToQuads,
+  nonVerbalEntityToQuads,
+  nonVerbalEntityUri,
+} from './gloss-non-verbal-rep.js';
+export {
   collectQuads,
   writeTurtle,
   writeNTriples,
   writeJsonld,
   sortQuads,
 } from './document-writer.js';
-export { validateShacl, loadShapes, quadsToDataset } from './shacl.js';
+export { validateShacl, loadShapes, clearShapesCache, quadsToDataset } from './shacl.js';

@@ -10,7 +10,7 @@ import {
   validateShacl,
   loadShapes,
 } from '../../src/rdf/index.js';
-import { __clearShapesCacheForTests as clearShapesCache } from '../../src/rdf/shacl.js';
+import { clearShapesCache } from '../../src/rdf/shacl.js';
 
 function buildConcept() {
   return new Concept({
@@ -69,4 +69,5 @@ describe('validateShacl', () => {
     const b = await loadShapes({ shapesPath: SHAPES_PATH });
     assert.equal(a, b, 'second load with same path must hit the cache');
   });
+
 });

@@ -119,6 +119,9 @@ export class Designation extends GlossaristModel {
   readonly pronunciations: Pronunciation[];
   readonly sources: ConceptSource[];
   readonly related: (RelatedConcept | DesignationRelationship)[];
+  rdfClass(): string;
+  skosLabelPredicate(skosNs: string): string;
+  skosxlLabelPredicate(skosxlNs: string): string;
   static register(type: string, cls: typeof Designation): void;
   static fromData(data: Record<string, unknown>): Designation;
   static fromJSON(data: Record<string, unknown>): Designation;

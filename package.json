@@ -1,13 +1,15 @@
 {
   "name": "glossarist",
   "version": "0.3.3",
-  "description": "JavaScript SDK for Glossarist GCR packages \u2014 read, write, validate, and manage terminology concepts",
+  "description": "JavaScript SDK for Glossarist GCR packages — read, write, validate, and manage terminology concepts",
   "type": "module",
   "main": "src/index.js",
   "types": "src/index.d.ts",
   "sideEffects": false,
   "files": [
-    "src"
+    "src",
+    "data/concept-model/shapes/glossarist.shacl.ttl",
+    "data/concept-model/README.md"
   ],
   "exports": {
     ".": {
@@ -34,10 +36,23 @@
       "types": "./src/validators/index.d.ts",
       "import": "./src/validators/index.js",
       "default": "./src/validators/index.js"
+    },
+    "./rdf": {
+      "types": "./src/rdf/index.d.ts",
+      "import": "./src/rdf/index.js",
+      "default": "./src/rdf/index.js"
+    },
+    "./transforms": {
+      "types": "./src/transforms/index.d.ts",
+      "import": "./src/transforms/index.js",
+      "default": "./src/transforms/index.js"
     }
   },
   "scripts": {
     "lint": "eslint src/ test/",
+    "sync:model": "node scripts/sync-concept-model.mjs",
+    "gen:predicates": "node scripts/gen-predicates.mjs",
+    "prebuild": "npm run gen:predicates",
     "pretest": "node test/fixtures/build-fixtures.js",
     "test": "find test -name '*.test.js' | sort | xargs node --test",
     "test:verbose": "find test -name '*.test.js' | sort | xargs node --test --test-reporter spec",
@@ -68,8 +83,13 @@
     "access": "public"
   },
   "dependencies": {
+    "@rdfjs/data-model": "^2.0.0",
+    "@rdfjs/dataset": "^2.0.0",
     "js-yaml": "^5.0.0",
-    "jszip": "^3.10.1"
+    "jsonld": "^8.3.3",
+    "jszip": "^3.10.1",
+    "n3": "^1.17.0",
+    "rdf-validate-shacl": "^0.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -3,12 +3,12 @@
 //
 // concept-model is a data-only repo. It is not an npm package. We vendor
 // the small set of artifacts we actually need (glossarist.context.jsonld,
-// glossarist.ttl, shapes/glossarist.shacl.ttl) and regenerate our own
-// predicate constants from them via scripts/gen-predicates.mjs.
+// glossarist.ttl, prefixes.ttl, shapes/glossarist.shacl.ttl) and regenerate
+// our own predicate constants from them via scripts/gen-predicates.mjs.
 //
 // Usage:
 //   npm run sync:model                # latest release tag
-//   npm run sync:model -- v3.0.0      # specific tag
+//   npm run sync:model -- v3.1.0      # specific tag
 //   node scripts/sync-concept-model.mjs --ref main   # any git ref
 //
 // Output: data/concept-model/* updated in place. Review the diff and commit.
@@ -51,14 +51,6 @@ if (!ref) {
 
 console.log(`Syncing from ${REPO}@${ref}`);
 
-const FILES = [
-  ['glossarist.context.jsonld', 'glossarist.context.jsonld'],
-  ['glossarist.ttl', 'glossarist.ttl'],
-  ['ontologies/glossarist.context.jsonld', 'glossarist.context.jsonld'],
-  ['ontologies/glossarist.ttl', 'glossarist.ttl'],
-  ['ontologies/shapes/glossarist.shacl.ttl', 'shapes/glossarist.shacl.ttl'],
-];
-
 mkdirSync(resolve(OUT_DIR, 'shapes'), { recursive: true });
 
 // Try both root and ontologies/ paths — the repo layout has shifted over time.
@@ -76,6 +68,7 @@ function fetchAny(ref, candidates) {
 const targets = {
   'glossarist.context.jsonld': ['ontologies/glossarist.context.jsonld', 'glossarist.context.jsonld'],
   'glossarist.ttl': ['ontologies/glossarist.ttl', 'glossarist.ttl'],
+  'prefixes.ttl': ['ontologies/prefixes.ttl', 'prefixes.ttl'],
   'shapes/glossarist.shacl.ttl': ['ontologies/shapes/glossarist.shacl.ttl', 'shapes/glossarist.shacl.ttl'],
 };
 

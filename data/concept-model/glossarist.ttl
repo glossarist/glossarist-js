@@ -14,13 +14,16 @@
 #
 # Every class and property here has a direct correspondence to a field in the
 # Glossarist YAML schema (schemas/v3/concept.yaml, localized-concept.yaml).
+#
+# Prefix bindings: see prefixes.ttl for the canonical SSOT. The declarations
+# below must stay in sync with that file.
 
 @prefix gloss:    <https://www.glossarist.org/ontologies/> .
 @prefix owl:      <http://www.w3.org/2002/07/owl#> .
 @prefix rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs:     <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix skos:     <http://www.w3.org/2004/02/skos/core#> .
-@prefix xl:       <http://www.w3.org/2008/05/skos-xl#> .
+@prefix skosxl:    <http://www.w3.org/2008/05/skos-xl#> .
 @prefix iso-thes: <http://purl.org/iso25964/skos-thes#> .
 @prefix dcterms:  <http://purl.org/dc/terms/> .
 @prefix prov:     <http://www.w3.org/ns/prov#> .
@@ -93,11 +96,11 @@ gloss:LocalizedConcept a owl:Class ;
 # ── Designation Hierarchy (MECE) ─────────────────────────────────────────
 
 gloss:Designation a owl:Class ;
-  rdfs:subClassOf xl:Label ;
+  rdfs:subClassOf skosxl:Label ;
   rdfs:label "Designation"@en ;
   rdfs:comment """
     Abstract base for all designation types. A designation is both a
-    gloss:Designation and a skosxl:Label. The xl:literalForm carries the
+    gloss:Designation and a skosxl:Label. The skosxl:literalForm carries the
     designation text.
     Corresponds to Designation::Base in glossarist-ruby.
   """@en .
@@ -1221,14 +1224,22 @@ gloss:sectionOrdering a owl:ObjectProperty ;
 gloss:NonVerbalEntity a owl:Class ;
   rdfs:label "Non-Verbal Entity"@en ;
   rdfs:comment """
-    Abstract base for dataset-level non-verbal representation entities
-    (ISO 10241-1 §6.5). Figures, Tables, and Formulas inherit common
-    metadata: id, identifier, caption, description, alt, sources.
-    Authored once and shared across concepts.
+    Abstract base for all non-verbal representation entities
+    (ISO 10241-1 §6.5). Carries the shared accessibility + provenance
+    payload: caption, description, alt, sources.
+  """@en .
+
+gloss:SharedNonVerbalEntity a owl:Class ;
+  rdfs:subClassOf gloss:NonVerbalEntity ;
+  rdfs:label "Shared Non-Verbal Entity"@en ;
+  rdfs:comment """
+    A non-verbal entity that has stable dataset-wide identity. Figure,
+    Table, and Formula inherit from this. Distinct from NonVerbRep,
+    which is concept-local and positional.
   """@en .
 
 gloss:Figure a owl:Class ;
-  rdfs:subClassOf gloss:NonVerbalEntity ;
+  rdfs:subClassOf gloss:SharedNonVerbalEntity ;
   rdfs:label "Figure"@en ;
   rdfs:comment """
     A dataset-level figure entity with localized caption/alt and
@@ -1236,12 +1247,12 @@ gloss:Figure a owl:Class ;
   """@en .
 
 gloss:Table a owl:Class ;
-  rdfs:subClassOf gloss:NonVerbalEntity ;
+  rdfs:subClassOf gloss:SharedNonVerbalEntity ;
   rdfs:label "Table"@en ;
   rdfs:comment "A dataset-level table entity with localized content."@en .
 
 gloss:Formula a owl:Class ;
-  rdfs:subClassOf gloss:NonVerbalEntity ;
+  rdfs:subClassOf gloss:SharedNonVerbalEntity ;
   rdfs:label "Formula"@en ;
   rdfs:comment "A dataset-level formula entity with localized expression."@en .
 
@@ -1296,3 +1307,21 @@ gloss:role a owl:DatatypeProperty ;
   rdfs:range xsd:string ;
   rdfs:label "role"@en ;
   rdfs:comment "Variant role (vector, raster, dark, light, print)."@en .
+
+gloss:content a owl:DatatypeProperty ;
+  rdfs:domain gloss:Table ;
+  rdfs:range xsd:string ;
+  rdfs:label "content"@en ;
+  rdfs:comment "Serialized table content (HTML, AsciiDoc, or similar markup)."@en .
+
+gloss:expression a owl:DatatypeProperty ;
+  rdfs:domain gloss:Formula ;
+  rdfs:range xsd:string ;
+  rdfs:label "expression"@en ;
+  rdfs:comment "The formula expression in its source notation (AsciiDoc stem, MathML, etc.)."@en .
+
+gloss:latexForm a owl:DatatypeProperty ;
+  rdfs:domain gloss:Formula ;
+  rdfs:range xsd:string ;
+  rdfs:label "LaTeX form"@en ;
+  rdfs:comment "LaTeX rendering of the formula expression for downstream typesetting."@en .

@@ -10,6 +10,7 @@ import {
   validateShacl,
   loadShapes,
 } from '../../src/rdf/index.js';
+import { __clearShapesCacheForTests as clearShapesCache } from '../../src/rdf/shacl.js';
 
 function buildConcept() {
   return new Concept({
@@ -57,5 +58,15 @@ describe('validateShacl', () => {
     })));
     const report = await validateShacl(ds, { shapes });
     assert.equal(typeof report.conforms, 'boolean');
+  });
+
+  it('caches shapes per path so different paths do not collide', async () => {
+    clearShapesCache();
+    const SHAPES_PATH = new URL('../../data/concept-model/shapes/glossarist.shacl.ttl', import.meta.url).pathname;
+    // First load populates the cache for this path.
+    const a = await loadShapes({ shapesPath: SHAPES_PATH });
+    // Second load returns the cached dataset (identity-equal).
+    const b = await loadShapes({ shapesPath: SHAPES_PATH });
+    assert.equal(a, b, 'second load with same path must hit the cache');
   });
 });

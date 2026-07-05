@@ -4,24 +4,30 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import dataModel from '@rdfjs/data-model';
 import rdfDatasetFactory from '@rdfjs/dataset';
-import { DataFactory, Parser as N3Parser } from 'n3';
+import { Parser as N3Parser } from 'n3';
 import { default as ShaclValidator } from 'rdf-validate-shacl';
 
-// rdf-validate-shacl needs a "full" RDFJS factory (terms + dataset).
-// N3's DataFactory provides terms/quads; @rdfjs/dataset provides the
-// Dataset class. Combine them.
-const COMBINED_FACTORY = {
-  namedNode: DataFactory.namedNode,
-  blankNode: DataFactory.blankNode,
-  literal: DataFactory.literal,
-  defaultGraph: DataFactory.defaultGraph,
-  quad: DataFactory.quad,
-  fromTerm: DataFactory.fromTerm,
-  fromQuad: DataFactory.fromQuad,
+// rdf-validate-shacl needs an RDFJS factory that produces both terms
+// and Datasets. @rdfjs/data-model is the spec-complete term factory;
+// @rdfjs/dataset adds the Dataset class.
+//
+// The data-model default export carries its methods on the prototype
+// (non-enumerable), so a spread ({ ...dataModel }) does not capture
+// them. List the RDF/JS surface explicitly.
+const FACTORY = {
+  namedNode: dataModel.namedNode.bind(dataModel),
+  blankNode: dataModel.blankNode.bind(dataModel),
+  literal: dataModel.literal.bind(dataModel),
+  variable: dataModel.variable.bind(dataModel),
+  defaultGraph: dataModel.defaultGraph.bind(dataModel),
+  quad: dataModel.quad.bind(dataModel),
+  fromTerm: dataModel.fromTerm.bind(dataModel),
+  fromQuad: dataModel.fromQuad.bind(dataModel),
   dataset: rdfDatasetFactory.dataset.bind(rdfDatasetFactory),
 };
-const createDataset = COMBINED_FACTORY.dataset;
+const createDataset = FACTORY.dataset;
 const ShaclValidatorCtor = ShaclValidator.default ?? ShaclValidator;
 
 // Path to the vendored SHACL shapes (synced from glossarist/concept-model
@@ -39,7 +45,9 @@ const SHAPES_PATH = resolve(
 // the relative climb (`../..`) from `src/rdf/shacl.js` still lands on the
 // installed package root.
 
-let CACHED_SHAPES = null;
+// Cache keyed by absolute path so callers swapping shapes via the
+// `shapesPath` option (or future overrides) don't get cross-talk.
+const SHAPES_CACHE = new Map();
 
 async function parseTurtle(text, baseIri) {
   const parser = new N3Parser({ baseIRI: baseIri });
@@ -53,22 +61,24 @@ async function parseTurtle(text, baseIri) {
   });
 }
 
-export async function loadShapes() {
-  if (CACHED_SHAPES) return CACHED_SHAPES;
-  const text = await readFile(SHAPES_PATH, 'utf8');
-  CACHED_SHAPES = await parseTurtle(text, `file://${SHAPES_PATH}`);
-  return CACHED_SHAPES;
+export async function loadShapes({ shapesPath = SHAPES_PATH } = {}) {
+  const cached = SHAPES_CACHE.get(shapesPath);
+  if (cached) return cached;
+  const text = await readFile(shapesPath, 'utf8');
+  const dataset = await parseTurtle(text, `file://${shapesPath}`);
+  SHAPES_CACHE.set(shapesPath, dataset);
+  return dataset;
 }
 
 // Validates a single RDFJS Dataset against the concept-model SHACL shapes.
 // Returns the underlying ValidationReport from rdf-validate-shacl.
 //
-// Pass { shapes: customDataset } to override the default shapes.
-export async function validateShacl(dataDataset, { shapes } = {}) {
-  const shapesDataset = shapes ?? await loadShapes();
-  // rdf-validate-shacl needs a "full" RDFJS factory (term + dataset); N3's
-  // DataFactory only does terms/quads. @rdfjs/dataset's factory does both.
-  const validator = new ShaclValidatorCtor(shapesDataset, { factory: COMBINED_FACTORY });
+// Options:
+//   - shapes: a pre-loaded Dataset to use instead of the default shapes
+//   - shapesPath: alternative path to load shapes from (cached per path)
+export async function validateShacl(dataDataset, { shapes, shapesPath } = {}) {
+  const shapesDataset = shapes ?? await loadShapes({ shapesPath });
+  const validator = new ShaclValidatorCtor(shapesDataset, { factory: FACTORY });
   return validator.validate(dataDataset);
 }
 
@@ -79,4 +89,10 @@ export function quadsToDataset(quads) {
   const ds = createDataset();
   for (const q of quads) ds.add(q);
   return ds;
+}
+
+// Test-only: clears the shapes cache. Exported so tests can verify
+// independent caching per path without reaching into module internals.
+export function __clearShapesCacheForTests() {
+  SHAPES_CACHE.clear();
 }

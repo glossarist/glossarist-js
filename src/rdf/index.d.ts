@@ -97,6 +97,20 @@ export type NonVerbalEntity = Figure | Table | Formula;
 export declare function nonVerbalEntityUri(entity: NonVerbalEntity, options: NonVerbalEntityEmitOptions): string;
 export declare function nonVerbalEntityToQuads(entity: NonVerbalEntity, options: NonVerbalEntityEmitOptions): Generator<Quad, void, unknown>;
 
+// Vocabulary emitter (SKOS ConceptSchemes for enumeration IRIs)
+export interface VocabTerm {
+  iri: string;
+  label: string;
+}
+export interface VocabScheme {
+  schemeIri: string;
+  label: string;
+  terms: readonly VocabTerm[];
+}
+export declare function resolveIri(iri: string): string;
+export declare function vocabularySchemeToQuads(scheme: VocabScheme): Generator<Quad, void, unknown>;
+export declare function vocabularyToQuads(schemes: readonly VocabScheme[]): Generator<Quad, void, unknown>;
+
 export declare function collectQuads(quadsIterable: Iterable<Quad>): Quad[];
 
 export interface WriteTurtleOptions {

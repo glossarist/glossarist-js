@@ -23,6 +23,11 @@ export {
   nonVerbalEntityUri,
 } from './gloss-non-verbal-rep.js';
 export {
+  vocabularySchemeToQuads,
+  vocabularyToQuads,
+  resolveIri,
+} from './vocabulary-emitter.js';
+export {
   collectQuads,
   writeTurtle,
   writeNTriples,

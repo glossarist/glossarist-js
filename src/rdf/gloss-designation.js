@@ -11,12 +11,25 @@ import { normalizeEnum } from './normalize-enum.js';
 
 const { namedNode, literal, quad } = DataFactory;
 
+const XSD_BOOLEAN = 'http://www.w3.org/2001/XMLSchema#boolean';
+
 const TYPE_BY_NORMATIVE_STATUS = {
   preferred: 'prefLabel',
   deprecated: 'hiddenLabel',
   admitted: 'altLabel',
   deprecated_: 'altLabel',
 };
+
+// Boolean flag fields on designation subtypes. Each entry maps a model
+// field name to its ontology predicate. Only emitted when the value is
+// truthy, so legacy data without the fields round-trips unchanged.
+const BOOLEAN_FLAGS = [
+  ['acronym', PRED.gloss.isAcronym],
+  ['initialism', PRED.gloss.isInitialism],
+  ['truncation', PRED.gloss.isTruncation],
+  ['international', PRED.gloss.isInternational],
+  ['absent', PRED.gloss.isAbsent],
+];
 
 // Returns the SKOS-XL predicate (as a string URI) appropriate for this
 // designation's normative status. Mirrors `skosxl_label_for` in Ruby.
@@ -40,8 +53,13 @@ function designationClassUri(type) {
     expression: 'Expression',
     abbreviation: 'Abbreviation',
     symbol: 'Symbol',
+    // Accept both underscore and hyphen forms — model registers with
+    // underscore but consumers may pass either.
     'letter-symbol': 'LetterSymbol',
+    'letter_symbol': 'LetterSymbol',
     'graphical-symbol': 'GraphicalSymbol',
+    'graphical_symbol': 'GraphicalSymbol',
+    'graphical symbol': 'GraphicalSymbol',
   };
   const cls = CLASS_BY_TYPE[type] ?? 'Expression';
   return PRED.gloss[cls];
@@ -69,6 +87,15 @@ export function* designationToQuads(designation, { subjectUri, language, index }
     if (statusToken) {
       const statusUri = `${PRED.gloss.$ns}norm/${statusToken}`;
       yield quad(namedNode(desigSubject), namedNode(PRED.gloss.normativeStatus), namedNode(statusUri));
+    }
+  }
+
+  // Subtype-specific boolean flags. Skipping when falsy preserves
+  // backward compatibility with simpler designations.
+  const booleanType = namedNode(XSD_BOOLEAN);
+  for (const [field, predicate] of BOOLEAN_FLAGS) {
+    if (designation[field]) {
+      yield quad(namedNode(desigSubject), namedNode(predicate), literal('true', booleanType));
     }
   }
 }

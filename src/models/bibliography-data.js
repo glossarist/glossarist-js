@@ -5,7 +5,12 @@ import { BibliographyEntry } from './bibliography-entry.js';
 export class BibliographyData extends GlossaristModel {
   constructor(data = {}) {
     super();
-    const entriesData = data.bibliography ?? data.entries ?? [];
+    let entriesData;
+    if (Array.isArray(data)) {
+      entriesData = data;
+    } else {
+      entriesData = data?.bibliography ?? data?.entries ?? [];
+    }
     this._rawEntries = Array.isArray(entriesData) ? entriesData : [];
     this._entries = null;
   }

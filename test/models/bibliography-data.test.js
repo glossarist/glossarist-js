@@ -105,4 +105,16 @@ bibliography:
     });
     assert.equal(bib.entries[0].id, 'x');
   });
+
+  it('accepts a bare array of entries', () => {
+    const bib = new BibliographyData([{ id: 'a' }, { id: 'b' }]);
+    assert.equal(bib.entries.length, 2);
+    assert.equal(bib.entries[0].id, 'a');
+    assert.equal(bib.entries[1].id, 'b');
+  });
+
+  it('treats null/undefined as empty', () => {
+    assert.equal(new BibliographyData(null).entries.length, 0);
+    assert.equal(new BibliographyData(undefined).entries.length, 0);
+  });
 });

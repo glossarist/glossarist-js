@@ -232,6 +232,52 @@ describe('Register', () => {
     assert.equal(r.schema_version, '3');
     assert.equal(r.source_repo, 'https://example.com');
   });
+
+  it('accepts a string name and resolves it for any language', () => {
+    const r = new Register({ id: 'X', name: 'My Vocab' });
+    assert.equal(r.displayName('eng'), 'My Vocab');
+    assert.equal(r.displayName('fra'), 'My Vocab');
+    assert.equal(r.displayName('deu'), 'My Vocab');
+  });
+
+  it('accepts a localized name object and resolves by language', () => {
+    const r = new Register({
+      id: 'X',
+      name: { eng: 'Vocabulary', fra: 'Vocabulaire', deu: 'Vokabular' },
+    });
+    assert.equal(r.displayName('eng'), 'Vocabulary');
+    assert.equal(r.displayName('fra'), 'Vocabulaire');
+    assert.equal(r.displayName('deu'), 'Vokabular');
+  });
+
+  it('displayName falls back to eng, then first available language', () => {
+    const r = new Register({
+      id: 'X',
+      name: { fra: 'Vocabulaire', deu: 'Vokabular' },
+    });
+    assert.equal(r.displayName('jpn'), 'Vocabulaire');
+  });
+
+  it('displayName returns null when name is absent', () => {
+    const r = new Register({ id: 'X' });
+    assert.equal(r.displayName('eng'), null);
+  });
+
+  it('round-trips name through toJSON/fromJSON', () => {
+    const r = new Register({
+      id: 'X',
+      name: { eng: 'Vocabulary', fra: 'Vocabulaire' },
+    });
+    const json = r.toJSON();
+    assert.deepEqual(json.name, { eng: 'Vocabulary', fra: 'Vocabulaire' });
+    const r2 = Register.fromJSON(json);
+    assert.equal(r2.displayName('fra'), 'Vocabulaire');
+  });
+
+  it('omits name from JSON when null', () => {
+    const r = new Register({ id: 'X' });
+    assert.equal(r.toJSON().name, undefined);
+  });
 });
 
 describe('Constants', () => {

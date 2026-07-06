@@ -14,6 +14,7 @@ export class Register extends GlossaristModel {
     super();
     this.schemaVersion = data.schema_version ?? data.schemaVersion ?? '3';
     this.id = data.id ?? null;
+    this.name = data.name ?? null;
     this.ref = data.ref ?? null;
     this.refAliases = data.refAliases ?? data.ref_aliases ?? [];
     this.year = data.year ?? null;
@@ -42,7 +43,7 @@ export class Register extends GlossaristModel {
   _extractRaw(data) {
     const known = new Set([
       'schema_version', 'schemaVersion',
-      'id', 'ref', 'refAliases', 'ref_aliases',
+      'id', 'name', 'ref', 'refAliases', 'ref_aliases',
       'year', 'urn', 'urnAliases', 'urn_aliases',
       'status', 'supersedes', 'owner',
       'sourceRepo', 'source_repo', 'tags',
@@ -138,6 +139,24 @@ export class Register extends GlossaristModel {
     return section ? section.name(lang) : null;
   }
 
+  // Localized display name. Returns the best-matching name string for
+  // the requested language, falling back to English, then to the first
+  // available language, then to null. Accepts three input shapes:
+  //   - null/undefined  → null
+  //   - string          → returned as-is for every language
+  //   - { eng, fra, ... } → language-resolved
+  displayName(lang) {
+    if (this.name == null) return null;
+    if (typeof this.name === 'string') return this.name;
+    if (typeof this.name === 'object') {
+      return this.name[lang]
+        ?? this.name.eng
+        ?? Object.values(this.name)[0]
+        ?? null;
+    }
+    return null;
+  }
+
   // Returns the hex color for the requested UI mode, falling back to
   // the single hex when the spec is a string. Returns null when no
   // color is set or when the requested mode is missing.
@@ -148,6 +167,7 @@ export class Register extends GlossaristModel {
   toJSON() {
     const obj = { ...this._raw, schema_version: this.schemaVersion };
     if (this.id != null) obj.id = this.id;
+    if (this.name != null) obj.name = this.name;
     if (this.ref != null) obj.ref = this.ref;
     if (this.refAliases.length > 0) obj.refAliases = [...this.refAliases];
     if (this.year != null) obj.year = this.year;

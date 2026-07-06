@@ -315,7 +315,5 @@ export interface ValidationReport {
   }>;
 }
 
-export declare function loadShapes(options?: { shapesPath?: string }): Promise<Dataset>;
-export declare function validateShacl(dataDataset: Dataset, options?: { shapes?: Dataset; shapesPath?: string }): Promise<ValidationReport>;
-export declare function clearShapesCache(): void;
-export declare function quadsToDataset(quads: Iterable<Quad>): Dataset;
+// SHACL validator moved to ./shacl-entry subpath. Importing from
+// 'glossarist/rdf/shacl' in Node-only; 'glossarist/rdf' is browser-safe.

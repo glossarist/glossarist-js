@@ -51,3 +51,5 @@ export {
 } from './document-writer.js';
 export { writeTurtleSync } from './write-turtle-sync.js';
 export { validateShacl, loadShapes, clearShapesCache, quadsToDataset } from './shacl.js';
+export { quadSectionsToClassInstances } from './sections-builder.js';
+export { provenanceToQuads } from './provenance-emitter.js';

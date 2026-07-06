@@ -117,6 +117,36 @@ export declare function resolveIri(iri: string, prefixes?: Record<string, string
 export declare function compactIri(iri: string, prefixes?: Record<string, string>): string;
 export declare function deterministicBnodeId(...parts: Array<string | number | null | undefined>): string;
 
+// ── Sections builder (Quad[] → ClassInstance[] for UI) ────────────────
+export interface PropValue {
+  predicate: string;
+  values: string[];
+  nested?: boolean;
+}
+export interface ClassInstance {
+  classId: string;
+  classLabel: string;
+  label: string;
+  props: PropValue[];
+}
+export interface SectionsBuilderOptions {
+  language?: string;
+}
+export declare function quadSectionsToClassInstances(
+  quads: readonly Quad[],
+  options?: SectionsBuilderOptions,
+): ClassInstance[];
+
+// ── Provenance emitter (subject → prov:wasGeneratedBy + Activity) ─────
+export interface ProvenanceInput {
+  subjectUri: string;
+  serializer: string;
+  serializerVersion: string;
+  generatedAt: string;
+  canonicalUri?: string;
+}
+export declare function provenanceToQuads(input: ProvenanceInput): Generator<Quad, void, unknown>;
+
 export declare function vocabularySchemeToQuads(scheme: VocabScheme): Generator<Quad, void, unknown>;
 export declare function vocabularyToQuads(schemes: readonly VocabScheme[]): Generator<Quad, void, unknown>;
 

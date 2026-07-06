@@ -18,7 +18,7 @@
 // abstraction. Any consumer (Vue UI, CLI inspector, debug tool) can
 // use it.
 
-import { RDF_TYPE, RDFS_LABEL, compactIri, resolveIri } from './curie.js';
+import { RDF_TYPE, RDFS_LABEL, compactIri } from './curie.js';
 import { PREFIXES } from './predicates.js';
 
 const SKOS_PREF_LABEL = `${PREFIXES.skos}prefLabel`;

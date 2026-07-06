@@ -11,7 +11,7 @@
 // for cascading section membership).
 
 import { namedNode, blankNode, literal, quad } from './terms.js';
-import { PREFIXES, PRED } from './predicates.js';
+import { PREFIXES } from './predicates.js';
 import { RDF_TYPE } from './curie.js';
 import { deterministicBnodeId } from './bnode-id.js';
 

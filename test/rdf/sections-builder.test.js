@@ -45,7 +45,8 @@ describe('quadSectionsToClassInstances', () => {
       ex:x a skos:Concept .
     `);
     const [section] = quadSectionsToClassInstances(quads);
-    assert.equal(section.classId, 'http://www.w3.org/2004/02/skos/core#Concept');
+    // classId is CURIE form (compacted for UI consumers)
+    assert.equal(section.classId, 'skos:Concept');
     assert.equal(section.classLabel, 'Concept');
   });
 
@@ -154,7 +155,7 @@ describe('quadSectionsToClassInstances', () => {
     const quads = [...conceptToQuads(concept, { registerId: 'test', uriBase: 'https://example.org' })];
     const sections = quadSectionsToClassInstances(quads);
     assert.ok(sections.length > 0);
-    // First section should be the concept itself
-    assert.match(sections[0].classId, /Concept$/);
+    // First section should be the concept itself; classId compacted to CURIE
+    assert.match(sections[0].classId, /^gloss:Concept$/);
   });
 });

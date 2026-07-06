@@ -100,11 +100,17 @@ function resourceToClassInstance(subject, quads, bnodeQuads, language) {
   }
 
   const subjectStr = subject.value;
-  const classId = types.length > 0 ? types[0] : '';
-  const classLabel = deriveClassLabel(classId);
+  // Compact classId and classLabel to CURIE form for UI consumers.
+  // The Vue components compare against CURIEs ('gloss:Concept') not
+  // absolute IRIs, so the builder is responsible for the conversion.
+  const rawClassId = types.length > 0 ? types[0] : '';
+  const classId = rawClassId ? compactIri(rawClassId) : '';
+  const classLabel = deriveClassLabel(rawClassId);
   const label = prefLabel?.value ?? rdfsLabel ?? deriveSubjectLabel(subjectStr);
 
-  // Group predicates (preserve insertion order)
+  // Group predicates (preserve insertion order). Compact IRIs to CURIEs
+  // for display — UI consumers expect 'gloss:hasDefinition' rather than
+  // 'https://www.glossarist.org/ontologies/hasDefinition'.
   const props = [];
   const seenPredKeys = new Set();
 
@@ -112,11 +118,12 @@ function resourceToClassInstance(subject, quads, bnodeQuads, language) {
     const isBnodeObj = q.object.termType === 'BlankNode';
     const formatted = formatTerm(q.object, bnodeQuads);
     if (formatted === '') continue;
-    const dedupKey = `${q.predicate.value}#${isBnodeObj ? 'n' : 'f'}#${formatted}`;
+    const predicate = compactIri(q.predicate.value);
+    const dedupKey = `${predicate}#${isBnodeObj ? 'n' : 'f'}#${formatted}`;
     if (seenPredKeys.has(dedupKey)) continue;
     seenPredKeys.add(dedupKey);
 
-    const prop = { predicate: q.predicate.value, values: [formatted] };
+    const prop = { predicate, values: [formatted] };
     if (isBnodeObj) prop.nested = true;
     props.push(prop);
   }
@@ -132,7 +139,7 @@ function resourceToClassInstance(subject, quads, bnodeQuads, language) {
 function formatTerm(term, bnodeQuads) {
   switch (term.termType) {
     case 'NamedNode':
-      return term.value;
+      return compactIri(term.value);
     case 'Literal':
       return term.value;
     case 'BlankNode': {
@@ -151,11 +158,11 @@ function formatTerm(term, bnodeQuads) {
 
 function deriveClassLabel(classId) {
   if (!classId) return '';
-  // CURIE case: "gloss:Concept" → "Concept"
-  if (!classId.includes('://') && classId.includes(':')) {
+  // ClassId is now CURIE form (compacted). Just take the local part.
+  if (classId.includes(':') && !classId.includes('://')) {
     return classId.slice(classId.indexOf(':') + 1);
   }
-  // Absolute IRI: take last path segment, strip fragment/query
+  // Fallback for absolute IRIs that didn't compact
   const noFrag = classId.split('#').pop();
   const last = noFrag.split('/').pop();
   return last || classId;

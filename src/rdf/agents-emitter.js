@@ -7,12 +7,13 @@
 // prov:Organization, and the person is linked via prov:actedOnBehalfOf.
 
 import { namedNode, literal, quad } from './terms.js';
+import { PREFIXES } from './predicates.js';
+import { RDF_TYPE } from './curie.js';
 
-const PROV_NS = 'http://www.w3.org/ns/prov#';
-const FOAF_NS = 'http://xmlns.com/foaf/0.1/';
-const DCTERMS_NS = 'http://purl.org/dc/terms/';
-const RDFS_NS = 'http://www.w3.org/2000/01/rdf-schema#';
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+const PROV_NS    = PREFIXES.prov;
+const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
+const DCTERMS_NS = PREFIXES.dcterms;
+const RDFS_NS    = PREFIXES.rdfs;
 
 const PROV = {
   Person: `${PROV_NS}Person`,

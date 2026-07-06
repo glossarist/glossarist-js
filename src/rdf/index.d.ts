@@ -107,7 +107,16 @@ export interface VocabScheme {
   label: string;
   terms: readonly VocabTerm[];
 }
-export declare function resolveIri(iri: string): string;
+
+// ── CURIE + bnode helpers ─────────────────────────────────────────────
+export declare const RDF_TYPE: string;
+export declare const RDF_VALUE: string;
+export declare const RDFS_LABEL: string;
+export declare function isAbsoluteIri(s: string): boolean;
+export declare function resolveIri(iri: string, prefixes?: Record<string, string>): string;
+export declare function compactIri(iri: string, prefixes?: Record<string, string>): string;
+export declare function deterministicBnodeId(...parts: Array<string | number | null | undefined>): string;
+
 export declare function vocabularySchemeToQuads(scheme: VocabScheme): Generator<Quad, void, unknown>;
 export declare function vocabularyToQuads(schemes: readonly VocabScheme[]): Generator<Quad, void, unknown>;
 

@@ -8,12 +8,13 @@
 // - dcat:downloadURL (canonical download)
 
 import { namedNode, literal, quad } from './terms.js';
+import { PREFIXES } from './predicates.js';
+import { RDF_TYPE } from './curie.js';
 
-const FOAF_NS = 'http://xmlns.com/foaf/0.1/';
-const DCTERMS_NS = 'http://purl.org/dc/terms/';
-const DCAT_NS = 'http://www.w3.org/ns/dcat#';
-const XSD_NS = 'http://www.w3.org/2001/XMLSchema#';
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
+const DCTERMS_NS = PREFIXES.dcterms;
+const DCAT_NS    = PREFIXES.dcat ?? 'http://www.w3.org/ns/dcat#';
+const XSD_NS     = PREFIXES.xsd;
 
 const FOAF = {
   Image: `${FOAF_NS}Image`,

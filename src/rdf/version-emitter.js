@@ -9,11 +9,12 @@
 // - prov:wasAssociatedWith (optional agent)
 
 import { namedNode, literal, quad } from './terms.js';
+import { PREFIXES } from './predicates.js';
+import { RDF_TYPE } from './curie.js';
 
-const PROV_NS = 'http://www.w3.org/ns/prov#';
-const DCTERMS_NS = 'http://purl.org/dc/terms/';
-const XSD_NS = 'http://www.w3.org/2001/XMLSchema#';
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+const PROV_NS    = PREFIXES.prov;
+const DCTERMS_NS = PREFIXES.dcterms;
+const XSD_NS     = PREFIXES.xsd;
 
 const PROV = {
   Entity: `${PROV_NS}Entity`,

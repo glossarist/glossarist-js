@@ -3,14 +3,13 @@ import assert from 'node:assert/strict';
 import { Concept } from '../../src/models/index.js';
 import { Designation } from '../../src/models/designation.js';
 import { DetailedDefinition } from '../../src/models/detailed-definition.js';
+import { conceptToQuads, collectQuads } from '../../src/rdf/index.js';
 import {
-  conceptToQuads,
-  collectQuads,
   quadsToDataset,
   validateShacl,
   loadShapes,
-} from '../../src/rdf/index.js';
-import { clearShapesCache } from '../../src/rdf/shacl.js';
+  clearShapesCache,
+} from '../../src/rdf/shacl.js';
 
 function buildConcept() {
   return new Concept({

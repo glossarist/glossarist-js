@@ -6,11 +6,30 @@
 // strategy: MD5 (via node:crypto) when available, FNV-1a fallback for
 // browser bundles.
 //
-// Cross-process stability matches glossarist-ruby's deterministic-id
-// when node:crypto is available. Within a single process, FNV-1a is
-// also stable.
+// Browser safety: node:crypto is loaded lazily via runtime check so
+// bundlers don't tree-shake the import into the browser bundle.
 
-import { createHash } from 'node:crypto';
+let nodeCreateHash = null;
+let nodeCryptoChecked = false;
+
+function getNodeCreateHash() {
+  if (nodeCryptoChecked) return nodeCreateHash;
+  nodeCryptoChecked = true;
+  try {
+    let requireFn;
+    try {
+      const mod = (Function('m', 'return require(m)'))('node:module');
+      requireFn = mod.createRequire(import.meta.url);
+    } catch {
+      requireFn = (m) => (Function('m', 'return require(m)'))(m);
+    }
+    const crypto = requireFn('node:crypto');
+    nodeCreateHash = crypto.createHash.bind(crypto);
+  } catch {
+    nodeCreateHash = null;
+  }
+  return nodeCreateHash;
+}
 
 function fnv1a(seed) {
   let h = 0x811c9dc5;
@@ -24,12 +43,13 @@ function fnv1a(seed) {
 export function deterministicBnodeId(...parts) {
   const seed = parts.filter(p => p != null && p !== '').join('|');
   if (!seed) return `b${fnv1a('empty')}`;
-  // MD5 matches glossarist-ruby's deterministic-id for cross-process
-  // stability. Truncated to 12 hex chars — enough collision resistance
-  // for bnode IDs within a single document.
-  try {
-    return createHash('md5').update(seed).digest('hex').slice(0, 12);
-  } catch {
-    return `b${fnv1a(seed)}`;
+  const createHash = getNodeCreateHash();
+  if (createHash) {
+    try {
+      return createHash('md5').update(seed).digest('hex').slice(0, 12);
+    } catch {
+      // fall through to FNV
+    }
   }
+  return `b${fnv1a(seed)}`;
 }

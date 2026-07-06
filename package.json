@@ -42,6 +42,11 @@
       "import": "./src/rdf/index.js",
       "default": "./src/rdf/index.js"
     },
+    "./rdf/shacl": {
+      "types": "./src/rdf/shacl-entry.d.ts",
+      "import": "./src/rdf/shacl-entry.js",
+      "default": "./src/rdf/shacl-entry.js"
+    },
     "./rdf/prefixes": {
       "types": "./src/rdf/predicates.d.ts",
       "import": "./src/rdf/predicates.js",

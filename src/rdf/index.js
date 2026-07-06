@@ -50,6 +50,8 @@ export {
   sortQuads,
 } from './document-writer.js';
 export { writeTurtleSync } from './write-turtle-sync.js';
-export { validateShacl, loadShapes, clearShapesCache, quadsToDataset } from './shacl.js';
+// SHACL validator moved to glossarist/rdf/shacl subpath — it depends on
+// node:fs/promises, node:path, node:url at module top-level, which would
+// break browser bundles. Importing 'glossarist/rdf' alone is browser-safe.
 export { quadSectionsToClassInstances } from './sections-builder.js';
 export { provenanceToQuads } from './provenance-emitter.js';

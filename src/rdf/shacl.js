@@ -76,9 +76,14 @@ export async function loadShapes({ shapesPath = SHAPES_PATH } = {}) {
 // Options:
 //   - shapes: a pre-loaded Dataset to use instead of the default shapes
 //   - shapesPath: alternative path to load shapes from (cached per path)
+//
+// Note: rdf-validate-shacl 0.6+ requires a factory with clownface. The
+// library's default env (from defaultEnv.js) provides one — we no longer
+// pass a custom factory. Callers still control Dataset creation via
+// quadsToDataset below.
 export async function validateShacl(dataDataset, { shapes, shapesPath } = {}) {
   const shapesDataset = shapes ?? await loadShapes({ shapesPath });
-  const validator = new ShaclValidatorCtor(shapesDataset, { factory: FACTORY });
+  const validator = new ShaclValidatorCtor(shapesDataset);
   return validator.validate(dataDataset);
 }
 

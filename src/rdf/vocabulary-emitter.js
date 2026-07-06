@@ -14,9 +14,8 @@
 
 import { namedNode, literal, quad } from './terms.js';
 import { PREFIXES } from './predicates.js';
+import { resolveIri, RDF_TYPE, RDFS_LABEL } from './curie.js';
 
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
-const RDF_LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
 const SKOS_NS = PREFIXES.skos;
 
 /**
@@ -32,22 +31,6 @@ const SKOS_NS = PREFIXES.skos;
  */
 
 /**
- * Resolves a CURIE (e.g. "gloss:status/valid") to an absolute IRI
- * using PREFIXES. Pass-through if already absolute.
- */
-function resolveIri(iri) {
-  if (iri.startsWith('http://') || iri.startsWith('https://') || iri.startsWith('urn:')) {
-    return iri;
-  }
-  const colonIdx = iri.indexOf(':');
-  if (colonIdx < 0) return iri;
-  const prefix = iri.slice(0, colonIdx);
-  const local = iri.slice(colonIdx + 1);
-  const base = PREFIXES[prefix];
-  return base ? `${base}${local}` : iri;
-}
-
-/**
  * Emits SKOS ConceptScheme + Concept quads for one scheme.
  *
  * @param {VocabScheme} scheme
@@ -58,14 +41,14 @@ export function* vocabularySchemeToQuads(scheme) {
   const schemeSubject = namedNode(schemeIri);
 
   yield quad(schemeSubject, namedNode(RDF_TYPE), namedNode(`${SKOS_NS}ConceptScheme`));
-  yield quad(schemeSubject, namedNode(RDF_LABEL), literal(scheme.label, 'en'));
+  yield quad(schemeSubject, namedNode(RDFS_LABEL), literal(scheme.label, 'en'));
 
   for (const term of scheme.terms ?? []) {
     const termIri = resolveIri(term.iri);
     const termSubject = namedNode(termIri);
 
     yield quad(termSubject, namedNode(RDF_TYPE), namedNode(`${SKOS_NS}Concept`));
-    yield quad(termSubject, namedNode(RDF_LABEL), literal(term.label, 'en'));
+    yield quad(termSubject, namedNode(RDFS_LABEL), literal(term.label, 'en'));
     yield quad(termSubject, namedNode(`${SKOS_NS}inScheme`), schemeSubject);
     yield quad(schemeSubject, namedNode(`${SKOS_NS}hasTopConcept`), termSubject);
   }
@@ -82,6 +65,3 @@ export function* vocabularyToQuads(schemes) {
     yield* vocabularySchemeToQuads(scheme);
   }
 }
-
-// Re-exported for callers that want to resolve CURIEs themselves.
-export { resolveIri };

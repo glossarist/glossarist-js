@@ -1,5 +1,14 @@
 // Public RDF layer. Mirrors lib/glossarist/rdf/ in glossarist-ruby.
 export { PRED, PREFIXES, SKOSXL, WELL_KNOWN } from './prefixes.js';
+export {
+  resolveIri,
+  compactIri,
+  isAbsoluteIri,
+  RDF_TYPE,
+  RDF_VALUE,
+  RDFS_LABEL,
+} from './curie.js';
+export { deterministicBnodeId } from './bnode-id.js';
 export { deterministicId, deterministicBnode } from './deterministic-id.js';
 export { namedNode, blankNode, literal, defaultGraph, quad } from './terms.js';
 export {
@@ -25,7 +34,6 @@ export {
 export {
   vocabularySchemeToQuads,
   vocabularyToQuads,
-  resolveIri,
 } from './vocabulary-emitter.js';
 export { datasetToQuads } from './dataset-emitter.js';
 export { groupToQuads } from './group-emitter.js';
@@ -43,3 +51,5 @@ export {
 } from './document-writer.js';
 export { writeTurtleSync } from './write-turtle-sync.js';
 export { validateShacl, loadShapes, clearShapesCache, quadsToDataset } from './shacl.js';
+export { quadSectionsToClassInstances } from './sections-builder.js';
+export { provenanceToQuads } from './provenance-emitter.js';

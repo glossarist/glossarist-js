@@ -11,17 +11,17 @@
 // for cascading section membership).
 
 import { namedNode, blankNode, literal, quad } from './terms.js';
+import { PREFIXES, PRED } from './predicates.js';
+import { RDF_TYPE } from './curie.js';
+import { deterministicBnodeId } from './bnode-id.js';
 
-// Prefix namespaces used by this emitter. Hard-coded (not via PREFIXES)
-// because dcat and prov are absent from the JSON-LD context that
-// PREFIXES is generated from — they appear in instance data only.
-// See concept-model/prefixes.ttl for the canonical bindings.
-const DCAT_NS = 'http://www.w3.org/ns/dcat#';
-const DCTERMS_NS = 'http://purl.org/dc/terms/';
-const SKOS_NS = 'http://www.w3.org/2004/02/skos/core#';
-const PROV_NS = 'http://www.w3.org/ns/prov#';
-const GLOSS_NS = 'https://www.glossarist.org/ontologies/';
-const XSD_NS = 'http://www.w3.org/2001/XMLSchema#';
+// Namespace IRIs from the canonical PREFIXES — single source of truth.
+const DCAT_NS    = PREFIXES.dcat ?? 'http://www.w3.org/ns/dcat#';
+const DCTERMS_NS = PREFIXES.dcterms;
+const SKOS_NS    = PREFIXES.skos;
+const PROV_NS    = PREFIXES.prov;
+const GLOSS_NS   = PREFIXES.gloss;
+const XSD_NS     = PREFIXES.xsd;
 
 /**
  * @typedef {Object} DatasetDistribution
@@ -87,7 +87,6 @@ const GLOSS = {
 };
 const XSD_DATE = `${XSD_NS}date`;
 const XSD_INTEGER = `${XSD_NS}integer`;
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
 /**
  * Emits dcat:Dataset + skos:ConceptScheme quads for one register's
@@ -141,7 +140,7 @@ function* distributionToQuads(ds, dist) {
   // outside their parent dataset. Using blankNode() (not namedNode with
   // a "_:..." string) so the n3 writer serializes them as _:bXXXX
   // rather than <_:bXXXX> which would be an invalid IRI.
-  const distSubject = blankNode(`b${deterministicId('dist', dist.id, dist.downloadUrl)}`);
+  const distSubject = blankNode(`b${deterministicBnodeId('dist', dist.id, dist.downloadUrl)}`);
   yield quad(ds, namedNode(DCAT.distribution), distSubject);
   yield quad(distSubject, namedNode(RDF_TYPE), namedNode(DCAT.Distribution));
   yield quad(distSubject, namedNode(DCTERMS.title), literal(dist.title));
@@ -167,15 +166,5 @@ function* sectionToQuads(section) {
   }
 }
 
-// Local deterministic-id helper (avoid pulling crypto-bearing module
-// into this browser-safe file). Mirrors deterministicId's seed|join
-// pattern using a small hash. Repeated calls within one process are
-// stable; cross-process stability isn't required for blank node IDs.
-function deterministicId(...parts) {
-  const seed = parts.filter(p => p != null).join('|');
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
-  }
-  return (h >>> 0).toString(16).padStart(8, '0');
-}
+// Local deterministic-id helper is no longer needed — using the shared
+// deterministicBnodeId from bnode-id.js for cross-emitter consistency.

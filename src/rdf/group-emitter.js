@@ -12,13 +12,14 @@
 // Both kinds are also typed as skos:ConceptScheme for SKOS interop.
 
 import { namedNode, literal, quad } from './terms.js';
+import { PREFIXES } from './predicates.js';
+import { RDF_TYPE } from './curie.js';
 
-// Hard-coded namespaces — see dataset-emitter.js for rationale.
-const DCAT_NS = 'http://www.w3.org/ns/dcat#';
-const DCTERMS_NS = 'http://purl.org/dc/terms/';
-const SKOS_NS = 'http://www.w3.org/2004/02/skos/core#';
-const PROV_NS = 'http://www.w3.org/ns/prov#';
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+// Namespace IRIs from canonical PREFIXES.
+const DCAT_NS    = PREFIXES.dcat ?? 'http://www.w3.org/ns/dcat#';
+const DCTERMS_NS = PREFIXES.dcterms;
+const SKOS_NS    = PREFIXES.skos;
+const PROV_NS    = PREFIXES.prov;
 
 const DCAT = {
   DatasetSeries: `${DCAT_NS}DatasetSeries`,

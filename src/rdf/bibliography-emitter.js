@@ -10,11 +10,14 @@
 // - dcterms:isPartOf (parent dataset)
 
 import { namedNode, literal, quad } from './terms.js';
+import { PREFIXES } from './predicates.js';
+import { RDF_TYPE } from './curie.js';
 
-const DCTERMS_NS = 'http://purl.org/dc/terms/';
-const FOAF_NS = 'http://xmlns.com/foaf/0.1/';
-const GLOSS_NS = 'https://www.glossarist.org/ontologies/';
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+// Namespace IRIs from canonical PREFIXES. foaf is absent from the
+// JSON-LD context (therefore not in PREFIXES) — declare locally.
+const DCTERMS_NS = PREFIXES.dcterms;
+const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
+const GLOSS_NS   = PREFIXES.gloss;
 
 const DCTERMS = {
   BibliographicResource: `${DCTERMS_NS}BibliographicResource`,

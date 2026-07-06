@@ -58,6 +58,7 @@ export const REGISTER_STATUSES: readonly string[];
 export class Register extends GlossaristModel {
   readonly schemaVersion: string;
   readonly id: string | null;
+  readonly name: string | Record<string, string> | null;
   readonly ref: string | null;
   readonly refAliases: string[];
   readonly year: number | null;
@@ -79,6 +80,7 @@ export class Register extends GlossaristModel {
   readonly sections: Section[];
   sectionById(id: string): Section | null;
   sectionName(sectionId: string, lang: string): string | null;
+  displayName(lang: string): string | null;
   static fromJSON(data: Record<string, unknown>): Register;
 }
 

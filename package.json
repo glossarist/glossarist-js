@@ -37,6 +37,11 @@
       "import": "./src/validators/index.js",
       "default": "./src/validators/index.js"
     },
+    "./diff": {
+      "types": "./src/diff/index.d.ts",
+      "import": "./src/diff/index.js",
+      "default": "./src/diff/index.js"
+    },
     "./rdf": {
       "types": "./src/rdf/index.d.ts",
       "import": "./src/rdf/index.js",

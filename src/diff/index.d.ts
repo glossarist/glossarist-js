@@ -104,12 +104,36 @@ export interface ConceptDiffWalkEntry extends DiffWalkEntry {
   language: string;
 }
 
+export class DiffStats extends GlossaristModel {
+  readonly added: number;
+  readonly removed: number;
+  readonly changed: number;
+  readonly total: number;
+  toJSON(): { added: number; removed: number; changed: number };
+  static fromJSON(data: Record<string, unknown>): DiffStats;
+}
+
 export class MetadataDiff extends GlossaristModel {
   readonly changes: Record<string, Changed>;
   readonly hasChanges: boolean;
-  walk(prefix?: string): Generator<DiffWalkEntry, void, unknown>;
+  readonly count: number;
+  walk(section?: string): Generator<DiffWalkEntry, void, unknown>;
   toJSON(): Record<string, ReturnType<Changed['toJSON']>>;
   static fromJSON(data: Record<string, unknown>): MetadataDiff;
+}
+
+export class ConceptLevelDiff extends GlossaristModel {
+  readonly sources: ListDiff;
+  readonly dates: ListDiff;
+  readonly relatedConcepts: ListDiff;
+  readonly groups: ListDiff;
+  readonly sections: ListDiff;
+  readonly tags: ListDiff;
+  readonly metadata: MetadataDiff;
+  readonly hasChanges: boolean;
+  walk(): Generator<DiffWalkEntry, void, unknown>;
+  toJSON(): Record<string, unknown>;
+  static fromJSON(data: Record<string, unknown>): ConceptLevelDiff;
 }
 
 export class LocalizedConceptDiff extends GlossaristModel {
@@ -123,7 +147,7 @@ export class LocalizedConceptDiff extends GlossaristModel {
   readonly related: ListDiff;
   readonly metadata: MetadataDiff;
   readonly hasChanges: boolean;
-  walk(): Generator<DiffWalkEntry, void, unknown>;
+  walk(prefix?: string): Generator<DiffWalkEntry, void, unknown>;
   toJSON(): Record<string, unknown>;
   static fromJSON(data: Record<string, unknown>): LocalizedConceptDiff;
 }
@@ -131,9 +155,12 @@ export class LocalizedConceptDiff extends GlossaristModel {
 export class ConceptDiff extends GlossaristModel {
   readonly oldId: string | null;
   readonly newId: string | null;
+  readonly concept: ConceptLevelDiff;
+  readonly languages: ListDiff;
   readonly localizations: Record<string, LocalizedConceptDiff>;
   readonly hasChanges: boolean;
-  readonly languages: string[];
+  readonly localizationLanguages: string[];
+  readonly stats: DiffStats;
   localization(lang: string): LocalizedConceptDiff | null;
   walk(): Generator<ConceptDiffWalkEntry, void, unknown>;
   toJSON(): Record<string, unknown>;

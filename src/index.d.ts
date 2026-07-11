@@ -15,6 +15,25 @@ export {
   RELATIONSHIP_TYPES, DESIGNATION_RELATIONSHIP_TYPES, DATE_TYPES,
 } from './models/index';
 
+// Concept diff
+export {
+  diffConcepts,
+  diffLocalizedConcepts,
+  diffText,
+  diffList,
+  diffSet,
+  ConceptDiff,
+  LocalizedConceptDiff,
+  MetadataDiff,
+  ListDiff,
+  TextDiff,
+  TextHunk,
+  Change,
+  Added,
+  Removed,
+  Changed,
+} from './diff/index';
+
 // GCR reader
 export { loadGcr, GcrPackage, parseConceptYaml, naturalSort } from './gcr-reader';
 

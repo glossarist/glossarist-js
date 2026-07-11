@@ -1,4 +1,5 @@
 export { naturalSort } from './sort.js';
+export { diffLocalizedConcepts, diffConcepts } from './concept-diff.js';
 export { loadGcr, GcrPackage, parseConceptYaml } from './gcr-reader.js';
 export { readConcepts, readConcept, listConceptIds, readRegister } from './concept-reader.js';
 export { writeConcept, writeConcepts } from './concept-writer.js';

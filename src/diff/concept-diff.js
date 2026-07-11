@@ -160,6 +160,7 @@ export class LocalizedConceptDiff extends GlossaristModel {
     this._metadata = data.metadata instanceof MetadataDiff
       ? data.metadata
       : MetadataDiff.fromJSON(data.metadata ?? {});
+    this._totalItems = data.totalItems ?? data.total_items ?? 0;
   }
 
   get designations() { return this._designations; }
@@ -180,6 +181,14 @@ export class LocalizedConceptDiff extends GlossaristModel {
       || this._dates.hasChanges
       || this._related.hasChanges
       || this._metadata.hasChanges;
+  }
+
+  get stats() {
+    return collectStats(this.walk());
+  }
+
+  get similarity() {
+    return computeSimilarity(this.stats.total, this._totalItems);
   }
 
   *walk(prefix) {
@@ -205,6 +214,7 @@ export class LocalizedConceptDiff extends GlossaristModel {
     obj.dates = this._dates.toJSON();
     obj.related = this._related.toJSON();
     obj.metadata = this._metadata.toJSON();
+    obj.total_items = this._totalItems;
     return obj;
   }
 
@@ -229,6 +239,7 @@ export class ConceptDiff extends GlossaristModel {
         ? lcDiff
         : LocalizedConceptDiff.fromJSON(lcDiff);
     }
+    this._totalItems = data.totalItems ?? data.total_items ?? 0;
   }
 
   get oldId() { return this._oldId; }
@@ -255,15 +266,11 @@ export class ConceptDiff extends GlossaristModel {
   }
 
   get stats() {
-    let added = 0;
-    let removed = 0;
-    let changed = 0;
-    for (const { change } of this.walk()) {
-      if (change.type === 'added') added++;
-      else if (change.type === 'removed') removed++;
-      else if (change.type === 'changed') changed++;
-    }
-    return new DiffStats({ added, removed, changed });
+    return collectStats(this.walk());
+  }
+
+  get similarity() {
+    return computeSimilarity(this.stats.total, this._totalItems);
   }
 
   *walk() {
@@ -286,6 +293,7 @@ export class ConceptDiff extends GlossaristModel {
     for (const [lang, lc] of Object.entries(this._localizations)) {
       obj.localizations[lang] = lc.toJSON();
     }
+    obj.total_items = this._totalItems;
     return obj;
   }
 
@@ -321,8 +329,12 @@ export function diffConcepts(oldConcept, newConcept, language = 'eng') {
   for (const lang of langs) {
     const oldLoc = oldConcept?.localization(lang) ?? null;
     const newLoc = newConcept?.localization(lang) ?? null;
-    localizations[lang] = diffLocalizedConcepts(oldLoc, newLoc);
+    const lcDiff = diffLocalizedConcepts(oldLoc, newLoc);
+    lcDiff._totalItems = countLocalizedItems(oldLoc, newLoc);
+    localizations[lang] = lcDiff;
   }
+
+  const totalItems = countConceptItems(oldConcept ?? null, newConcept ?? null, langs);
 
   return new ConceptDiff({
     oldId,
@@ -330,6 +342,7 @@ export function diffConcepts(oldConcept, newConcept, language = 'eng') {
     concept: conceptDiff,
     languages: languageDiff,
     localizations,
+    totalItems,
   });
 }
 
@@ -518,6 +531,65 @@ function diffMetadata(oldObj, newObj, fields) {
 function wrapListDiff(data) {
   if (data instanceof ListDiff) return data;
   return ListDiff.fromJSON(data ?? {});
+}
+
+function collectStats(walker) {
+  let added = 0;
+  let removed = 0;
+  let changed = 0;
+  for (const { change } of walker) {
+    if (change.type === 'added') added++;
+    else if (change.type === 'removed') removed++;
+    else if (change.type === 'changed') changed++;
+  }
+  return new DiffStats({ added, removed, changed });
+}
+
+function computeSimilarity(changeCount, totalItems) {
+  if (totalItems <= 0) return 1.0;
+  const ratio = Math.min(changeCount / totalItems, 1);
+  return Math.round((1 - ratio) * 10000) / 10000;
+}
+
+function maxOf(a, b) {
+  return Math.max(a ?? 0, b ?? 0);
+}
+
+function countConceptItems(oldConcept, newConcept, langs) {
+  let count = 0;
+
+  count += maxOf(oldConcept?.sources?.length, newConcept?.sources?.length);
+  count += maxOf(oldConcept?.dates?.length, newConcept?.dates?.length);
+  count += maxOf(oldConcept?.relatedConcepts?.length, newConcept?.relatedConcepts?.length);
+  count += maxOf(oldConcept?.groups?.length, newConcept?.groups?.length);
+  count += maxOf(oldConcept?.sections?.length, newConcept?.sections?.length);
+  count += maxOf(oldConcept?.tags?.length, newConcept?.tags?.length);
+  count += CONCEPT_METADATA_FIELDS.length;
+
+  const oldLangs = oldConcept?.languages ?? [];
+  const newLangs = newConcept?.languages ?? [];
+  count += maxOf(oldLangs.length, newLangs.length);
+
+  for (const lang of langs) {
+    const oldLoc = oldConcept?.localization(lang) ?? null;
+    const newLoc = newConcept?.localization(lang) ?? null;
+    count += countLocalizedItems(oldLoc, newLoc);
+  }
+
+  return count;
+}
+
+function countLocalizedItems(oldLoc, newLoc) {
+  let count = 0;
+  count += maxOf(oldLoc?.terms?.length, newLoc?.terms?.length);
+  count += maxOf(oldLoc?.definitions?.length, newLoc?.definitions?.length);
+  count += maxOf(oldLoc?.notes?.length, newLoc?.notes?.length);
+  count += maxOf(oldLoc?.examples?.length, newLoc?.examples?.length);
+  count += maxOf(oldLoc?.sources?.length, newLoc?.sources?.length);
+  count += maxOf(oldLoc?.dates?.length, newLoc?.dates?.length);
+  count += maxOf(oldLoc?.related?.length, newLoc?.related?.length);
+  count += LOCALIZATION_METADATA_FIELDS.length;
+  return count;
 }
 
 function* walkList(section, listDiff) {

@@ -7,7 +7,7 @@ import { ConceptSource } from './concept-source.js';
 import { FigureReference } from './non-verbal-references.js';
 import { TableReference } from './non-verbal-references.js';
 import { FormulaReference } from './non-verbal-references.js';
-import { diffConcepts } from '../concept-diff.js';
+import { diffConcepts } from '../diff/concept-diff.js';
 
 export class Concept extends GlossaristModel {
   constructor(data = {}) {

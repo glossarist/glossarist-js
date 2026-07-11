@@ -30,3 +30,19 @@ export {
   diffConcepts,
   diffLocalizedConcepts,
 } from './concept-diff.js';
+
+export {
+  ConceptCollectionDiff,
+  diffConceptCollections,
+} from './collection-diff.js';
+
+export {
+  renderConceptDiff,
+  renderCollectionDiff,
+  renderTextDiff,
+} from './diff-renderer.js';
+
+export {
+  applyDiff,
+  reverseDiff,
+} from './diff-patch.js';

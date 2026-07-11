@@ -22,7 +22,9 @@ export {
 } from './list-diff.js';
 
 export {
+  DiffStats,
   MetadataDiff,
+  ConceptLevelDiff,
   LocalizedConceptDiff,
   ConceptDiff,
   diffConcepts,

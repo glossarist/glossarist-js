@@ -2,7 +2,11 @@ import { GlossaristModel } from '../models/base.js';
 import { Added, Removed, Changed } from './change.js';
 import { ListDiff, diffList, diffSet } from './list-diff.js';
 
-const METADATA_FIELDS = Object.freeze([
+const CONCEPT_METADATA_FIELDS = Object.freeze([
+  'status', 'term', 'uri', 'schemaVersion',
+]);
+
+const LOCALIZATION_METADATA_FIELDS = Object.freeze([
   'entryStatus',
   'classification',
   'reviewType',
@@ -19,11 +23,33 @@ const METADATA_FIELDS = Object.freeze([
   'reviewDecisionNotes',
 ]);
 
+export class DiffStats extends GlossaristModel {
+  constructor(data = {}) {
+    super();
+    this._added = data.added ?? 0;
+    this._removed = data.removed ?? 0;
+    this._changed = data.changed ?? 0;
+  }
+
+  get added() { return this._added; }
+  get removed() { return this._removed; }
+  get changed() { return this._changed; }
+  get total() { return this._added + this._removed + this._changed; }
+
+  toJSON() {
+    return { added: this._added, removed: this._removed, changed: this._changed };
+  }
+
+  static fromJSON(data) {
+    return new DiffStats(data ?? {});
+  }
+}
+
 export class MetadataDiff extends GlossaristModel {
   constructor(data = {}) {
     super();
     this._changes = {};
-    const raw = data.changes ?? {};
+    const raw = data.changes ?? data ?? {};
     for (const [field, change] of Object.entries(raw)) {
       this._changes[field] = change instanceof Changed ? change : Changed.fromJSON(change);
     }
@@ -37,9 +63,13 @@ export class MetadataDiff extends GlossaristModel {
     return Object.keys(this._changes).length > 0;
   }
 
-  *walk(prefix = '') {
+  get count() {
+    return Object.keys(this._changes).length;
+  }
+
+  *walk(section) {
     for (const [field, change] of Object.entries(this._changes)) {
-      const path = prefix ? `${prefix}.${field}` : field;
+      const path = section ? `${section}.${field}` : field;
       yield { path, change };
     }
   }
@@ -57,31 +87,76 @@ export class MetadataDiff extends GlossaristModel {
   }
 }
 
+export class ConceptLevelDiff extends GlossaristModel {
+  constructor(data = {}) {
+    super();
+    this._sources = wrapListDiff(data.sources);
+    this._dates = wrapListDiff(data.dates);
+    this._relatedConcepts = wrapListDiff(data.relatedConcepts ?? data.related_concepts);
+    this._groups = wrapListDiff(data.groups);
+    this._sections = wrapListDiff(data.sections);
+    this._tags = wrapListDiff(data.tags);
+    this._metadata = data.metadata instanceof MetadataDiff
+      ? data.metadata
+      : MetadataDiff.fromJSON(data.metadata ?? {});
+  }
+
+  get sources() { return this._sources; }
+  get dates() { return this._dates; }
+  get relatedConcepts() { return this._relatedConcepts; }
+  get groups() { return this._groups; }
+  get sections() { return this._sections; }
+  get tags() { return this._tags; }
+  get metadata() { return this._metadata; }
+
+  get hasChanges() {
+    return this._sources.hasChanges
+      || this._dates.hasChanges
+      || this._relatedConcepts.hasChanges
+      || this._groups.hasChanges
+      || this._sections.hasChanges
+      || this._tags.hasChanges
+      || this._metadata.hasChanges;
+  }
+
+  *walk() {
+    yield* walkList('concept.sources', this._sources);
+    yield* walkList('concept.dates', this._dates);
+    yield* walkList('concept.relatedConcepts', this._relatedConcepts);
+    yield* walkList('concept.groups', this._groups);
+    yield* walkList('concept.sections', this._sections);
+    yield* walkList('concept.tags', this._tags);
+    yield* this._metadata.walk('concept.metadata');
+  }
+
+  toJSON() {
+    return {
+      sources: this._sources.toJSON(),
+      dates: this._dates.toJSON(),
+      related_concepts: this._relatedConcepts.toJSON(),
+      groups: this._groups.toJSON(),
+      sections: this._sections.toJSON(),
+      tags: this._tags.toJSON(),
+      metadata: this._metadata.toJSON(),
+    };
+  }
+
+  static fromJSON(data) {
+    return new ConceptLevelDiff(data);
+  }
+}
+
 export class LocalizedConceptDiff extends GlossaristModel {
   constructor(data = {}) {
     super();
     this.languageCode = data.languageCode ?? data.language_code ?? null;
-    this._designations = data.designations instanceof ListDiff
-      ? data.designations
-      : ListDiff.fromJSON(data.designations ?? {});
-    this._definitions = data.definitions instanceof ListDiff
-      ? data.definitions
-      : ListDiff.fromJSON(data.definitions ?? {});
-    this._notes = data.notes instanceof ListDiff
-      ? data.notes
-      : ListDiff.fromJSON(data.notes ?? {});
-    this._examples = data.examples instanceof ListDiff
-      ? data.examples
-      : ListDiff.fromJSON(data.examples ?? {});
-    this._sources = data.sources instanceof ListDiff
-      ? data.sources
-      : ListDiff.fromJSON(data.sources ?? {});
-    this._dates = data.dates instanceof ListDiff
-      ? data.dates
-      : ListDiff.fromJSON(data.dates ?? {});
-    this._related = data.related instanceof ListDiff
-      ? data.related
-      : ListDiff.fromJSON(data.related ?? {});
+    this._designations = wrapListDiff(data.designations);
+    this._definitions = wrapListDiff(data.definitions);
+    this._notes = wrapListDiff(data.notes);
+    this._examples = wrapListDiff(data.examples);
+    this._sources = wrapListDiff(data.sources);
+    this._dates = wrapListDiff(data.dates);
+    this._related = wrapListDiff(data.related);
     this._metadata = data.metadata instanceof MetadataDiff
       ? data.metadata
       : MetadataDiff.fromJSON(data.metadata ?? {});
@@ -107,20 +182,16 @@ export class LocalizedConceptDiff extends GlossaristModel {
       || this._metadata.hasChanges;
   }
 
-  /**
-   * Yield every change in this localization, each with a dotted path.
-   * Entries are grouped by section: designations, definitions, notes,
-   * examples, sources, dates, related, metadata.
-   */
-  *walk() {
-    yield* walkList('designations', this._designations);
-    yield* walkList('definitions', this._definitions);
-    yield* walkList('notes', this._notes);
-    yield* walkList('examples', this._examples);
-    yield* walkList('sources', this._sources);
-    yield* walkList('dates', this._dates);
-    yield* walkList('related', this._related);
-    yield* this._metadata.walk();
+  *walk(prefix) {
+    const base = prefix ?? '';
+    yield* walkList(`${base}.designations`, this._designations);
+    yield* walkList(`${base}.definitions`, this._definitions);
+    yield* walkList(`${base}.notes`, this._notes);
+    yield* walkList(`${base}.examples`, this._examples);
+    yield* walkList(`${base}.sources`, this._sources);
+    yield* walkList(`${base}.dates`, this._dates);
+    yield* walkList(`${base}.related`, this._related);
+    yield* this._metadata.walk(`${base}.metadata`);
   }
 
   toJSON() {
@@ -147,6 +218,10 @@ export class ConceptDiff extends GlossaristModel {
     super();
     this.oldId = data.oldId ?? data.old_id ?? null;
     this.newId = data.newId ?? data.new_id ?? null;
+    this._concept = data.concept instanceof ConceptLevelDiff
+      ? data.concept
+      : ConceptLevelDiff.fromJSON(data.concept ?? {});
+    this._languages = wrapListDiff(data.languages);
     this._localizations = {};
     const raw = data.localizations ?? {};
     for (const [lang, lcDiff] of Object.entries(raw)) {
@@ -156,34 +231,57 @@ export class ConceptDiff extends GlossaristModel {
     }
   }
 
-  get localizations() {
-    return this._localizations;
+  get oldId() { return this._oldId; }
+  get newId() { return this._newId; }
+  get concept() { return this._concept; }
+  get languages() { return this._languages; }
+  get localizations() { return this._localizations; }
+
+  set oldId(v) { this._oldId = v; }
+  set newId(v) { this._newId = v; }
+
+  get localizationLanguages() {
+    return Object.keys(this._localizations);
+  }
+
+  get hasChanges() {
+    return this._concept.hasChanges
+      || this._languages.hasChanges
+      || Object.values(this._localizations).some(lc => lc.hasChanges);
   }
 
   localization(lang) {
     return this._localizations[lang] ?? null;
   }
 
-  get hasChanges() {
-    return Object.values(this._localizations).some(lc => lc.hasChanges);
-  }
-
-  get languages() {
-    return Object.keys(this._localizations);
+  get stats() {
+    let added = 0;
+    let removed = 0;
+    let changed = 0;
+    for (const { change } of this.walk()) {
+      if (change.type === 'added') added++;
+      else if (change.type === 'removed') removed++;
+      else if (change.type === 'changed') changed++;
+    }
+    return new DiffStats({ added, removed, changed });
   }
 
   *walk() {
+    yield* this._concept.walk();
+    yield* walkList('languages', this._languages);
     for (const [lang, lc] of Object.entries(this._localizations)) {
-      for (const { path, change } of lc.walk()) {
-        yield { path: `localizations.${lang}.${path}`, change, language: lang };
+      for (const { path, change } of lc.walk(`localizations.${lang}`)) {
+        yield { path, change, language: lang };
       }
     }
   }
 
   toJSON() {
     const obj = {};
-    if (this.oldId != null) obj.old_id = this.oldId;
-    if (this.newId != null) obj.new_id = this.newId;
+    if (this._oldId != null) obj.old_id = this._oldId;
+    if (this._newId != null) obj.new_id = this._newId;
+    obj.concept = this._concept.toJSON();
+    obj.languages = this._languages.toJSON();
     obj.localizations = {};
     for (const [lang, lc] of Object.entries(this._localizations)) {
       obj.localizations[lang] = lc.toJSON();
@@ -217,6 +315,8 @@ export function diffConcepts(oldConcept, newConcept, language = 'eng') {
     langs = ['eng'];
   }
 
+  const conceptDiff = diffConceptLevel(oldConcept ?? null, newConcept ?? null);
+  const languageDiff = diffLanguageSets(oldLangs, newLangs);
   const localizations = {};
   for (const lang of langs) {
     const oldLoc = oldConcept?.localization(lang) ?? null;
@@ -224,21 +324,27 @@ export function diffConcepts(oldConcept, newConcept, language = 'eng') {
     localizations[lang] = diffLocalizedConcepts(oldLoc, newLoc);
   }
 
-  return new ConceptDiff({ oldId, newId, localizations });
+  return new ConceptDiff({
+    oldId,
+    newId,
+    concept: conceptDiff,
+    languages: languageDiff,
+    localizations,
+  });
 }
 
 export function diffLocalizedConcepts(oldLoc, newLoc) {
   if (!oldLoc && !newLoc) {
-    return emptyLocalizedConceptDiff(null);
+    return new LocalizedConceptDiff({ languageCode: null });
   }
 
   const lang = newLoc?.languageCode ?? oldLoc?.languageCode ?? null;
 
   if (!oldLoc) {
-    return fullyAddedDiff(newLoc, lang);
+    return fullyDiff(newLoc, lang, 'added');
   }
   if (!newLoc) {
-    return fullyRemovedDiff(oldLoc, lang);
+    return fullyDiff(oldLoc, lang, 'removed');
   }
 
   return new LocalizedConceptDiff({
@@ -250,50 +356,84 @@ export function diffLocalizedConcepts(oldLoc, newLoc) {
     sources: diffSources(oldLoc.sources ?? [], newLoc.sources ?? []),
     dates: diffDates(oldLoc.dates ?? [], newLoc.dates ?? []),
     related: diffRelated(oldLoc.related ?? [], newLoc.related ?? []),
-    metadata: diffMetadata(oldLoc, newLoc),
+    metadata: diffMetadata(oldLoc, newLoc, LOCALIZATION_METADATA_FIELDS),
   });
 }
 
-function emptyLocalizedConceptDiff(lang) {
-  return new LocalizedConceptDiff({ languageCode: lang });
+function diffConceptLevel(oldConcept, newConcept) {
+  if (!oldConcept && !newConcept) {
+    return new ConceptLevelDiff({});
+  }
+
+  const Direction = !oldConcept ? 'added' : !newConcept ? 'removed' : null;
+
+  if (Direction) {
+    const c = (oldConcept ?? newConcept);
+    return new ConceptLevelDiff({
+      sources: fullListDiff(c.sources ?? [], Direction),
+      dates: fullListDiff(c.dates ?? [], Direction),
+      relatedConcepts: fullListDiff(c.relatedConcepts ?? [], Direction),
+      groups: fullListDiff(c.groups ?? [], Direction),
+      sections: fullListDiff(c.sections ?? [], Direction),
+      tags: fullListDiff(c.tags ?? [], Direction),
+      metadata: fullMetadataDiff(c, CONCEPT_METADATA_FIELDS, Direction),
+    });
+  }
+
+  return new ConceptLevelDiff({
+    sources: diffSources(oldConcept.sources ?? [], newConcept.sources ?? []),
+    dates: diffDates(oldConcept.dates ?? [], newConcept.dates ?? []),
+    relatedConcepts: diffRelatedConcepts(oldConcept.relatedConcepts ?? [], newConcept.relatedConcepts ?? []),
+    groups: diffStringSet(oldConcept.groups ?? [], newConcept.groups ?? []),
+    sections: diffStringSet(oldConcept.sections ?? [], newConcept.sections ?? []),
+    tags: diffStringSet(oldConcept.tags ?? [], newConcept.tags ?? []),
+    metadata: diffMetadata(oldConcept, newConcept, CONCEPT_METADATA_FIELDS),
+  });
 }
 
-function fullyAddedDiff(loc, lang) {
+function diffLanguageSets(oldLangs, newLangs) {
+  const oldSet = new Set(oldLangs);
+  const newSet = new Set(newLangs);
+  const added = newLangs
+    .filter(l => !oldSet.has(l))
+    .sort()
+    .map(l => new Added({ value: l }));
+  const removed = oldLangs
+    .filter(l => !newSet.has(l))
+    .sort()
+    .map(l => new Removed({ value: l }));
+  return new ListDiff({ added, removed, changed: [] });
+}
+
+function fullyDiff(loc, lang, direction) {
+  const ChangeClass = direction === 'added' ? Added : Removed;
+  const key = direction;
   return new LocalizedConceptDiff({
     languageCode: lang,
-    designations: new ListDiff({ added: (loc.terms ?? []).map(v => new Added({ value: v })) }),
-    definitions: new ListDiff({ added: (loc.definitions ?? []).map(v => new Added({ value: v })) }),
-    notes: new ListDiff({ added: (loc.notes ?? []).map(v => new Added({ value: v })) }),
-    examples: new ListDiff({ added: (loc.examples ?? []).map(v => new Added({ value: v })) }),
-    sources: new ListDiff({ added: (loc.sources ?? []).map(v => new Added({ value: v })) }),
-    dates: new ListDiff({ added: (loc.dates ?? []).map(v => new Added({ value: v })) }),
-    related: new ListDiff({ added: (loc.related ?? []).map(v => new Added({ value: v })) }),
-    metadata: metadataFromFullObject(loc, true),
+    designations: new ListDiff({ [key]: (loc.terms ?? []).map(v => new ChangeClass({ value: v })) }),
+    definitions: new ListDiff({ [key]: (loc.definitions ?? []).map(v => new ChangeClass({ value: v })) }),
+    notes: new ListDiff({ [key]: (loc.notes ?? []).map(v => new ChangeClass({ value: v })) }),
+    examples: new ListDiff({ [key]: (loc.examples ?? []).map(v => new ChangeClass({ value: v })) }),
+    sources: new ListDiff({ [key]: (loc.sources ?? []).map(v => new ChangeClass({ value: v })) }),
+    dates: new ListDiff({ [key]: (loc.dates ?? []).map(v => new ChangeClass({ value: v })) }),
+    related: new ListDiff({ [key]: (loc.related ?? []).map(v => new ChangeClass({ value: v })) }),
+    metadata: fullMetadataDiff(loc, LOCALIZATION_METADATA_FIELDS, direction),
   });
 }
 
-function fullyRemovedDiff(loc, lang) {
-  return new LocalizedConceptDiff({
-    languageCode: lang,
-    designations: new ListDiff({ removed: (loc.terms ?? []).map(v => new Removed({ value: v })) }),
-    definitions: new ListDiff({ removed: (loc.definitions ?? []).map(v => new Removed({ value: v })) }),
-    notes: new ListDiff({ removed: (loc.notes ?? []).map(v => new Removed({ value: v })) }),
-    examples: new ListDiff({ removed: (loc.examples ?? []).map(v => new Removed({ value: v })) }),
-    sources: new ListDiff({ removed: (loc.sources ?? []).map(v => new Removed({ value: v })) }),
-    dates: new ListDiff({ removed: (loc.dates ?? []).map(v => new Removed({ value: v })) }),
-    related: new ListDiff({ removed: (loc.related ?? []).map(v => new Removed({ value: v })) }),
-    metadata: metadataFromFullObject(loc, false),
-  });
+function fullListDiff(items, direction) {
+  const ChangeClass = direction === 'added' ? Added : Removed;
+  return new ListDiff({ [direction]: items.map(v => new ChangeClass({ value: v })) });
 }
 
-function metadataFromFullObject(loc, added) {
+function fullMetadataDiff(obj, fields, direction) {
   const changes = {};
-  for (const field of METADATA_FIELDS) {
-    const val = loc[field];
+  for (const field of fields) {
+    const val = obj[field];
     if (val != null) {
       changes[field] = new Changed({
-        oldValue: added ? null : val,
-        newValue: added ? val : null,
+        oldValue: direction === 'added' ? null : val,
+        newValue: direction === 'added' ? val : null,
       });
     }
   }
@@ -315,7 +455,6 @@ function designationIdentity(d) {
 
 function diffTextList(oldItems, newItems) {
   return diffList(oldItems, newItems, {
-    identityKey: d => d?.content ?? '',
     textKey: d => d?.content ?? '',
   });
 }
@@ -343,20 +482,42 @@ function diffDates(oldDates, newDates) {
 
 function diffRelated(oldRelated, newRelated) {
   return diffSet(oldRelated, newRelated, {
-    identityKey: r => `${r?.type ?? ''}|${r?.ref?.source ?? ''}|${r?.ref?.id ?? ''}`,
+    identityKey: relatedIdentity,
   });
 }
 
-function diffMetadata(oldLoc, newLoc) {
+function diffRelatedConcepts(oldRC, newRC) {
+  return diffSet(oldRC, newRC, {
+    identityKey: relatedIdentity,
+  });
+}
+
+function relatedIdentity(r) {
+  const ref = r?.ref;
+  return `${r?.type ?? ''}|${ref?.source ?? ''}|${ref?.id ?? ''}`;
+}
+
+function diffStringSet(oldStrings, newStrings) {
+  return diffSet(oldStrings, newStrings, {
+    identityKey: s => String(s),
+  });
+}
+
+function diffMetadata(oldObj, newObj, fields) {
   const changes = {};
-  for (const field of METADATA_FIELDS) {
-    const oldVal = oldLoc[field];
-    const newVal = newLoc[field];
+  for (const field of fields) {
+    const oldVal = oldObj[field];
+    const newVal = newObj[field];
     if (oldVal !== newVal) {
       changes[field] = new Changed({ oldValue: oldVal, newValue: newVal });
     }
   }
   return new MetadataDiff({ changes });
+}
+
+function wrapListDiff(data) {
+  if (data instanceof ListDiff) return data;
+  return ListDiff.fromJSON(data ?? {});
 }
 
 function* walkList(section, listDiff) {

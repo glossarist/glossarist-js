@@ -26,6 +26,10 @@ export class Change extends GlossaristModel {
   get type() {
     throw new Error(`${this.constructor.name} must override type getter`);
   }
+
+  static fromJSON(data) {
+    return deserializeChange(data);
+  }
 }
 
 export class Added extends Change {

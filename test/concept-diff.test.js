@@ -299,7 +299,7 @@ describe('diffConcepts', () => {
     const newC = makeConcept({ id: '2', loc: {} });
     const d = diffConcepts(oldC, newC, 'fra');
     assert.equal(d.hasChanges, false);
-    assert.ok(d.languages.includes('eng'));
+    assert.ok(d.localizationLanguages.includes('eng'));
   });
 
   test('language=all diffs every language', () => {
@@ -318,8 +318,8 @@ describe('diffConcepts', () => {
       },
     });
     const d = diffConcepts(oldC, newC, 'all');
-    assert.ok(d.languages.includes('eng'));
-    assert.ok(d.languages.includes('fra'));
+    assert.ok(d.localizationLanguages.includes('eng'));
+    assert.ok(d.localizationLanguages.includes('fra'));
     assert.equal(d.localization('eng').hasChanges, true);
     assert.equal(d.localization('fra').hasChanges, false);
   });

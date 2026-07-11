@@ -7,6 +7,7 @@ import { ConceptSource } from './concept-source.js';
 import { FigureReference } from './non-verbal-references.js';
 import { TableReference } from './non-verbal-references.js';
 import { FormulaReference } from './non-verbal-references.js';
+import { diffConcepts } from '../concept-diff.js';
 
 export class Concept extends GlossaristModel {
   constructor(data = {}) {
@@ -56,6 +57,10 @@ export class Concept extends GlossaristModel {
       this._cache[lang] = new LocalizedConcept({ ...raw, language_code: lang });
     }
     return this._cache[lang];
+  }
+
+  diff(other, language = 'eng') {
+    return diffConcepts(this, other, language);
   }
 
   primaryDesignation(lang) {

@@ -104,6 +104,7 @@ export declare const PRED = {
     "sourceId": "https://www.glossarist.org/ontologies/sourceId",
     "sourceOrigin": "https://www.glossarist.org/ontologies/sourceOrigin",
     "modification": "https://www.glossarist.org/ontologies/modification",
+    "sourcedFrom": "https://www.glossarist.org/ontologies/sourcedFrom",
     "hasCitationRef": "https://www.glossarist.org/ontologies/hasCitationRef",
     "hasCitationLocality": "https://www.glossarist.org/ontologies/hasCitationLocality",
     "citationOriginal": "https://www.glossarist.org/ontologies/citationOriginal",
@@ -362,6 +363,7 @@ export type Predicate =
   | "https://www.glossarist.org/ontologies/sourceId"
   | "https://www.glossarist.org/ontologies/sourceOrigin"
   | "https://www.glossarist.org/ontologies/modification"
+  | "https://www.glossarist.org/ontologies/sourcedFrom"
   | "https://www.glossarist.org/ontologies/hasCitationRef"
   | "https://www.glossarist.org/ontologies/hasCitationLocality"
   | "https://www.glossarist.org/ontologies/citationOriginal"

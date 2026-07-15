@@ -62,4 +62,78 @@ describe('ConceptSource', () => {
       assert.equal(source.origin.locality.referenceFrom, '3.2');
     });
   });
+
+  describe('sourced_from', () => {
+    it('defaults to empty array when not provided', () => {
+      const source = new ConceptSource({ type: 'authoritative' });
+      assert.deepEqual(source.sourced_from, []);
+    });
+
+    it('wraps plain objects as Citation instances', () => {
+      const source = new ConceptSource({
+        type: 'lineage',
+        origin: { ref: { source: 'OIML', id: 'G 18', version: '2010' } },
+        sourced_from: [
+          { ref: { source: 'OIML', id: 'B 3', version: '2003' } },
+        ],
+      });
+      assert.equal(source.sourced_from.length, 1);
+      assert.equal(source.sourced_from[0] instanceof Citation, true);
+      assert.equal(source.sourced_from[0].ref.id, 'B 3');
+    });
+
+    it('round-trips through toJSON/fromJSON', () => {
+      const source = new ConceptSource({
+        type: 'lineage',
+        status: 'identical',
+        origin: { ref: { source: 'OIML', id: 'G 18', version: '2010' } },
+        sourced_from: [
+          { ref: { source: 'OIML', id: 'B 3', version: '2003' } },
+        ],
+      });
+      const json = source.toJSON();
+      assert.equal(json.sourced_from.length, 1);
+      assert.equal(json.sourced_from[0].ref.id, 'B 3');
+      const restored = ConceptSource.fromJSON(json);
+      assert.equal(restored.sourced_from.length, 1);
+      assert.equal(restored.sourced_from[0].ref.id, 'B 3');
+    });
+
+    it('omits sourced_from from JSON when empty', () => {
+      const source = new ConceptSource({ type: 'authoritative' });
+      const json = source.toJSON();
+      assert.equal('sourced_from' in json, false);
+    });
+
+    it('handles multiple sourced_from entries', () => {
+      const source = new ConceptSource({
+        type: 'lineage',
+        status: 'modified',
+        modification: 'merged definitions from B 3 and B 4',
+        origin: { ref: { source: 'OIML', id: 'G 18', version: '2010' } },
+        sourced_from: [
+          { ref: { source: 'OIML', id: 'B 3', version: '2003' } },
+          { ref: { source: 'OIML', id: 'B 4', version: '2005' } },
+        ],
+      });
+      const json = source.toJSON();
+      assert.equal(json.sourced_from.length, 2);
+      assert.equal(json.sourced_from[0].ref.id, 'B 3');
+      assert.equal(json.sourced_from[1].ref.id, 'B 4');
+    });
+
+    it('preserves locality in sourced_from entries', () => {
+      const source = new ConceptSource({
+        type: 'lineage',
+        status: 'identical',
+        origin: { ref: { source: 'OIML', id: 'G 18', version: '2010' } },
+        sourced_from: [
+          { ref: { source: 'OIML', id: 'V 1', version: '2000' }, locality: { type: 'clause', reference_from: '3.1' } },
+        ],
+      });
+      const json = source.toJSON();
+      assert.equal(json.sourced_from[0].locality.type, 'clause');
+      assert.equal(json.sourced_from[0].locality.reference_from, '3.1');
+    });
+  });
 });

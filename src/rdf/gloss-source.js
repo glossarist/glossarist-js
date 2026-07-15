@@ -27,13 +27,18 @@ export function* conceptSourceToQuads(source, { subjectUri, index }) {
   }
 
   if (source.origin) {
-    yield* citationToQuads(source.origin, { subjectUri: srcSubject });
+    yield* citationToQuads(source.origin, { subjectUri: srcSubject, predicate: PRED.gloss.sourceOrigin, bnodeKey: 'origin' });
+  }
+
+  const sourcedFrom = source.sourced_from ?? [];
+  for (let i = 0; i < sourcedFrom.length; i++) {
+    yield* citationToQuads(sourcedFrom[i], { subjectUri: srcSubject, predicate: PRED.gloss.sourcedFrom, bnodeKey: 'sourced_from', index: i });
   }
 }
 
-function* citationToQuads(citation, { subjectUri }) {
-  const citSubject = deterministicBnode(subjectUri, 'origin', 0);
-  yield quad(namedNode(subjectUri), namedNode(PRED.gloss.sourceOrigin), namedNode(citSubject));
+function* citationToQuads(citation, { subjectUri, predicate, bnodeKey, index = 0 }) {
+  const citSubject = deterministicBnode(subjectUri, bnodeKey, index);
+  yield quad(namedNode(subjectUri), namedNode(predicate), namedNode(citSubject));
   yield quad(namedNode(citSubject), namedNode(WELL_KNOWN.rdfType), namedNode(PRED.gloss.Citation));
 
   if (citation.original) {

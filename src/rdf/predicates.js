@@ -104,6 +104,7 @@ export const PRED = {
     "sourceId": "https://www.glossarist.org/ontologies/sourceId",
     "sourceOrigin": "https://www.glossarist.org/ontologies/sourceOrigin",
     "modification": "https://www.glossarist.org/ontologies/modification",
+    "sourcedFrom": "https://www.glossarist.org/ontologies/sourcedFrom",
     "hasCitationRef": "https://www.glossarist.org/ontologies/hasCitationRef",
     "hasCitationLocality": "https://www.glossarist.org/ontologies/hasCitationLocality",
     "citationOriginal": "https://www.glossarist.org/ontologies/citationOriginal",

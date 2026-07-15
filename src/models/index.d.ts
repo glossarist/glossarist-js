@@ -257,6 +257,7 @@ export class ConceptSource extends GlossaristModel {
   readonly type: string | null;
   readonly origin: Citation | null;
   readonly modification: string | null;
+  readonly sourced_from: Citation[];
 }
 
 export const RELATIONSHIP_TYPES: readonly string[];

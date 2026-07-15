@@ -11,6 +11,9 @@ export class ConceptSource extends GlossaristModel {
       ? (data.origin instanceof Citation ? data.origin : new Citation(data.origin))
       : null;
     this.modification = data.modification ?? null;
+    this.sourced_from = (data.sourced_from ?? []).map(
+      c => c instanceof Citation ? c : new Citation(c)
+    );
   }
 
   toJSON() {
@@ -20,6 +23,7 @@ export class ConceptSource extends GlossaristModel {
     if (this.type != null) obj.type = this.type;
     if (this.origin != null) obj.origin = this.origin.toJSON();
     if (this.modification != null) obj.modification = this.modification;
+    if (this.sourced_from.length > 0) obj.sourced_from = this.sourced_from.map(c => c.toJSON());
     return obj;
   }
 

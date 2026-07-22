@@ -252,7 +252,9 @@ describe('RelatedConcept', () => {
   it('stores type and content', () => {
     const rc = new RelatedConcept({ type: 'supersedes', content: '3.1.1.1' });
     assert.equal(rc.type, 'supersedes');
-    assert.equal(rc.content, '3.1.1.1');
+    // Content is normalized to localized hash form
+    assert.deepEqual(rc.content, { default: '3.1.1.1' });
+    assert.equal(rc.contentString, '3.1.1.1');
   });
 
   it('defaults to see type', () => {

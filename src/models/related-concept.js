@@ -37,10 +37,19 @@ export class RelatedConcept extends GlossaristModel {
   constructor(data = {}) {
     super();
     this.type = data.type ?? 'see';
-    this.content = data.content ?? null;
+    this.content = normalizeContent(data.content);
     this.ref = data.ref
       ? (data.ref instanceof ConceptRef ? data.ref : new ConceptRef(data.ref))
       : null;
+  }
+
+  // Convenience reader: returns the first available string value
+  // from the localized hash, or null if absent. Mirrors
+  // PartitiveHyperedge#contentString.
+  get contentString() {
+    if (!this.content) return null;
+    const values = Object.values(this.content);
+    return values.length > 0 ? values[0] : null;
   }
 
   toJSON() {
@@ -50,7 +59,30 @@ export class RelatedConcept extends GlossaristModel {
     return obj;
   }
 
+  static identityOf(value) {
+    const v = value ?? {};
+    const ref = v?.ref;
+    return `${v.type ?? ''}|${ref?.source ?? ''}|${ref?.id ?? ''}`;
+  }
+
+  identity() {
+    return RelatedConcept.identityOf(this);
+  }
+
   static fromJSON(data) {
     return new RelatedConcept(data);
   }
+}
+
+// Content is a localized string (language → text). Plain strings on
+// input are normalized to `{ default: '...' }` so callers always see
+// the same shape. Mirrors PartitiveHyperedge's normalizeContent.
+function normalizeContent(value) {
+  if (value == null) return null;
+  if (typeof value === 'string') return { default: value };
+  if (typeof value === 'object') {
+    const entries = Object.entries(value).filter(([, v]) => typeof v === 'string');
+    return entries.length > 0 ? Object.fromEntries(entries) : null;
+  }
+  return null;
 }

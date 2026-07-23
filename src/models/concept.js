@@ -1,6 +1,9 @@
 import { GlossaristModel } from './base.js';
 import { LocalizedConcept } from './localized-concept.js';
 import { RelatedConcept } from './related-concept.js';
+import { PartitiveHyperedge } from './partitive-hyperedge.js';
+import { PartitiveRelation } from './partitive-relation.js';
+import { migrateHyperedgeToRelation } from '../migration/partitive-relation-migrator.js';
 import { ConceptReference } from './concept-reference.js';
 import { ConceptDate } from './concept-date.js';
 import { ConceptSource } from './concept-source.js';
@@ -10,6 +13,18 @@ import { FormulaReference } from './non-verbal-references.js';
 import { diffConcepts } from '../diff/concept-diff.js';
 
 export class Concept extends GlossaristModel {
+  // Scalar fields the diff layer tracks at the concept level. Adding
+  // a new scalar metadata field requires only appending its name here;
+  // diff detection, patch application, and similarity scoring all pick
+  // it up automatically. (Invariant N2 — TODO.hyperedges-v2/07.)
+  static get DIFF_FIELDS() {
+    return Object.freeze(['status', 'term', 'uri', 'schemaVersion']);
+  }
+
+  static wireNameFor(field) {
+    return CONCEPT_WIRE_NAMES[field] ?? field;
+  }
+
   constructor(data = {}) {
     super();
     this.id = String(data.id ?? data.termid ?? '');
@@ -19,6 +34,12 @@ export class Concept extends GlossaristModel {
     this._cache = {};
 
     this.relatedConcepts = _mapInstances(data.relatedConcepts ?? data.related ?? data.related_concepts ?? [], RelatedConcept);
+    this.partitiveRelations = _resolvePartitiveRelations(data);
+    // Backward-compat alias: v1 callers reading .partitiveHyperedges
+    // get the v2 relations (the v1 model is preserved at
+    // ../partitive-hyperedge.js for direct instantiation, but Concept
+    // exposes only v2).
+    this.partitiveHyperedges = this.partitiveRelations;
     this.domains = _normalizeDomains(data.domains, data.groups);
     this.groups = Array.isArray(data.groups)
       ? data.groups.map(g => typeof g === 'string' ? g : (g?.id ?? g?.sectionId ?? null)).filter(Boolean)
@@ -181,6 +202,9 @@ export class Concept extends GlossaristModel {
     if (this.relatedConcepts.length > 0) {
       obj.related = this.relatedConcepts.map(rc => rc.toJSON());
     }
+    if (this.partitiveRelations.length > 0) {
+      obj.partitive_relations = this.partitiveRelations.map(r => r.toJSON());
+    }
     if (this.domains.length > 0) {
       obj.domains = this.domains.map(d => d.toJSON());
     }
@@ -209,6 +233,37 @@ export class Concept extends GlossaristModel {
 function _mapInstances(arr, Cls) {
   return arr.map(item => item instanceof Cls ? item : new Cls(item));
 }
+
+// Resolve partitive relations from any of three input shapes:
+//   1. data.partitiveRelations (v2, preferred)
+//   2. data.partitive_relations (v2 wire name)
+//   3. data.partitiveHyperedges / data.partitive_hyperedges (v1, migrated)
+//
+// v1 input is auto-migrated to v2 via the migrator. v1 instances
+// already constructed (rare — only direct callers) are migrated field
+// by field. The parser produces plain hashes so the common path is (3).
+function _resolvePartitiveRelations(data) {
+  if (Array.isArray(data.partitiveRelations)) {
+    return data.partitiveRelations.map(r =>
+      r instanceof PartitiveRelation ? r : new PartitiveRelation(r));
+  }
+  if (Array.isArray(data.partitive_relations)) {
+    return data.partitive_relations.map(r => new PartitiveRelation(r));
+  }
+  const v1 = data.partitiveHyperedges ?? data.partitive_hyperedges;
+  if (Array.isArray(v1)) {
+    return v1
+      .map(h => h instanceof PartitiveHyperedge ? h.toJSON() : h)
+      .map(migrateHyperedgeToRelation)
+      .filter(h => h != null)
+      .map(h => new PartitiveRelation(h));
+  }
+  return [];
+}
+
+const CONCEPT_WIRE_NAMES = Object.freeze({
+  schemaVersion: 'schema_version',
+});
 
 function _normalizeDomains(domains, groups) {
   if (domains) {

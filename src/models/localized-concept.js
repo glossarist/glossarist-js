@@ -10,7 +10,36 @@ function wrapAs(Cls) {
   return item => item instanceof Cls ? item : new Cls(item);
 }
 
+const LOC_WIRE_NAMES = Object.freeze({
+  entryStatus: 'entry_status',
+  reviewType: 'review_type',
+  lineageSourceSimilarity: 'lineage_source_similarity',
+  reviewDate: 'review_date',
+  reviewDecisionDate: 'review_decision_date',
+  reviewDecisionEvent: 'review_decision_event',
+  reviewStatus: 'review_status',
+  reviewDecision: 'review_decision',
+  reviewDecisionNotes: 'review_decision_notes',
+});
+
 export class LocalizedConcept extends GlossaristModel {
+  // Scalar metadata fields the diff layer tracks per localization.
+  // Adding a new scalar field requires only appending its name here;
+  // diff/patch/similarity pick it up automatically.
+  // (Invariant N2 — TODO.hyperedges-v2/07.)
+  static get DIFF_FIELDS() {
+    return Object.freeze([
+      'entryStatus', 'classification', 'reviewType', 'domain', 'release',
+      'lineageSourceSimilarity', 'script', 'system',
+      'reviewDate', 'reviewDecisionDate', 'reviewDecisionEvent',
+      'reviewStatus', 'reviewDecision', 'reviewDecisionNotes',
+    ]);
+  }
+
+  static wireNameFor(field) {
+    return LOC_WIRE_NAMES[field] ?? field;
+  }
+
   constructor(data = {}) {
     super();
     this.languageCode = data.language_code ?? data.languageCode ?? null;

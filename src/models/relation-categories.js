@@ -96,6 +96,11 @@ export const RELATION_CATEGORIES = Object.freeze({
   // (a version IS a definitional variant of the same concept identity).
   // Renaming aligns glossarist-js with the canonical taxonomy at
   // concept-browser:src/data/taxonomies.json.
+  //
+  // `provides` / `provided_by` (Glossarist v2 extension) live here too:
+  // they record ExternalConcept resolution — a definitional linkage
+  // between a placeholder and the concept that fills its substance.
+  // See TODO.partitive-relation-v2 item 07.
   definitional: Object.freeze({
     label: 'Definitional',
     description: 'ISO 19135 concept-to-concept relations: definition, part, instance, inheritance, versioning.',
@@ -107,6 +112,7 @@ export const RELATION_CATEGORIES = Object.freeze({
       'inherits', 'inherited_by',
       'has_version', 'version_of',
       'current_version', 'current_version_of',
+      'provides', 'provided_by',
     ]),
   }),
 });

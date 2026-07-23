@@ -25,6 +25,11 @@ export const RELATIONSHIP_TYPES = Object.freeze([
   // Associative (ISO 10241-1 / ISO 25964)
   'see', 'related_concept', 'related_concept_broader', 'related_concept_narrower',
   'references',
+  // ExternalConcept resolution (Glossarist extension — v2 partitive-relation)
+  // Direction: real concept `provides` substance for an external concept;
+  // external concept `provided_by` real concept. Stored on the
+  // ExternalConcept. See TODO.partitive-relation-v2 item 07.
+  'provides', 'provided_by',
   // Comparative (ISO 10241-1)
   'compare', 'contrast',
   // Spatiotemporal (ISO 25964 / TBX)

@@ -17,6 +17,12 @@ export {
   NonVerbalRefIntegrityRule,
   OrphanedImagesRule,
 } from './v3-rules.js';
+export { PartitiveHyperedgeShapeRule } from './partitive-hyperedge-rule.js';
+export { PartitiveDriftRule } from './partitive-drift-rule.js';
+export { SourcedFromLocalityRule } from './sourced-from-locality-rule.js';
+export { PartitiveRelationCoherenceRule } from './partitive-relation-coherence-rule.js';
+export { ExternalConceptShapeRule } from './external-concept-shape-rule.js';
+export { BinaryHasPartRedundancyRule } from './binary-has-part-redundancy-rule.js';
 
 import { ConceptValidator, LanguageCodeRule, DesignationTypeRule, EntryStatusRule } from './concept-validator.js';
 import { RegisterValidator } from './register-validator.js';
@@ -33,6 +39,12 @@ import {
   CiteRefIntegrityRule,
   NonVerbalRefIntegrityRule,
 } from './v3-rules.js';
+import { PartitiveHyperedgeShapeRule } from './partitive-hyperedge-rule.js';
+import { PartitiveDriftRule } from './partitive-drift-rule.js';
+import { SourcedFromLocalityRule } from './sourced-from-locality-rule.js';
+import { PartitiveRelationCoherenceRule } from './partitive-relation-coherence-rule.js';
+import { ExternalConceptShapeRule } from './external-concept-shape-rule.js';
+import { BinaryHasPartRedundancyRule } from './binary-has-part-redundancy-rule.js';
 
 const _default = new ConceptValidator()
   .addRule(new LanguageCodeRule())
@@ -47,7 +59,13 @@ const _default = new ConceptValidator()
   .addRule(new SourceUrnFormatRule())
   .addRule(new RelationshipTypeRule())
   .addRule(new CiteRefIntegrityRule())
-  .addRule(new NonVerbalRefIntegrityRule());
+  .addRule(new NonVerbalRefIntegrityRule())
+  .addRule(new PartitiveHyperedgeShapeRule())
+  .addRule(new PartitiveDriftRule())
+  .addRule(new SourcedFromLocalityRule())
+  .addRule(new PartitiveRelationCoherenceRule())
+  .addRule(new ExternalConceptShapeRule())
+  .addRule(new BinaryHasPartRedundancyRule());
 
 export function validateConcept(concept) {
   return _default.validate(concept);

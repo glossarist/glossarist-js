@@ -91,6 +91,21 @@ export class Designation extends RegistrableModel {
     return SKOS_LABEL_BY_NORMATIVE_STATUS[status] ?? 'altLabel';
   }
 
+  // Static identity works on a model instance OR its plain JSON form.
+  // The diff layer uses this so that patch-side identity (computed on
+  // plain JSON from toJSON) matches diff-side identity (computed on
+  // model instances).
+  static identityOf(value) {
+    const v = value ?? {};
+    const type = v.type ?? 'expression';
+    const text = String(v.designation ?? '').toLowerCase().trim();
+    return `${type}|${text}`;
+  }
+
+  identity() {
+    return Designation.identityOf(this);
+  }
+
   static fromJSON(data) {
     return Designation.fromData(data);
   }

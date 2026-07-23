@@ -100,6 +100,7 @@ export class Concept extends GlossaristModel {
   readonly localizations: Record<string, any>;
   readonly raw: Record<string, unknown> | null;
   readonly relatedConcepts: RelatedConcept[];
+  readonly partitiveHyperedges: PartitiveHyperedge[];
   readonly domains: ConceptReference[];
   readonly tags: string[];
   readonly dates: ConceptDate[];
@@ -257,6 +258,8 @@ export class ConceptSource extends GlossaristModel {
   readonly type: string | null;
   readonly origin: Citation | null;
   readonly modification: string | null;
+  readonly sourcedFrom: Citation[];
+  /** @deprecated use sourcedFrom */
   readonly sourced_from: Citation[];
 }
 
@@ -265,6 +268,64 @@ export class RelatedConcept extends GlossaristModel {
   readonly type: string;
   readonly content: string | null;
   readonly ref: ConceptRef | null;
+}
+
+export interface LocalizedContent {
+  readonly [language: string]: string;
+}
+
+export const PARTITIVE_ENUMERATION: Readonly<{
+  readonly CLOSED: 'closed';
+  readonly OPEN: 'open';
+}>;
+export const PARTITIVE_ENUMERATION_VALUES: readonly ['closed', 'open'];
+export function isValidPartitiveEnumeration(value: unknown): value is 'closed' | 'open';
+
+export const PLURALITY_MARKER: Readonly<{
+  readonly DOUBLE: 'double';
+  readonly DASHED: 'dashed';
+}>;
+export const PLURALITY_MARKER_VALUES: readonly ['double', 'dashed'];
+export function isValidPluralityMarker(value: unknown): value is 'double' | 'dashed';
+
+export function makeEnum<T extends string>(
+  name: string,
+  values: Record<string, T>,
+): Readonly<Record<string, T>> & {
+  readonly name: string;
+  readonly VALUES: readonly T[];
+  readonly isValid: (value: unknown) => value is T;
+};
+
+export interface HyperedgeColorPair {
+  readonly light: string;
+  readonly dark: string;
+  readonly pattern: 'dashed' | 'double' | null;
+}
+
+export function resolveHyperedgeColor(
+  hyperedge: { enumeration?: string; markers?: string[] } | null,
+  options?: {
+    category?: string;
+    overrides?: { byCategory?: Record<string, unknown> };
+  },
+): HyperedgeColorPair | null;
+
+export class PartitiveHyperedge extends GlossaristModel {
+  readonly comprehensive: ConceptRef;
+  readonly parts: ConceptRef[];
+  readonly enumeration: 'closed' | 'open';
+  readonly markers: ('double' | 'dashed')[];
+  readonly content: LocalizedContent | null;
+
+  readonly isMarked: boolean;
+  readonly contentString: string | null;
+
+  hasMarker(value: string): boolean;
+  hasEnumeration(value: string): boolean;
+  identity(): string;
+  toJSON(): Record<string, unknown>;
+  static fromJSON(data: Record<string, unknown>): PartitiveHyperedge;
 }
 
 export const DESIGNATION_RELATIONSHIP_TYPES: readonly string[];

@@ -1,7 +1,14 @@
 import { Concept } from '../models/concept.js';
+import { ConceptSource } from '../models/concept-source.js';
+import { ConceptDate } from '../models/concept-date.js';
+import { RelatedConcept } from '../models/related-concept.js';
+import { Designation } from '../models/designation.js';
+import { DetailedDefinition } from '../models/detailed-definition.js';
+import { PartitiveRelation } from '../models/partitive-relation.js';
 import { Added, Removed, Changed } from './change.js';
 import { ListDiff } from './list-diff.js';
 import { TextDiff, TextHunk } from './text-diff.js';
+import { identityOf } from './identity.js';
 import {
   ConceptDiff,
   ConceptLevelDiff,
@@ -9,14 +16,23 @@ import {
   MetadataDiff,
 } from './concept-diff.js';
 
-const CONCEPT_METADATA_JSON_KEYS = {
+// Wire-name (camelCase JS field → snake_case JSON key) for metadata
+// fields patched onto Concept and LocalizedConcept.
+//
+// These mirror `Concept.wireNameFor` / `LocalizedConcept.wireNameFor`.
+// The duplication is intentional: diff-patch.js cannot import those
+// models lazily without making applyDiff async (a breaking API change),
+// and the field set is small and stable. A spec
+// (test/diff/field-sync.test.js) asserts the two stay in sync.
+
+const CONCEPT_METADATA_JSON_KEYS = Object.freeze({
   status: 'status',
   term: 'term',
   uri: 'uri',
   schemaVersion: 'schema_version',
-};
+});
 
-const LOC_METADATA_JSON_KEYS = {
+const LOC_METADATA_JSON_KEYS = Object.freeze({
   entryStatus: 'entry_status',
   classification: 'classification',
   reviewType: 'review_type',
@@ -31,7 +47,7 @@ const LOC_METADATA_JSON_KEYS = {
   reviewStatus: 'review_status',
   reviewDecision: 'review_decision',
   reviewDecisionNotes: 'review_decision_notes',
-};
+});
 
 export function applyDiff(oldConcept, diff) {
   const json = oldConcept.toJSON();
@@ -51,6 +67,9 @@ export function reverseDiff(diff) {
     sources: reverseListDiff(diff.concept.sources),
     dates: reverseListDiff(diff.concept.dates),
     relatedConcepts: reverseListDiff(diff.concept.relatedConcepts),
+    partitiveRelations: reverseListDiff(
+      diff.concept.partitiveRelations ?? diff.concept.partitiveHyperedges,
+    ),
     groups: reverseListDiff(diff.concept.groups),
     sections: reverseListDiff(diff.concept.sections),
     tags: reverseListDiff(diff.concept.tags),
@@ -86,11 +105,21 @@ export function reverseDiff(diff) {
 }
 
 function applyConceptLevelPatch(json, conceptDiff) {
-  json.sources = applyListPatch(json.sources ?? [], conceptDiff.sources, sourceIdentity);
-  json.dates = applyListPatch(json.dates ?? [], conceptDiff.dates, dateIdentity);
-  json.related = applyListPatch(json.related ?? [], conceptDiff.relatedConcepts, relatedIdentity);
+  json.sources = applyListPatch(json.sources ?? [], conceptDiff.sources, ConceptSource.identityOf);
+  json.dates = applyListPatch(json.dates ?? [], conceptDiff.dates, ConceptDate.identityOf);
+  json.related = applyListPatch(json.related ?? [], conceptDiff.relatedConcepts, RelatedConcept.identityOf);
+  json.partitive_relations = applyListPatch(
+    json.partitive_relations ?? json.partitive_hyperedges ?? [],
+    conceptDiff.partitiveRelations ?? conceptDiff.partitiveHyperedges,
+    PartitiveRelation.identityOf,
+  );
+  // v1 wire key is removed once v2 has replaced it; otherwise leave
+  // v1 data in place for backward-compat readers.
+  if (json.partitive_relations != null && json.partitive_hyperedges != null) {
+    delete json.partitive_hyperedges;
+  }
 
-  json.tags = applyListPatch(json.tags ?? [], conceptDiff.tags, s => String(s));
+  json.tags = applyListPatch(json.tags ?? [], conceptDiff.tags);
 
   applyMetadataPatch(json, conceptDiff.metadata, CONCEPT_METADATA_JSON_KEYS);
 }
@@ -114,18 +143,19 @@ function applyLocalizedPatch(json, lang, lcDiff) {
   }
   const loc = json.localizations[lang];
 
-  loc.terms = applyListPatch(loc.terms ?? [], lcDiff.designations, designationIdentity);
-  loc.definition = applyListPatch(loc.definition ?? [], lcDiff.definitions, definitionIdentity);
-  loc.notes = applyListPatch(loc.notes ?? [], lcDiff.notes, definitionIdentity);
-  loc.examples = applyListPatch(loc.examples ?? [], lcDiff.examples, definitionIdentity);
-  loc.sources = applyListPatch(loc.sources ?? [], lcDiff.sources, sourceIdentity);
-  loc.dates = applyListPatch(loc.dates ?? [], lcDiff.dates, dateIdentity);
-  loc.related = applyListPatch(loc.related ?? [], lcDiff.related, relatedIdentity);
+  loc.terms = applyListPatch(loc.terms ?? [], lcDiff.designations, Designation.identityOf);
+  loc.definition = applyListPatch(loc.definition ?? [], lcDiff.definitions, DetailedDefinition.identityOf);
+  loc.notes = applyListPatch(loc.notes ?? [], lcDiff.notes, DetailedDefinition.identityOf);
+  loc.examples = applyListPatch(loc.examples ?? [], lcDiff.examples, DetailedDefinition.identityOf);
+  loc.sources = applyListPatch(loc.sources ?? [], lcDiff.sources, ConceptSource.identityOf);
+  loc.dates = applyListPatch(loc.dates ?? [], lcDiff.dates, ConceptDate.identityOf);
+  loc.related = applyListPatch(loc.related ?? [], lcDiff.related, RelatedConcept.identityOf);
 
   applyMetadataPatch(loc, lcDiff.metadata, LOC_METADATA_JSON_KEYS);
 }
 
 function applyListPatch(existingItems, listDiff, identityFn) {
+  const fn = identityFn ?? identityOf;
   let result = [...existingItems];
 
   for (const entry of listDiff.added) {
@@ -133,14 +163,14 @@ function applyListPatch(existingItems, listDiff, identityFn) {
   }
 
   for (const entry of listDiff.removed) {
-    const targetKey = identityFn(entry.value);
-    result = result.filter(item => identityFn(item) !== targetKey);
+    const targetKey = fn(entry.value);
+    result = result.filter(item => fn(item) !== targetKey);
   }
 
   for (const entry of listDiff.changed) {
-    const oldKey = identityFn(entry.oldValue);
+    const oldKey = fn(entry.oldValue);
     result = result.map(item =>
-      identityFn(item) === oldKey ? toJsonValue(entry.newValue) : item,
+      fn(item) === oldKey ? toJsonValue(entry.newValue) : item,
     );
   }
 
@@ -202,33 +232,4 @@ function toJsonValue(value) {
   }
   if (typeof value.toJSON === 'function') return value.toJSON();
   return value;
-}
-
-function designationIdentity(d) {
-  const data = typeof d?.toJSON === 'function' ? d.toJSON() : d ?? {};
-  const type = data.type ?? 'expression';
-  const text = String(data.designation ?? '').toLowerCase().trim();
-  return `${type}|${text}`;
-}
-
-function definitionIdentity(d) {
-  const data = typeof d?.toJSON === 'function' ? d.toJSON() : d ?? {};
-  return JSON.stringify(data);
-}
-
-function sourceIdentity(s) {
-  const data = typeof s?.toJSON === 'function' ? s.toJSON() : s ?? {};
-  const ref = data.origin?.ref;
-  return `${data.type ?? ''}|${ref?.source ?? ''}|${ref?.id ?? ''}`;
-}
-
-function dateIdentity(d) {
-  const data = typeof d?.toJSON === 'function' ? d.toJSON() : d ?? {};
-  return data.type ?? '';
-}
-
-function relatedIdentity(r) {
-  const data = typeof r?.toJSON === 'function' ? r.toJSON() : r ?? {};
-  const ref = data.ref;
-  return `${data.type ?? ''}|${ref?.source ?? ''}|${ref?.id ?? ''}`;
 }

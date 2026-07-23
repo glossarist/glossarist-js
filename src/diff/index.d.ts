@@ -29,8 +29,13 @@ export function diffText(oldText: string | null | undefined, newText: string | n
 export const CHANGE_ADDED: 'added';
 export const CHANGE_REMOVED: 'removed';
 export const CHANGE_CHANGED: 'changed';
+export const CHANGE_MATCHED: 'matched';
 
-export type ChangeType = typeof CHANGE_ADDED | typeof CHANGE_REMOVED | typeof CHANGE_CHANGED;
+export type ChangeType =
+  | typeof CHANGE_ADDED
+  | typeof CHANGE_REMOVED
+  | typeof CHANGE_CHANGED
+  | typeof CHANGE_MATCHED;
 
 export class Change extends GlossaristModel {
   readonly type: ChangeType;
@@ -64,6 +69,13 @@ export class Changed extends Change {
     text_diff?: ReturnType<TextDiff['toJSON']>;
   };
   static fromJSON(data: Record<string, unknown>): Changed;
+}
+
+export class Matched extends Change {
+  readonly type: 'matched';
+  readonly value: unknown;
+  toJSON(): { type: 'matched'; path?: string; value: unknown };
+  static fromJSON(data: Record<string, unknown>): Matched;
 }
 
 export function deserializeChange(data: Record<string, unknown>): Change;
@@ -126,6 +138,7 @@ export class ConceptLevelDiff extends GlossaristModel {
   readonly sources: ListDiff;
   readonly dates: ListDiff;
   readonly relatedConcepts: ListDiff;
+  readonly partitiveHyperedges: ListDiff;
   readonly groups: ListDiff;
   readonly sections: ListDiff;
   readonly tags: ListDiff;
@@ -147,6 +160,9 @@ export class LocalizedConceptDiff extends GlossaristModel {
   readonly related: ListDiff;
   readonly metadata: MetadataDiff;
   readonly hasChanges: boolean;
+  readonly stats: DiffStats;
+  readonly similarity: number;
+  readonly totalItems: number;
   walk(prefix?: string): Generator<DiffWalkEntry, void, unknown>;
   toJSON(): Record<string, unknown>;
   static fromJSON(data: Record<string, unknown>): LocalizedConceptDiff;
@@ -161,6 +177,8 @@ export class ConceptDiff extends GlossaristModel {
   readonly hasChanges: boolean;
   readonly localizationLanguages: string[];
   readonly stats: DiffStats;
+  readonly similarity: number;
+  readonly totalItems: number;
   localization(lang: string): LocalizedConceptDiff | null;
   walk(): Generator<ConceptDiffWalkEntry, void, unknown>;
   toJSON(): Record<string, unknown>;
@@ -177,3 +195,48 @@ export function diffLocalizedConcepts(
   oldLoc: any | null,
   newLoc: any | null,
 ): LocalizedConceptDiff;
+
+// ── Collection diff ────────────────────────────────────────────────────
+
+export class ConceptCollectionDiff extends GlossaristModel {
+  readonly oldCount: number;
+  readonly newCount: number;
+  readonly matched: Matched[];
+  readonly added: Added[];
+  readonly removed: Removed[];
+  readonly conceptDiffs: Record<string, ConceptDiff>;
+  readonly changedIds: string[];
+  readonly hasChanges: boolean;
+  readonly stats: DiffStats;
+  readonly similarity: number;
+  conceptDiff(id: string): ConceptDiff | null;
+  walk(): Generator<ConceptDiffWalkEntry, void, unknown>;
+  toJSON(): Record<string, unknown>;
+  static fromJSON(data: Record<string, unknown>): ConceptCollectionDiff;
+}
+
+export function diffConceptCollections(
+  oldCollection: any | null,
+  newCollection: any | null,
+  options?: { language?: string; skipUnchanged?: boolean },
+): ConceptCollectionDiff;
+
+// ── Rendering ──────────────────────────────────────────────────────────
+
+export interface RenderOptions {
+  colors?: boolean;
+  showUnchanged?: boolean;
+}
+
+export function renderConceptDiff(diff: ConceptDiff, options?: RenderOptions): string;
+export function renderCollectionDiff(diff: ConceptCollectionDiff, options?: RenderOptions): string;
+export function renderTextDiff(textDiff: TextDiff | Record<string, unknown>, options?: RenderOptions): string;
+
+// ── Patching ───────────────────────────────────────────────────────────
+
+export function applyDiff<T extends { toJSON(): Record<string, unknown> }>(
+  oldConcept: T,
+  diff: ConceptDiff,
+): T;
+
+export function reverseDiff(diff: ConceptDiff): ConceptDiff;

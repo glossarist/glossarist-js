@@ -30,7 +30,7 @@ export function* conceptSourceToQuads(source, { subjectUri, index }) {
     yield* citationToQuads(source.origin, { subjectUri: srcSubject, predicate: PRED.gloss.sourceOrigin, bnodeKey: 'origin' });
   }
 
-  const sourcedFrom = source.sourced_from ?? [];
+  const sourcedFrom = source.sourcedFrom ?? source.sourced_from ?? [];
   for (let i = 0; i < sourcedFrom.length; i++) {
     yield* citationToQuads(sourcedFrom[i], { subjectUri: srcSubject, predicate: PRED.gloss.sourcedFrom, bnodeKey: 'sourced_from', index: i });
   }

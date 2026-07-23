@@ -9,9 +9,11 @@ export {
   Added,
   Removed,
   Changed,
+  Matched,
   CHANGE_ADDED,
   CHANGE_REMOVED,
   CHANGE_CHANGED,
+  CHANGE_MATCHED,
   deserializeChange,
 } from './change.js';
 

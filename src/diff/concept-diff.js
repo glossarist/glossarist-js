@@ -1,27 +1,33 @@
 import { GlossaristModel } from '../models/base.js';
 import { Added, Removed, Changed } from './change.js';
 import { ListDiff, diffList, diffSet } from './list-diff.js';
+import { identityOf } from './identity.js';
+import { canonicalJson } from './canonical-json.js';
+import { computeSimilarity } from './similarity.js';
 
+// Metadata field lists for the diff layer.
+//
+// Concept and LocalizedConcept also expose static DIFF_FIELDS that
+// mirror these arrays. The duplication is intentional: concept-diff.js
+// cannot import Concept (Concept imports diffConcepts from this module,
+// creating a cycle). Instead, a spec (test/diff/field-sync.test.js)
+// asserts the two stay in sync. Adding a new scalar metadata field
+// requires editing both sites; forgetting one fails the test loudly.
+//
+// (Invariant N2 — TODO.hyperedges-v2/07.)
 const CONCEPT_METADATA_FIELDS = Object.freeze([
   'status', 'term', 'uri', 'schemaVersion',
 ]);
 
 const LOCALIZATION_METADATA_FIELDS = Object.freeze([
-  'entryStatus',
-  'classification',
-  'reviewType',
-  'domain',
-  'release',
-  'lineageSourceSimilarity',
-  'script',
-  'system',
-  'reviewDate',
-  'reviewDecisionDate',
-  'reviewDecisionEvent',
-  'reviewStatus',
-  'reviewDecision',
-  'reviewDecisionNotes',
+  'entryStatus', 'classification', 'reviewType', 'domain', 'release',
+  'lineageSourceSimilarity', 'script', 'system',
+  'reviewDate', 'reviewDecisionDate', 'reviewDecisionEvent',
+  'reviewStatus', 'reviewDecision', 'reviewDecisionNotes',
 ]);
+
+// Metadata field lists are sourced from the models per invariant N2.
+// (See file-top comment about why they're duplicated rather than imported.)
 
 export class DiffStats extends GlossaristModel {
   constructor(data = {}) {
@@ -93,6 +99,15 @@ export class ConceptLevelDiff extends GlossaristModel {
     this._sources = wrapListDiff(data.sources);
     this._dates = wrapListDiff(data.dates);
     this._relatedConcepts = wrapListDiff(data.relatedConcepts ?? data.related_concepts);
+    // v2 canonical name is partitiveRelations. Accept v1 names
+    // (partitiveHyperedges / partitive_hyperedges) for backward compat
+    // with diffs serialized by older glossarist-js versions.
+    this._partitiveRelations = wrapListDiff(
+      data.partitiveRelations
+        ?? data.partitive_relations
+        ?? data.partitiveHyperedges
+        ?? data.partitive_hyperedges,
+    );
     this._groups = wrapListDiff(data.groups);
     this._sections = wrapListDiff(data.sections);
     this._tags = wrapListDiff(data.tags);
@@ -104,6 +119,8 @@ export class ConceptLevelDiff extends GlossaristModel {
   get sources() { return this._sources; }
   get dates() { return this._dates; }
   get relatedConcepts() { return this._relatedConcepts; }
+  get partitiveRelations() { return this._partitiveRelations; }
+  /** @deprecated use partitiveRelations */ get partitiveHyperedges() { return this._partitiveRelations; }
   get groups() { return this._groups; }
   get sections() { return this._sections; }
   get tags() { return this._tags; }
@@ -113,6 +130,7 @@ export class ConceptLevelDiff extends GlossaristModel {
     return this._sources.hasChanges
       || this._dates.hasChanges
       || this._relatedConcepts.hasChanges
+      || this._partitiveRelations.hasChanges
       || this._groups.hasChanges
       || this._sections.hasChanges
       || this._tags.hasChanges
@@ -123,6 +141,7 @@ export class ConceptLevelDiff extends GlossaristModel {
     yield* walkList('concept.sources', this._sources);
     yield* walkList('concept.dates', this._dates);
     yield* walkList('concept.relatedConcepts', this._relatedConcepts);
+    yield* walkList('concept.partitiveRelations', this._partitiveRelations);
     yield* walkList('concept.groups', this._groups);
     yield* walkList('concept.sections', this._sections);
     yield* walkList('concept.tags', this._tags);
@@ -134,6 +153,7 @@ export class ConceptLevelDiff extends GlossaristModel {
       sources: this._sources.toJSON(),
       dates: this._dates.toJSON(),
       related_concepts: this._relatedConcepts.toJSON(),
+      partitive_relations: this._partitiveRelations.toJSON(),
       groups: this._groups.toJSON(),
       sections: this._sections.toJSON(),
       tags: this._tags.toJSON(),
@@ -161,6 +181,8 @@ export class LocalizedConceptDiff extends GlossaristModel {
       ? data.metadata
       : MetadataDiff.fromJSON(data.metadata ?? {});
     this._totalItems = data.totalItems ?? data.total_items ?? 0;
+    this._statsCache = undefined;
+    this._similarityCache = undefined;
   }
 
   get designations() { return this._designations; }
@@ -171,6 +193,7 @@ export class LocalizedConceptDiff extends GlossaristModel {
   get dates() { return this._dates; }
   get related() { return this._related; }
   get metadata() { return this._metadata; }
+  get totalItems() { return this._totalItems; }
 
   get hasChanges() {
     return this._designations.hasChanges
@@ -184,11 +207,17 @@ export class LocalizedConceptDiff extends GlossaristModel {
   }
 
   get stats() {
-    return collectStats(this.walk());
+    if (this._statsCache === undefined) {
+      this._statsCache = collectStats(this.walk());
+    }
+    return this._statsCache;
   }
 
   get similarity() {
-    return computeSimilarity(this.stats.total, this._totalItems);
+    if (this._similarityCache === undefined) {
+      this._similarityCache = computeSimilarity(this.stats.total, this._totalItems);
+    }
+    return this._similarityCache;
   }
 
   *walk(prefix) {
@@ -226,8 +255,8 @@ export class LocalizedConceptDiff extends GlossaristModel {
 export class ConceptDiff extends GlossaristModel {
   constructor(data = {}) {
     super();
-    this.oldId = data.oldId ?? data.old_id ?? null;
-    this.newId = data.newId ?? data.new_id ?? null;
+    this._oldId = data.oldId ?? data.old_id ?? null;
+    this._newId = data.newId ?? data.new_id ?? null;
     this._concept = data.concept instanceof ConceptLevelDiff
       ? data.concept
       : ConceptLevelDiff.fromJSON(data.concept ?? {});
@@ -240,6 +269,8 @@ export class ConceptDiff extends GlossaristModel {
         : LocalizedConceptDiff.fromJSON(lcDiff);
     }
     this._totalItems = data.totalItems ?? data.total_items ?? 0;
+    this._statsCache = undefined;
+    this._similarityCache = undefined;
   }
 
   get oldId() { return this._oldId; }
@@ -247,9 +278,7 @@ export class ConceptDiff extends GlossaristModel {
   get concept() { return this._concept; }
   get languages() { return this._languages; }
   get localizations() { return this._localizations; }
-
-  set oldId(v) { this._oldId = v; }
-  set newId(v) { this._newId = v; }
+  get totalItems() { return this._totalItems; }
 
   get localizationLanguages() {
     return Object.keys(this._localizations);
@@ -266,11 +295,17 @@ export class ConceptDiff extends GlossaristModel {
   }
 
   get stats() {
-    return collectStats(this.walk());
+    if (this._statsCache === undefined) {
+      this._statsCache = collectStats(this.walk());
+    }
+    return this._statsCache;
   }
 
   get similarity() {
-    return computeSimilarity(this.stats.total, this._totalItems);
+    if (this._similarityCache === undefined) {
+      this._similarityCache = computeSimilarity(this.stats.total, this._totalItems);
+    }
+    return this._similarityCache;
   }
 
   *walk() {
@@ -302,7 +337,7 @@ export class ConceptDiff extends GlossaristModel {
   }
 }
 
-export function diffConcepts(oldConcept, newConcept, language = 'eng') {
+export function diffConcepts(oldConcept, newConcept, language) {
   if (!oldConcept && !newConcept) {
     return new ConceptDiff({});
   }
@@ -315,12 +350,19 @@ export function diffConcepts(oldConcept, newConcept, language = 'eng') {
   let langs;
   if (language === 'all') {
     langs = union(oldLangs, newLangs);
-  } else if (oldLangs.includes(language) || newLangs.includes(language)) {
+  } else if (language) {
+    if (!oldLangs.includes(language) && !newLangs.includes(language)) {
+      throw new Error(
+        `diffConcepts: language '${language}' not present in either concept ` +
+        `(available: ${union(oldLangs, newLangs).join(', ') || 'none'})`,
+      );
+    }
     langs = [language];
-  } else if (oldLangs.length === 0 && newLangs.length === 0) {
-    langs = [];
   } else {
-    langs = ['eng'];
+    // No language specified: diff everything that exists. Avoids the
+    // silent 'eng' fallback that masked changes in concepts without an
+    // English localization.
+    langs = union(oldLangs, newLangs);
   }
 
   const conceptDiff = diffConceptLevel(oldConcept ?? null, newConcept ?? null);
@@ -330,7 +372,6 @@ export function diffConcepts(oldConcept, newConcept, language = 'eng') {
     const oldLoc = oldConcept?.localization(lang) ?? null;
     const newLoc = newConcept?.localization(lang) ?? null;
     const lcDiff = diffLocalizedConcepts(oldLoc, newLoc);
-    lcDiff._totalItems = countLocalizedItems(oldLoc, newLoc);
     localizations[lang] = lcDiff;
   }
 
@@ -370,6 +411,7 @@ export function diffLocalizedConcepts(oldLoc, newLoc) {
     dates: diffDates(oldLoc.dates ?? [], newLoc.dates ?? []),
     related: diffRelated(oldLoc.related ?? [], newLoc.related ?? []),
     metadata: diffMetadata(oldLoc, newLoc, LOCALIZATION_METADATA_FIELDS),
+    totalItems: countLocalizedItems(oldLoc, newLoc),
   });
 }
 
@@ -386,6 +428,7 @@ function diffConceptLevel(oldConcept, newConcept) {
       sources: fullListDiff(c.sources ?? [], Direction),
       dates: fullListDiff(c.dates ?? [], Direction),
       relatedConcepts: fullListDiff(c.relatedConcepts ?? [], Direction),
+      partitiveRelations: fullListDiff(c.partitiveRelations ?? c.partitiveHyperedges ?? [], Direction),
       groups: fullListDiff(c.groups ?? [], Direction),
       sections: fullListDiff(c.sections ?? [], Direction),
       tags: fullListDiff(c.tags ?? [], Direction),
@@ -397,6 +440,10 @@ function diffConceptLevel(oldConcept, newConcept) {
     sources: diffSources(oldConcept.sources ?? [], newConcept.sources ?? []),
     dates: diffDates(oldConcept.dates ?? [], newConcept.dates ?? []),
     relatedConcepts: diffRelatedConcepts(oldConcept.relatedConcepts ?? [], newConcept.relatedConcepts ?? []),
+    partitiveRelations: diffPartitiveRelations(
+      oldConcept.partitiveRelations ?? oldConcept.partitiveHyperedges ?? [],
+      newConcept.partitiveRelations ?? newConcept.partitiveHyperedges ?? [],
+    ),
     groups: diffStringSet(oldConcept.groups ?? [], newConcept.groups ?? []),
     sections: diffStringSet(oldConcept.sections ?? [], newConcept.sections ?? []),
     tags: diffStringSet(oldConcept.tags ?? [], newConcept.tags ?? []),
@@ -421,7 +468,7 @@ function diffLanguageSets(oldLangs, newLangs) {
 function fullyDiff(loc, lang, direction) {
   const ChangeClass = direction === 'added' ? Added : Removed;
   const key = direction;
-  return new LocalizedConceptDiff({
+  const lc = new LocalizedConceptDiff({
     languageCode: lang,
     designations: new ListDiff({ [key]: (loc.terms ?? []).map(v => new ChangeClass({ value: v })) }),
     definitions: new ListDiff({ [key]: (loc.definitions ?? []).map(v => new ChangeClass({ value: v })) }),
@@ -431,7 +478,9 @@ function fullyDiff(loc, lang, direction) {
     dates: new ListDiff({ [key]: (loc.dates ?? []).map(v => new ChangeClass({ value: v })) }),
     related: new ListDiff({ [key]: (loc.related ?? []).map(v => new ChangeClass({ value: v })) }),
     metadata: fullMetadataDiff(loc, LOCALIZATION_METADATA_FIELDS, direction),
+    totalItems: countLocalizedItems(direction === 'added' ? null : loc, direction === 'added' ? loc : null),
   });
+  return lc;
 }
 
 function fullListDiff(items, direction) {
@@ -455,15 +504,9 @@ function fullMetadataDiff(obj, fields, direction) {
 
 function diffDesignations(oldTerms, newTerms) {
   return diffSet(oldTerms, newTerms, {
-    identityKey: designationIdentity,
+    identityKey: identityOf,
     textKey: d => d?.designation ?? '',
   });
-}
-
-function designationIdentity(d) {
-  const type = d?.type ?? 'expression';
-  const text = String(d?.designation ?? '').toLowerCase().trim();
-  return `${type}|${text}`;
 }
 
 function diffTextList(oldItems, newItems) {
@@ -474,45 +517,44 @@ function diffTextList(oldItems, newItems) {
 
 function diffSources(oldSources, newSources) {
   return diffSet(oldSources, newSources, {
-    identityKey: sourceIdentity,
+    identityKey: identityOf,
   });
-}
-
-function sourceIdentity(s) {
-  const ref = s?.origin?.ref;
-  const source = ref?.source ?? '';
-  const id = ref?.id ?? '';
-  const type = s?.type ?? '';
-  return `${type}|${source}|${id}`;
 }
 
 function diffDates(oldDates, newDates) {
   return diffSet(oldDates, newDates, {
-    identityKey: d => d?.type ?? '',
+    identityKey: identityOf,
     textKey: d => d?.date ?? '',
   });
 }
 
 function diffRelated(oldRelated, newRelated) {
   return diffSet(oldRelated, newRelated, {
-    identityKey: relatedIdentity,
+    identityKey: identityOf,
   });
 }
 
 function diffRelatedConcepts(oldRC, newRC) {
   return diffSet(oldRC, newRC, {
-    identityKey: relatedIdentity,
+    identityKey: identityOf,
   });
 }
 
-function relatedIdentity(r) {
-  const ref = r?.ref;
-  return `${r?.type ?? ''}|${ref?.source ?? ''}|${ref?.id ?? ''}`;
+function diffPartitiveRelations(oldR, newR) {
+  return diffSet(oldR, newR, {
+    identityKey: identityOf,
+    textKey: relationText,
+  });
+}
+
+function relationText(r) {
+  if (!r) return '';
+  return canonicalJson(typeof r.toJSON === 'function' ? r.toJSON() : r);
 }
 
 function diffStringSet(oldStrings, newStrings) {
   return diffSet(oldStrings, newStrings, {
-    identityKey: s => String(s),
+    identityKey: identityOf,
   });
 }
 
@@ -545,12 +587,6 @@ function collectStats(walker) {
   return new DiffStats({ added, removed, changed });
 }
 
-function computeSimilarity(changeCount, totalItems) {
-  if (totalItems <= 0) return 1.0;
-  const ratio = Math.min(changeCount / totalItems, 1);
-  return Math.round((1 - ratio) * 10000) / 10000;
-}
-
 function maxOf(a, b) {
   return Math.max(a ?? 0, b ?? 0);
 }
@@ -561,6 +597,10 @@ function countConceptItems(oldConcept, newConcept, langs) {
   count += maxOf(oldConcept?.sources?.length, newConcept?.sources?.length);
   count += maxOf(oldConcept?.dates?.length, newConcept?.dates?.length);
   count += maxOf(oldConcept?.relatedConcepts?.length, newConcept?.relatedConcepts?.length);
+  count += maxOf(
+    oldConcept?.partitiveRelations?.length ?? oldConcept?.partitiveHyperedges?.length,
+    newConcept?.partitiveRelations?.length ?? newConcept?.partitiveHyperedges?.length,
+  );
   count += maxOf(oldConcept?.groups?.length, newConcept?.groups?.length);
   count += maxOf(oldConcept?.sections?.length, newConcept?.sections?.length);
   count += maxOf(oldConcept?.tags?.length, newConcept?.tags?.length);

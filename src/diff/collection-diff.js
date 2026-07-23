@@ -1,6 +1,7 @@
 import { GlossaristModel } from '../models/base.js';
-import { Added, Removed } from './change.js';
+import { Added, Removed, Matched, deserializeChange } from './change.js';
 import { ConceptDiff, DiffStats, diffConcepts } from './concept-diff.js';
+import { averageSimilarity } from './similarity.js';
 
 export class ConceptCollectionDiff extends GlossaristModel {
   constructor(data = {}) {
@@ -8,9 +9,9 @@ export class ConceptCollectionDiff extends GlossaristModel {
     this.oldCount = data.oldCount ?? data.old_count ?? 0;
     this.newCount = data.newCount ?? data.new_count ?? 0;
 
-    this._matched = wrapIdList(data.matched);
-    this._added = wrapIdList(data.added);
-    this._removed = wrapIdList(data.removed);
+    this._matched = wrapIdList(data.matched, Matched);
+    this._added = wrapIdList(data.added, Added);
+    this._removed = wrapIdList(data.removed, Removed);
 
     this._conceptDiffs = {};
     const raw = data.conceptDiffs ?? data.concept_diffs ?? {};
@@ -19,6 +20,8 @@ export class ConceptCollectionDiff extends GlossaristModel {
         ? diff
         : ConceptDiff.fromJSON(diff);
     }
+    this._statsCache = undefined;
+    this._similarityCache = undefined;
   }
 
   get matched() { return this._matched; }
@@ -41,29 +44,35 @@ export class ConceptCollectionDiff extends GlossaristModel {
   }
 
   get stats() {
-    let added = this._added.length;
-    let removed = this._removed.length;
-    let changed = 0;
-    for (const diff of Object.values(this._conceptDiffs)) {
-      const s = diff.stats;
-      added += s.added;
-      removed += s.removed;
-      changed += s.changed;
+    if (this._statsCache === undefined) {
+      let added = this._added.length;
+      let removed = this._removed.length;
+      let changed = 0;
+      for (const diff of Object.values(this._conceptDiffs)) {
+        const s = diff.stats;
+        added += s.added;
+        removed += s.removed;
+        changed += s.changed;
+      }
+      this._statsCache = new DiffStats({ added, removed, changed });
     }
-    return new DiffStats({ added, removed, changed });
+    return this._statsCache;
   }
 
   get similarity() {
-    if (this._matched.length === 0) return 0;
-    let sum = 0;
-    let n = 0;
-    for (const entry of this._matched) {
-      const id = entry.value;
-      const diff = this._conceptDiffs[id];
-      sum += diff ? diff.similarity : 1.0;
-      n++;
+    if (this._similarityCache === undefined) {
+      if (this._matched.length === 0) {
+        this._similarityCache = 0;
+      } else {
+        const values = this._matched.map(entry => {
+          const id = entry.value;
+          const diff = this._conceptDiffs[id];
+          return diff ? diff.similarity : 1.0;
+        });
+        this._similarityCache = averageSimilarity(values);
+      }
     }
-    return n > 0 ? Math.round((sum / n) * 10000) / 10000 : 1.0;
+    return this._similarityCache;
   }
 
   *walk() {
@@ -134,7 +143,7 @@ export function diffConceptCollections(oldCollection, newCollection, options = {
   return new ConceptCollectionDiff({
     oldCount: oldConcepts.length,
     newCount: newConcepts.length,
-    matched: matchedIds.map(id => new Added({ value: id })),
+    matched: matchedIds.map(id => new Matched({ value: id })),
     added: addedIds.map(id => new Added({ value: id })),
     removed: removedIds.map(id => new Removed({ value: id })),
     conceptDiffs,
@@ -158,7 +167,30 @@ function conceptsEqual(a, b) {
   return JSON.stringify(a?.toJSON?.()) === JSON.stringify(b?.toJSON?.());
 }
 
-function wrapIdList(data) {
+// `wrapIdList` deserializes each entry via deserializeChange, which
+// dispatches on `type`. The `expectedClass` parameter is a defensive
+// check: if the entry's deserialized type doesn't match the slot it's
+// being loaded into, throw. Prevents the round-1 bug where removed
+// entries silently became Added after a JSON round-trip.
+function wrapIdList(data, expectedClass) {
   if (!data) return [];
-  return data.map(c => c instanceof Added || c instanceof Removed ? c : Added.fromJSON(c));
+  return data.map(c => {
+    if (c instanceof Added || c instanceof Removed || c instanceof Matched) {
+      if (!(c instanceof expectedClass)) {
+        throw new Error(
+          `ConceptCollectionDiff: entry type ${c.constructor.name} ` +
+          `does not match slot ${expectedClass.name}`,
+        );
+      }
+      return c;
+    }
+    const deserialized = deserializeChange(c);
+    if (!(deserialized instanceof expectedClass)) {
+      throw new Error(
+        `ConceptCollectionDiff: deserialized entry type ` +
+        `${deserialized.constructor.name} does not match slot ${expectedClass.name}`,
+      );
+    }
+    return deserialized;
+  });
 }

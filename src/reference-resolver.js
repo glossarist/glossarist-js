@@ -38,6 +38,17 @@ function refTarget(rc) {
   return '';
 }
 
+// Extract a concept-ref target from a hyperedge comprehensive/part
+// ConceptRef. Returns the id (preferred) or source. Returns '' if
+// the ref is empty (the constructor already rejects empty refs; this
+// is a defensive guard for data that bypassed the constructor).
+function hyperedgeRefTarget(ref) {
+  if (!ref) return '';
+  if (ref.id) return ref.id;
+  if (ref.source) return ref.source;
+  return '';
+}
+
 export function resolveBibliographyRecord(citationRef, registry) {
   if (!citationRef?.source || !citationRef?.id) return null;
   const bioColl = registry[`bibliography:${citationRef.source}`]?.concepts;
@@ -70,6 +81,44 @@ export class ReferenceResolver {
         refs.push(new Reference('concept', target, rc.type, 'relatedConcepts', {
           lookupKey: { id: target },
         }));
+      }
+    }
+
+    // v2 model: concept.partitiveRelations is canonical; v1 alias
+    // concept.partitiveHyperedges points at the same array. Each
+    // relation has a comprehensive ConceptRef and 2+ partitive members
+    // each carrying a ConceptRef.
+    const relations = concept.partitiveRelations ?? concept.partitiveHyperedges ?? [];
+    for (let i = 0; i < relations.length; i++) {
+      const rel = relations[i];
+      const relPath = `partitiveRelations[${i}]`;
+
+      const compTarget = hyperedgeRefTarget(rel.comprehensive);
+      if (compTarget) {
+        refs.push(new Reference(
+          'concept',
+          compTarget,
+          'partitive_relation',
+          `${relPath}.comprehensive`,
+          { lookupKey: { id: compTarget } },
+        ));
+      }
+
+      // v2 shape: rel.partitives is [{ ref, certainty }, ...].
+      // v1 shape: rel.parts is [ref, ...]. Accept both.
+      const members = rel.partitives ?? rel.parts ?? [];
+      for (let j = 0; j < members.length; j++) {
+        const m = members[j];
+        const memberRef = m?.ref ?? m;
+        const pTarget = hyperedgeRefTarget(memberRef);
+        if (!pTarget) continue;
+        refs.push(new Reference(
+          'concept',
+          pTarget,
+          'partitive_relation',
+          `${relPath}.partitives[${j}]`,
+          { lookupKey: { id: pTarget } },
+        ));
       }
     }
 

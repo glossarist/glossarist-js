@@ -4,6 +4,7 @@ import { TextDiff } from './text-diff.js';
 export const CHANGE_ADDED = 'added';
 export const CHANGE_REMOVED = 'removed';
 export const CHANGE_CHANGED = 'changed';
+export const CHANGE_MATCHED = 'matched';
 
 function serializeValue(v) {
   if (v == null) return null;
@@ -100,11 +101,38 @@ export class Changed extends Change {
   }
 }
 
+// Matched is for set-membership records that exist in both sides of a
+// comparison but have no directionality — used by ConceptCollectionDiff
+// to track which concepts were paired by id, distinct from those that
+// were genuinely Added or Removed. Distinct from Added because the data
+// has a different semantic meaning; conflating them caused type drift
+// in round 1 (TODO.hyperedges-v2/08).
+export class Matched extends Change {
+  constructor(data = {}) {
+    super(data);
+    this.value = data.value ?? null;
+  }
+
+  get type() { return CHANGE_MATCHED; }
+
+  toJSON() {
+    const obj = { type: CHANGE_MATCHED };
+    if (this.path != null) obj.path = this.path;
+    obj.value = serializeValue(this.value);
+    return obj;
+  }
+
+  static fromJSON(data) {
+    return new Matched(data);
+  }
+}
+
 export function deserializeChange(data) {
   switch (data?.type) {
     case CHANGE_ADDED: return Added.fromJSON(data);
     case CHANGE_REMOVED: return Removed.fromJSON(data);
     case CHANGE_CHANGED: return Changed.fromJSON(data);
+    case CHANGE_MATCHED: return Matched.fromJSON(data);
     default:
       throw new Error(`Unknown change type: ${data?.type}`);
   }

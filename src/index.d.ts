@@ -13,6 +13,8 @@ export {
   BibliographyEntry, BibliographyData,
   GcrMetadata, GcrStatistics,
   RELATIONSHIP_TYPES, DESIGNATION_RELATIONSHIP_TYPES, DATE_TYPES,
+  PartitiveHyperedge, PARTITIVE_ENUMERATION, PARTITIVE_ENUMERATION_VALUES,
+  PLURALITY_MARKER, PLURALITY_MARKER_VALUES,
 } from './models/index';
 
 // Concept diff

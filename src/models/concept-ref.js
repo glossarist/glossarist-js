@@ -26,6 +26,10 @@ export class ConceptRef extends GlossaristModel {
     return obj;
   }
 
+  identity() {
+    return `${this.source ?? ''}|${this.id ?? ''}`;
+  }
+
   static fromJSON(data) {
     return new ConceptRef(data);
   }

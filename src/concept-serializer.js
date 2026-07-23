@@ -7,6 +7,13 @@ export class ConceptSerializer {
     const doc = { termid: concept.id };
     if (concept.term) doc.term = concept.term;
 
+    // v2: emit partitive_relations (was partitive_hyperedges in v1).
+    // Concept.partitiveRelations is the canonical v2 property; the
+    // v1 alias `partitiveHyperedges` points at the same array.
+    if (concept.partitiveRelations && concept.partitiveRelations.length > 0) {
+      doc.partitive_relations = concept.partitiveRelations.map(r => r.toJSON());
+    }
+
     for (const lang of concept.languages) {
       const lc = concept.localization(lang);
       if (lc) {
@@ -45,6 +52,10 @@ export class ConceptSerializer {
 
     if (concept.relatedConcepts.length > 0) {
       mainDoc.related = concept.relatedConcepts.map(rc => rc.toJSON());
+    }
+    // v2 wire name. Concept loads both v1 and v2 input but emits only v2.
+    if (concept.partitiveRelations && concept.partitiveRelations.length > 0) {
+      mainDoc.partitive_relations = concept.partitiveRelations.map(r => r.toJSON());
     }
     if (concept.sources.length > 0) {
       mainDoc.sources = concept.sources.map(s => s.toJSON());

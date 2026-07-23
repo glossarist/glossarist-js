@@ -294,12 +294,21 @@ describe('diffConcepts', () => {
     assert.equal(d.localization('eng').designations.added.length, 1);
   });
 
-  test('falls back to eng if requested language not found', () => {
+  test('throws when an unknown language is explicitly requested', () => {
     const oldC = makeConcept({ loc: {} });
     const newC = makeConcept({ id: '2', loc: {} });
-    const d = diffConcepts(oldC, newC, 'fra');
+    assert.throws(
+      () => diffConcepts(oldC, newC, 'fra'),
+      /language 'fra' not present in either concept/,
+    );
+  });
+
+  test('no language specified diffs the union of available languages', () => {
+    const oldC = makeConcept({ loc: {} });
+    const newC = makeConcept({ id: '2', loc: {} });
+    const d = diffConcepts(oldC, newC);
     assert.equal(d.hasChanges, false);
-    assert.ok(d.localizationLanguages.includes('eng'));
+    assert.deepEqual(d.localizationLanguages, ['eng']);
   });
 
   test('language=all diffs every language', () => {

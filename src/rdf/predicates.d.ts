@@ -23,6 +23,9 @@ export declare const PRED = {
     "ConceptRef": "https://www.glossarist.org/ontologies/ConceptRef",
     "Reference": "https://www.glossarist.org/ontologies/Reference",
     "RelatedConcept": "https://www.glossarist.org/ontologies/RelatedConcept",
+    "PartitiveHyperedge": "https://www.glossarist.org/ontologies/PartitiveHyperedge",
+    "PartitiveEnumeration": "https://www.glossarist.org/ontologies/PartitiveEnumeration",
+    "PluralityMarker": "https://www.glossarist.org/ontologies/PluralityMarker",
     "DesignationRelationship": "https://www.glossarist.org/ontologies/DesignationRelationship",
     "ConceptDate": "https://www.glossarist.org/ontologies/ConceptDate",
     "NonVerbalRepresentation": "https://www.glossarist.org/ontologies/NonVerbalRepresentation",
@@ -42,6 +45,7 @@ export declare const PRED = {
     "isLocalizationOf": "https://www.glossarist.org/ontologies/isLocalizationOf",
     "hasStatus": "https://www.glossarist.org/ontologies/hasStatus",
     "hasDomain": "https://www.glossarist.org/ontologies/hasDomain",
+    "tag": "https://www.glossarist.org/ontologies/tag",
     "hasRelatedConcept": "https://www.glossarist.org/ontologies/hasRelatedConcept",
     "hasDate": "https://www.glossarist.org/ontologies/hasDate",
     "hasSource": "https://www.glossarist.org/ontologies/hasSource",
@@ -93,7 +97,30 @@ export declare const PRED = {
     "relationshipType": "https://www.glossarist.org/ontologies/relationshipType",
     "relationshipContent": "https://www.glossarist.org/ontologies/relationshipContent",
     "relationshipRef": "https://www.glossarist.org/ontologies/relationshipRef",
+    "relatedConceptBroader": "https://www.glossarist.org/ontologies/relatedConceptBroader",
+    "relatedConceptNarrower": "https://www.glossarist.org/ontologies/relatedConceptNarrower",
+    "hasPartitiveHyperedge": "https://www.glossarist.org/ontologies/hasPartitiveHyperedge",
+    "comprehensive": "https://www.glossarist.org/ontologies/comprehensive",
+    "hasPart": "https://www.glossarist.org/ontologies/hasPart",
+    "enumeration": "https://www.glossarist.org/ontologies/enumeration",
+    "hasPluralityMarker": "https://www.glossarist.org/ontologies/hasPluralityMarker",
+    "hyperedgeContent": "https://www.glossarist.org/ontologies/hyperedgeContent",
+    "PartitiveRelation": "https://www.glossarist.org/ontologies/PartitiveRelation",
+    "PartitiveMember": "https://www.glossarist.org/ontologies/PartitiveMember",
+    "TypeSharedPlurality": "https://www.glossarist.org/ontologies/TypeSharedPlurality",
+    "hasPartitiveRelation": "https://www.glossarist.org/ontologies/hasPartitiveRelation",
+    "hasPartitive": "https://www.glossarist.org/ontologies/hasPartitive",
+    "completeness": "https://www.glossarist.org/ontologies/completeness",
+    "hasPlurality": "https://www.glossarist.org/ontologies/hasPlurality",
+    "isShared": "https://www.glossarist.org/ontologies/isShared",
+    "isUncertain": "https://www.glossarist.org/ontologies/isUncertain",
+    "sharedType": "https://www.glossarist.org/ontologies/sharedType",
+    "criterion": "https://www.glossarist.org/ontologies/criterion",
+    "certainty": "https://www.glossarist.org/ontologies/certainty",
+    "provides": "https://www.glossarist.org/ontologies/provides",
+    "providedBy": "https://www.glossarist.org/ontologies/providedBy",
     "refType": "https://www.glossarist.org/ontologies/refType",
+    "source": "https://www.glossarist.org/ontologies/source",
     "urn": "https://www.glossarist.org/ontologies/urn",
     "term": "https://www.glossarist.org/ontologies/term",
     "refId": "https://www.glossarist.org/ontologies/refId",
@@ -282,6 +309,9 @@ export type Predicate =
   | "https://www.glossarist.org/ontologies/ConceptRef"
   | "https://www.glossarist.org/ontologies/Reference"
   | "https://www.glossarist.org/ontologies/RelatedConcept"
+  | "https://www.glossarist.org/ontologies/PartitiveHyperedge"
+  | "https://www.glossarist.org/ontologies/PartitiveEnumeration"
+  | "https://www.glossarist.org/ontologies/PluralityMarker"
   | "https://www.glossarist.org/ontologies/DesignationRelationship"
   | "https://www.glossarist.org/ontologies/ConceptDate"
   | "https://www.glossarist.org/ontologies/NonVerbalRepresentation"
@@ -301,6 +331,7 @@ export type Predicate =
   | "https://www.glossarist.org/ontologies/isLocalizationOf"
   | "https://www.glossarist.org/ontologies/hasStatus"
   | "https://www.glossarist.org/ontologies/hasDomain"
+  | "https://www.glossarist.org/ontologies/tag"
   | "https://www.glossarist.org/ontologies/hasRelatedConcept"
   | "https://www.glossarist.org/ontologies/hasDate"
   | "https://www.glossarist.org/ontologies/hasSource"
@@ -352,7 +383,30 @@ export type Predicate =
   | "https://www.glossarist.org/ontologies/relationshipType"
   | "https://www.glossarist.org/ontologies/relationshipContent"
   | "https://www.glossarist.org/ontologies/relationshipRef"
+  | "https://www.glossarist.org/ontologies/relatedConceptBroader"
+  | "https://www.glossarist.org/ontologies/relatedConceptNarrower"
+  | "https://www.glossarist.org/ontologies/hasPartitiveHyperedge"
+  | "https://www.glossarist.org/ontologies/comprehensive"
+  | "https://www.glossarist.org/ontologies/hasPart"
+  | "https://www.glossarist.org/ontologies/enumeration"
+  | "https://www.glossarist.org/ontologies/hasPluralityMarker"
+  | "https://www.glossarist.org/ontologies/hyperedgeContent"
+  | "https://www.glossarist.org/ontologies/PartitiveRelation"
+  | "https://www.glossarist.org/ontologies/PartitiveMember"
+  | "https://www.glossarist.org/ontologies/TypeSharedPlurality"
+  | "https://www.glossarist.org/ontologies/hasPartitiveRelation"
+  | "https://www.glossarist.org/ontologies/hasPartitive"
+  | "https://www.glossarist.org/ontologies/completeness"
+  | "https://www.glossarist.org/ontologies/hasPlurality"
+  | "https://www.glossarist.org/ontologies/isShared"
+  | "https://www.glossarist.org/ontologies/isUncertain"
+  | "https://www.glossarist.org/ontologies/sharedType"
+  | "https://www.glossarist.org/ontologies/criterion"
+  | "https://www.glossarist.org/ontologies/certainty"
+  | "https://www.glossarist.org/ontologies/provides"
+  | "https://www.glossarist.org/ontologies/providedBy"
   | "https://www.glossarist.org/ontologies/refType"
+  | "https://www.glossarist.org/ontologies/source"
   | "https://www.glossarist.org/ontologies/urn"
   | "https://www.glossarist.org/ontologies/term"
   | "https://www.glossarist.org/ontologies/refId"

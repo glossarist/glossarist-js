@@ -15,6 +15,14 @@ export class ConceptDate extends GlossaristModel {
     return this.date ? new Date(this.date) : null;
   }
 
+  static identityOf(value) {
+    return value?.type ?? '';
+  }
+
+  identity() {
+    return ConceptDate.identityOf(this);
+  }
+
   toJSON() {
     const obj = {};
     if (this.date != null) obj.date = this.date;

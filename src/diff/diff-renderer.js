@@ -124,6 +124,7 @@ function renderConceptLevel(diff, colors) {
   lines.push(...renderListDiff('Sources', diff.sources, colors, itemLabel));
   lines.push(...renderListDiff('Dates', diff.dates, colors, itemLabel));
   lines.push(...renderListDiff('Related', diff.relatedConcepts, colors, itemLabel));
+  lines.push(...renderListDiff('Partitive relations', diff.partitiveRelations ?? diff.partitiveHyperedges, colors, relationLabel));
   lines.push(...renderListDiff('Groups', diff.groups, colors, itemLabel));
   lines.push(...renderListDiff('Sections', diff.sections, colors, itemLabel));
   lines.push(...renderListDiff('Tags', diff.tags, colors, itemLabel));
@@ -195,6 +196,39 @@ function designationLabel(d) {
 function definitionLabel(d) {
   if (!d) return '?';
   return d.content ?? '?';
+}
+
+function relationLabel(r) {
+  if (!r) return '?';
+  const c = r.comprehensive;
+  const head = c?.id ?? c?.source ?? c?.text ?? '?';
+  const partitives = Array.isArray(r.partitives)
+    ? r.partitives.map(m => {
+        const ref = m?.ref ?? m ?? {};
+        const tail = m?.certainty === 'possible' ? '?' : '';
+        return `${ref.id ?? ref.source ?? ref.text ?? '?'}${tail}`;
+      }).join(', ')
+    : '';
+  const completeness = r.completeness ? ` (${r.completeness})` : '';
+  const criterion = r.criterion
+    ? ` / ${Object.values(r.criterion)[0] ?? ''}`
+    : '';
+  const plurality = r.plurality
+    ? ` [${_pluralityLabel(r.plurality)}]`
+    : '';
+  return `${head} → {${partitives}}${completeness}${criterion}${plurality}`;
+}
+
+function _pluralityLabel(p) {
+  if (!p) return '';
+  const flags = [];
+  if (p.is_shared) flags.push('shared');
+  if (p.is_uncertain) flags.push('uncertain');
+  if (p.shared_type) {
+    const t = p.shared_type;
+    flags.push(`type=${t.id ?? t.source ?? '?'}`);
+  }
+  return flags.join(',');
 }
 
 function itemLabel(item) {

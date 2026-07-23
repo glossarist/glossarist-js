@@ -11,6 +11,7 @@ import type { Designation } from '../models/index';
 import type { DetailedDefinition } from '../models/index';
 import type { ConceptSource } from '../models/index';
 import type { NonVerbRep, Figure, Table, Formula } from '../models/index';
+import type { PartitiveHyperedge, PartitiveRelation } from '../models/index';
 
 export { PRED, PREFIXES } from './predicates';
 export type PredicateMap = typeof PRED;
@@ -76,6 +77,42 @@ export interface ConceptSourceEmitOptions {
 }
 
 export declare function conceptSourceToQuads(source: ConceptSource, options: ConceptSourceEmitOptions): Generator<Quad, void, unknown>;
+
+// ── Hyperedge emitter ─────────────────────────────────────────────────
+
+export interface HyperedgeEmitOptions {
+  parentUri: string;
+  index: number;
+}
+
+export declare function hyperedgeToQuads(
+  hyperedge: PartitiveHyperedge,
+  options: HyperedgeEmitOptions,
+): Generator<Quad, void, unknown>;
+
+export declare function hyperedgeSubjectUri(
+  parentUri: string,
+  hyperedge: PartitiveHyperedge,
+  index: number,
+): string;
+
+// ── PartitiveRelation emitter (v2) ────────────────────────────────────
+
+export interface PartitiveRelationEmitOptions {
+  parentUri: string;
+  index: number;
+}
+
+export declare function partitiveRelationToQuads(
+  relation: PartitiveRelation,
+  options: PartitiveRelationEmitOptions,
+): Generator<Quad, void, unknown>;
+
+export declare function partitiveRelationSubjectUri(
+  parentUri: string,
+  relation: PartitiveRelation,
+  index: number,
+): string;
 
 // ── Non-verbal representation emitters ─────────────────────────────────
 

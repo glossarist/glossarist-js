@@ -1,5 +1,6 @@
 import { GlossaristModel } from './base.js';
 import { Citation } from './citation.js';
+import { canonicalJson } from '../diff/canonical-json.js';
 
 export class DetailedDefinition extends GlossaristModel {
   constructor(data = {}) {
@@ -40,6 +41,16 @@ export class DetailedDefinition extends GlossaristModel {
     for (let i = 0; i < this.examples.length; i++) {
       yield* this.examples[i].walkTexts(`${path}.examples[${i}]`);
     }
+  }
+
+  static identityOf(value) {
+    if (value == null) return '';
+    if (typeof value.toJSON === 'function') return canonicalJson(value.toJSON());
+    return canonicalJson(value);
+  }
+
+  identity() {
+    return DetailedDefinition.identityOf(this);
   }
 
   static fromJSON(data) {

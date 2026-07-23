@@ -7,6 +7,8 @@ import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { localizedConceptToQuads } from './gloss-localized-concept.js';
 import { conceptSourceToQuads } from './gloss-source.js';
+import { partitiveRelationToQuads, partitiveRelationSubjectUri } from './gloss-partitive-relation.js';
+import { hyperedgeToQuads, hyperedgeSubjectUri } from './gloss-hyperedge.js';
 import { namedNode, literal, quad } from './terms.js';
 
 // Kind tag → URI segment. Each NonVerbalReference subtype has a
@@ -68,5 +70,29 @@ export function* conceptToQuads(concept, options) {
   for (const source of concept.sources ?? []) {
     yield* conceptSourceToQuads(source, { subjectUri, index: srcIndex });
     srcIndex += 1;
+  }
+
+  // v2 canonical: concept.partitiveRelations. v1 alias
+  // (concept.partitiveHyperedges) points at the same array — both
+  // work here.
+  const relations = concept.partitiveRelations ?? concept.partitiveHyperedges ?? [];
+  let relIdx = 0;
+  for (const relation of relations) {
+    // Skip v1 PartitiveHyperedge instances — they have their own
+    // emitter (gloss-hyperedge.js) and would double-emit. The parser
+    // always produces v2 PartitiveRelation instances; only direct
+    // callers using the v1 model would see this branch.
+    const isV2 = !relation.enumeration && !relation.markers && !relation.parts
+      || (relation.completeness != null || relation.partitives != null);
+    if (!isV2) {
+      const heSubject = hyperedgeSubjectUri(subjectUri, relation, relIdx);
+      yield quad(s, namedNode(PRED.gloss.hasPartitiveHyperedge), namedNode(heSubject));
+      yield* hyperedgeToQuads(relation, { parentUri: subjectUri, index: relIdx });
+    } else {
+      const relSubject = partitiveRelationSubjectUri(subjectUri, relation, relIdx);
+      yield quad(s, namedNode(PRED.gloss.hasPartitiveRelation), namedNode(relSubject));
+      yield* partitiveRelationToQuads(relation, { parentUri: subjectUri, index: relIdx });
+    }
+    relIdx += 1;
   }
 }

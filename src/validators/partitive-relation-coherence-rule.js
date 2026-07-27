@@ -71,19 +71,10 @@ export class PartitiveRelationCoherenceRule extends ValidationRule {
       }
     }
 
-    // Check 4: plurality coherence (warning).
-    for (let i = 0; i < relations.length; i++) {
-      const plural = relations[i]?.plurality;
-      if (!plural) continue;
-      if (plural.isUncertain && !plural.isShared) {
-        result.addWarning(
-          `${path}partitiveRelations[${i}].plurality`,
-          `plurality has isUncertain=true without isShared=true (semantically odd: ` +
-          `ISO 704 broken line qualifies the close-set double line plurality; ` +
-          `without double, what is being qualified?)`,
-        );
-      }
-    }
+    // (Check 4 — plurality coherence — removed. The prior plurality
+    // block was based on a misreading of ISO 704; the corrected model
+    // uses per-member multiplicity + is_delimiting, which are validated
+    // at construction by PartitiveMember itself.)
   }
 }
 

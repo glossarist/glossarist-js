@@ -215,7 +215,9 @@ describe('PartitiveHyperedge', () => {
       assert.equal(rel.comprehensive.id, '112-02-09');
       assert.deepEqual(rel.partitives.map(p => p.ref.id), ['112-02-10', '112-03-26']);
       assert.equal(rel.isComplete, true);  // 'closed' → 'complete'
-      assert.equal(rel.plurality.isShared, true);  // 'double' → is_shared
+      // v1 'double' marker is dropped in v2 (markers are replaced by
+      // per-member multiplicity + is_delimiting per ISO 704:2022).
+      // Migration sets a warning but no longer maps to plurality.
     });
 
     it('Concept.toJSON emits partitive_relations (v2 wire name)', () => {

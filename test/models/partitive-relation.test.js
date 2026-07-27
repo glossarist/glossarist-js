@@ -57,7 +57,7 @@ describe('Multiplicity enum (ISO 704:2022)', () => {
     assert.equal(MULTIPLICITY.OPTIONAL, 'optional');
     assert.equal(MULTIPLICITY.COMPULSORY_MULTIPLE, 'compulsory_multiple');
     assert.equal(MULTIPLICITY.OPTIONAL_MULTIPLE, 'optional_multiple');
-    assert.equal(MULTIPLICITY.AT_LEAST_ONE, 'at_least_one');
+    assert.equal(MULTIPLICITY.COMPULSORY_AT_LEAST_ONE, 'compulsory_at_least_one');
   });
 
   it('default is compulsory', () => {

@@ -10,7 +10,7 @@
 //     optional            — 1 dashed line (exists in some instances only)
 //     compulsory_multiple — 2 solid lines (multiple must exist)
 //     optional_multiple   — 2 dashed lines (multiple may exist)
-//     at_least_one        — 1 solid + 1 dashed line (≥1 must exist)
+//     compulsory_at_least_one        — 1 solid + 1 dashed line (≥1 must exist)
 //
 //   is_delimiting (orthogonal, bold 3x-width line in diagram):
 //     A delimiting part behaves like a delimiting characteristic:

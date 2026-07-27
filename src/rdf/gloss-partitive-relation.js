@@ -7,16 +7,11 @@
 //     gloss:comprehensive            <base>/concept/<comprehensive-id>      (named node)
 //     gloss:hasPartitive             <base>/concept/<partitive-id>         (named node, one per member)
 //     gloss:completeness             "complete"|"partial"                   (literal)
-//     gloss:hasPlurality             <plurality bnode>                      (when plurality present)
 //     gloss:criterion                "..."@lang                             (one per language, when present)
 //
-// Plurality bnode (when present):
-//
-//   _:b<n>
-//     rdf:type                       gloss:TypeSharedPlurality
-//     gloss:isShared                 true|false                             (literal)
-//     gloss:isUncertain              true|false                             (literal, when non-default)
-//     gloss:sharedType               <base>/concept/<shared-type-id>        (when shared_type present)
+// Per-member multiplicity + is_delimiting are emitted as part of
+// each member's named-node object via the partitiveMemberToQuads
+// helper (separate file).
 //
 // The carrying concept links via `gloss:hasPartitiveRelation`.
 //
@@ -25,7 +20,6 @@
 
 import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
-import { deterministicBnode } from './deterministic-id.js';
 import { namedNode, literal, quad } from './terms.js';
 
 export function* partitiveRelationToQuads(relation, { parentUri, index }) {
@@ -44,18 +38,22 @@ export function* partitiveRelationToQuads(relation, { parentUri, index }) {
   for (const member of members) {
     const ref = member?.ref ?? member;
     if (!ref || (!ref.source && !ref.id)) continue;
-    yield quad(s, namedNode(PRED.gloss.hasPartitive),
-      namedNode(conceptRefUri(ref, parentUri)));
+    const memberUri = conceptRefUri(ref, parentUri);
+    yield quad(s, namedNode(PRED.gloss.hasPartitive), namedNode(memberUri));
+
+    // Per-member multiplicity (ISO 704:2022) and is_delimiting.
+    if (member?.multiplicity) {
+      yield quad(namedNode(memberUri), namedNode(PRED.gloss.multiplicity),
+        literal(member.multiplicity));
+    }
+    if (member?.is_delimiting === true) {
+      yield quad(namedNode(memberUri), namedNode(PRED.gloss.isDelimiting),
+        literal('true', 'xsd:boolean'));
+    }
   }
 
   if (relation.completeness) {
     yield quad(s, namedNode(PRED.gloss.completeness), literal(relation.completeness));
-  }
-
-  if (relation.plurality != null) {
-    const pSubject = deterministicBnode(subjectUri, 'plurality', 0);
-    yield quad(s, namedNode(PRED.gloss.hasPlurality), namedNode(pSubject));
-    yield* pluralityToQuads(relation.plurality, pSubject);
   }
 
   if (relation.criterion && typeof relation.criterion === 'object') {
@@ -63,25 +61,6 @@ export function* partitiveRelationToQuads(relation, { parentUri, index }) {
       if (typeof text !== 'string') continue;
       yield quad(s, namedNode(PRED.gloss.criterion), literal(text, lang));
     }
-  }
-}
-
-function* pluralityToQuads(plurality, subjectUri) {
-  const s = namedNode(subjectUri);
-  yield quad(s, namedNode(WELL_KNOWN.rdfType), namedNode(PRED.gloss.TypeSharedPlurality));
-  yield quad(s, namedNode(PRED.gloss.isShared), literal(plurality.isShared ? 'true' : 'false', 'xsd:boolean'));
-  if (plurality.isUncertain) {
-    yield quad(s, namedNode(PRED.gloss.isUncertain), literal('true', 'xsd:boolean'));
-  }
-  if (plurality.sharedType) {
-    // sharedType is a ConceptRef-like object; emit as a concept URI.
-    // We don't have parentUri here, but sharedType typically points at
-    // an external concept. Fall back to urn form.
-    const st = plurality.sharedType;
-    const uri = st.id
-      ? `urn:glossarist:${st.source ?? 'unknown'}:${st.id}`
-      : `urn:glossarist:${st.source ?? 'unknown'}:`;
-    yield quad(s, namedNode(PRED.gloss.sharedType), namedNode(uri));
   }
 }
 

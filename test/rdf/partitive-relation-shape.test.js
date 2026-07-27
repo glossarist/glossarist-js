@@ -103,24 +103,24 @@ describe('PartitiveRelation RDF shape — cross-repo contract', () => {
     assert.equal(completenessQuad.object.value, 'partial');
   });
 
-  it('emits gloss:hasPlurality bnode with isShared literal when plurality is present', () => {
+  it('emits gloss:multiplicity and gloss:isDelimiting on member URIs', () => {
     const concept = new Concept({
       id: '1',
       partitiveRelations: [makeRelation({
         comprehensive: { source: 'VIM', id: '1' },
-        plurality: { is_shared: true, is_uncertain: true },
+        partitives: [
+          { ref: { source: 'VIM', id: '2' }, multiplicity: 'optional', is_delimiting: true },
+          { ref: { source: 'VIM', id: '3' } },
+        ],
       })],
     });
     const quads = quadsFor(concept);
     assert.ok(quads.some(q =>
-      q.predicate.value === 'https://www.glossarist.org/ontologies/hasPlurality',
+      q.predicate.value === 'https://www.glossarist.org/ontologies/multiplicity' &&
+      q.object.value === 'optional',
     ));
     assert.ok(quads.some(q =>
-      q.predicate.value === 'https://www.glossarist.org/ontologies/isShared' &&
-      q.object.termType === 'Literal',
-    ));
-    assert.ok(quads.some(q =>
-      q.predicate.value === 'https://www.glossarist.org/ontologies/isUncertain' &&
+      q.predicate.value === 'https://www.glossarist.org/ontologies/isDelimiting' &&
       q.object.termType === 'Literal',
     ));
   });
@@ -175,8 +175,7 @@ describe('PartitiveRelation RDF shape — cross-repo contract', () => {
       q.predicate.value === 'https://www.glossarist.org/ontologies/completeness' &&
       q.object.value === 'complete',
     ));
-    assert.ok(quads.some(q =>
-      q.predicate.value === 'https://www.glossarist.org/ontologies/isShared',
-    ));
+    // v1 markers are dropped during migration (v2 uses per-member
+    // multiplicity + is_delimiting, not plurality bnodes).
   });
 });

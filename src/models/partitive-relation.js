@@ -1,31 +1,29 @@
-// PartitiveRelation — a one-to-many partitive decomposition.
-//
-// Connects a comprehensive concept (superordinate concept partitive)
-// to two or more partitive concepts (subordinate concepts partitive)
-// which fitted together constitute the comprehensive.
-//
-// Renamed from the v1 `PartitiveHyperedge` per TODO.partitive-relation-v2
-// item 01. ISO 704 / 1087-1 / 12620 call this a *partitive relation*,
-// not a hyperedge.
+// PartitiveRelation — an ISO 704 / ISO 1087-1 / ISO 12620
+// partitive relation connecting a comprehensive concept
+// (superordinate concept partitive) to two or more partitive
+// concepts (subordinate concepts partitive) which fitted together
+// constitute the comprehensive.
 //
 // Field renames (v1 → v2):
 //   parts [1..*]              → partitives [2..*]  (as PartitiveMember)
 //   enumeration: closed|open  → completeness: complete|partial
-//   markers: [double, dashed] → plurality: TypeSharedPlurality (structured)
 //   content: LocalizedString  → (dropped — structural edges carry no prose)
+//
+// Per-member metadata (ISO 704:2022):
+//   multiplicity (5 values) + is_delimiting (boolean)
 //
 // New field:
 //   criterion: LocalizedString [0..1]  (ISO 12620 coordinate-concept coherence)
 //
 // Distinguished from binary `has_part` / `is_part_of` edges, which
-// express pairwise part-of assertions without completeness, plurality,
-// or criterion claims. A single partitive should be expressed as a
-// binary edge, not a PartitiveRelation (ISO requires "two or more").
+// express pairwise part-of assertions without completeness,
+// multiplicity, or criterion claims. A single partitive should be
+// expressed as a binary edge, not a PartitiveRelation (ISO requires
+// "two or more").
 
 import { GlossaristModel } from './base.js';
 import { ConceptRef } from './concept-ref.js';
 import { PartitiveMember } from './partitive-member.js';
-import { TypeSharedPlurality } from './type-shared-plurality.js';
 import {
   COMPLETENESS,
   COMPLETENESS_VALUES,
@@ -39,11 +37,6 @@ export class PartitiveRelation extends GlossaristModel {
     this.comprehensive = _ensureComprehensive(data.comprehensive);
     this.partitives = _ensurePartitives(data.partitives);
     this.completeness = _resolveCompleteness(data.completeness);
-    this.plurality = data.plurality == null
-      ? null
-      : (data.plurality instanceof TypeSharedPlurality
-          ? data.plurality
-          : new TypeSharedPlurality(data.plurality));
     this.criterion = _normalizeCriterion(data.criterion);
 
     _assertNoSelfLoop(this.comprehensive, this.partitives);
@@ -57,7 +50,6 @@ export class PartitiveRelation extends GlossaristModel {
   // coordinate concepts by definition).
   get isCoordinate() { return this.partitives.length >= 2; }
 
-  hasPlurality() { return this.plurality != null; }
   hasCriterion() { return this.criterion != null; }
 
   identity() {
@@ -70,15 +62,14 @@ export class PartitiveRelation extends GlossaristModel {
       partitives: this.partitives.map(p => p.toJSON()),
       completeness: this.completeness,
     };
-    if (this.plurality != null) obj.plurality = this.plurality.toJSON();
     if (this.criterion != null) obj.criterion = { ...this.criterion };
     return obj;
   }
 
   // Stable identity for diffing: same comprehensive + same partitive
   // set (by ref identity) = same relation. Changes to completeness,
-  // plurality, or criterion produce "changed" entries rather than
-  // add+remove. Matches the v1 hyperedgeIdentity semantics.
+  // multiplicity, is_delimiting, or criterion produce "changed"
+  // entries rather than add+remove.
   static identityOf(value) {
     const v = value ?? {};
     const c = v.comprehensive ?? {};

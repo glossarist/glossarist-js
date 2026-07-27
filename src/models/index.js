@@ -38,7 +38,6 @@ export {
 // backward-compat input. New code should use v2 exclusively.
 export { PartitiveRelation } from './partitive-relation.js';
 export { PartitiveMember } from './partitive-member.js';
-export { TypeSharedPlurality } from './type-shared-plurality.js';
 export {
   COMPLETENESS,
   COMPLETENESS_VALUES,
@@ -46,11 +45,11 @@ export {
   isValidCompleteness,
 } from './completeness.js';
 export {
-  MEMBER_CERTAINTY,
-  MEMBER_CERTAINTY_VALUES,
-  DEFAULT_MEMBER_CERTAINTY,
-  isValidMemberCertainty,
-} from './member-certainty.js';
+  MULTIPLICITY,
+  MULTIPLICITY_VALUES,
+  DEFAULT_MULTIPLICITY,
+  isValidMultiplicity,
+} from './multiplicity.js';
 
 // v1 → v2 migration helper. Pure function; idempotent.
 export {

@@ -107,16 +107,12 @@ export declare const PRED = {
     "hyperedgeContent": "https://www.glossarist.org/ontologies/hyperedgeContent",
     "PartitiveRelation": "https://www.glossarist.org/ontologies/PartitiveRelation",
     "PartitiveMember": "https://www.glossarist.org/ontologies/PartitiveMember",
-    "TypeSharedPlurality": "https://www.glossarist.org/ontologies/TypeSharedPlurality",
     "hasPartitiveRelation": "https://www.glossarist.org/ontologies/hasPartitiveRelation",
     "hasPartitive": "https://www.glossarist.org/ontologies/hasPartitive",
     "completeness": "https://www.glossarist.org/ontologies/completeness",
-    "hasPlurality": "https://www.glossarist.org/ontologies/hasPlurality",
-    "isShared": "https://www.glossarist.org/ontologies/isShared",
-    "isUncertain": "https://www.glossarist.org/ontologies/isUncertain",
-    "sharedType": "https://www.glossarist.org/ontologies/sharedType",
+    "multiplicity": "https://www.glossarist.org/ontologies/multiplicity",
+    "isDelimiting": "https://www.glossarist.org/ontologies/isDelimiting",
     "criterion": "https://www.glossarist.org/ontologies/criterion",
-    "certainty": "https://www.glossarist.org/ontologies/certainty",
     "provides": "https://www.glossarist.org/ontologies/provides",
     "providedBy": "https://www.glossarist.org/ontologies/providedBy",
     "refType": "https://www.glossarist.org/ontologies/refType",
@@ -393,16 +389,12 @@ export type Predicate =
   | "https://www.glossarist.org/ontologies/hyperedgeContent"
   | "https://www.glossarist.org/ontologies/PartitiveRelation"
   | "https://www.glossarist.org/ontologies/PartitiveMember"
-  | "https://www.glossarist.org/ontologies/TypeSharedPlurality"
   | "https://www.glossarist.org/ontologies/hasPartitiveRelation"
   | "https://www.glossarist.org/ontologies/hasPartitive"
   | "https://www.glossarist.org/ontologies/completeness"
-  | "https://www.glossarist.org/ontologies/hasPlurality"
-  | "https://www.glossarist.org/ontologies/isShared"
-  | "https://www.glossarist.org/ontologies/isUncertain"
-  | "https://www.glossarist.org/ontologies/sharedType"
+  | "https://www.glossarist.org/ontologies/multiplicity"
+  | "https://www.glossarist.org/ontologies/isDelimiting"
   | "https://www.glossarist.org/ontologies/criterion"
-  | "https://www.glossarist.org/ontologies/certainty"
   | "https://www.glossarist.org/ontologies/provides"
   | "https://www.glossarist.org/ontologies/providedBy"
   | "https://www.glossarist.org/ontologies/refType"

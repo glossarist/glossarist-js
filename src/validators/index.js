@@ -23,6 +23,7 @@ export { SourcedFromLocalityRule } from './sourced-from-locality-rule.js';
 export { PartitiveRelationCoherenceRule } from './partitive-relation-coherence-rule.js';
 export { ExternalConceptShapeRule } from './external-concept-shape-rule.js';
 export { BinaryHasPartRedundancyRule } from './binary-has-part-redundancy-rule.js';
+export { DelimitingCoherenceRule } from './delimiting-coherence-rule.js';
 
 import { ConceptValidator, LanguageCodeRule, DesignationTypeRule, EntryStatusRule } from './concept-validator.js';
 import { RegisterValidator } from './register-validator.js';
@@ -45,6 +46,7 @@ import { SourcedFromLocalityRule } from './sourced-from-locality-rule.js';
 import { PartitiveRelationCoherenceRule } from './partitive-relation-coherence-rule.js';
 import { ExternalConceptShapeRule } from './external-concept-shape-rule.js';
 import { BinaryHasPartRedundancyRule } from './binary-has-part-redundancy-rule.js';
+import { DelimitingCoherenceRule } from './delimiting-coherence-rule.js';
 
 const _default = new ConceptValidator()
   .addRule(new LanguageCodeRule())
@@ -65,7 +67,8 @@ const _default = new ConceptValidator()
   .addRule(new SourcedFromLocalityRule())
   .addRule(new PartitiveRelationCoherenceRule())
   .addRule(new ExternalConceptShapeRule())
-  .addRule(new BinaryHasPartRedundancyRule());
+  .addRule(new BinaryHasPartRedundancyRule())
+  .addRule(new DelimitingCoherenceRule());
 
 export function validateConcept(concept) {
   return _default.validate(concept);

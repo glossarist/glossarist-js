@@ -6,21 +6,30 @@
 //     rdf:type                       gloss:PartitiveRelation
 //     gloss:comprehensive            <base>/concept/<comprehensive-id>      (named node)
 //     gloss:hasPartitive             <base>/concept/<partitive-id>         (named node, one per member)
-//     gloss:completeness             "complete"|"partial"                   (literal)
-//     gloss:criterion                "..."@lang                             (one per language, when present)
+//     gloss:completeness             <.../completeness/complete|partial>   (named node, SKOS)
+//     gloss:criterion                "..."@lang                             (literal, one per language)
 //
-// Per-member multiplicity + is_delimiting are emitted as part of
-// each member's named-node object via the partitiveMemberToQuads
-// helper (separate file).
+// Per-member multiplicity + is_delimiting are emitted by the
+// `partitiveMemberToQuads` helper in `gloss-partitive-member.js`.
 //
 // The carrying concept links via `gloss:hasPartitiveRelation`.
 //
-// Replaces gloss-hyperedge.js (the v1 emitter) per TODO.partitive-relation-v2 item 01.
+// Replaces gloss-hyperedge.js (the v1 emitter) per
+// TODO.partitive-relation-v2 item 01.
 // Cross-repo alignment with glossarist-ruby's Rdf::GlossPartitiveRelation.
+//
+// JSON-LD `@type: @id` invariant: `multiplicity` and `completeness`
+// are URI references into SKOS taxonomies (per
+// `data/concept-model/glossarist.context.jsonld`), not literals.
+// `criterion` is `@container: @language` (one literal per language).
+// `isDelimiting` is `xsd:boolean` literal.
 
 import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
+import { partitiveMemberToQuads } from './gloss-partitive-member.js';
 import { namedNode, literal, quad } from './terms.js';
+
+const COMPLETENESS_NS = 'https://www.glossarist.org/ontologies/completeness/';
 
 export function* partitiveRelationToQuads(relation, { parentUri, index }) {
   const subjectUri = partitiveRelationSubjectUri(parentUri, relation, index);
@@ -40,20 +49,12 @@ export function* partitiveRelationToQuads(relation, { parentUri, index }) {
     if (!ref || (!ref.source && !ref.id)) continue;
     const memberUri = conceptRefUri(ref, parentUri);
     yield quad(s, namedNode(PRED.gloss.hasPartitive), namedNode(memberUri));
-
-    // Per-member multiplicity (ISO 704:2022) and is_delimiting.
-    if (member?.multiplicity) {
-      yield quad(namedNode(memberUri), namedNode(PRED.gloss.multiplicity),
-        literal(member.multiplicity));
-    }
-    if (member?.is_delimiting === true) {
-      yield quad(namedNode(memberUri), namedNode(PRED.gloss.isDelimiting),
-        literal('true', 'xsd:boolean'));
-    }
+    yield* partitiveMemberToQuads(member, { memberUri });
   }
 
   if (relation.completeness) {
-    yield quad(s, namedNode(PRED.gloss.completeness), literal(relation.completeness));
+    yield quad(s, namedNode(PRED.gloss.completeness),
+      namedNode(COMPLETENESS_NS + relation.completeness));
   }
 
   if (relation.criterion && typeof relation.criterion === 'object') {

@@ -25,11 +25,11 @@ export class BinaryHasPartRedundancyRule extends ValidationRule {
     // Collect partitive refs from PartitiveRelations.
     const relationTargets = new Set();
     for (const rel of relations) {
-      const compKey = refKey(rel?.comprehensive);
+      const compKey = _refKey(rel?.comprehensive);
       const members = rel?.partitives ?? rel?.parts ?? [];
       for (const member of members) {
         const ref = member?.ref ?? member;
-        const key = refKey(ref);
+        const key = _refKey(ref);
         if (key && key !== compKey) relationTargets.add(key);
       }
     }
@@ -39,7 +39,7 @@ export class BinaryHasPartRedundancyRule extends ValidationRule {
     const related = concept.relatedConcepts ?? [];
     for (const rc of related) {
       if (!BINARY_HAS_PART_TYPES.has(rc.type)) continue;
-      const key = refKey(rc?.ref);
+      const key = _refKey(rc?.ref);
       if (key) binaryTargets.add(key);
     }
 
@@ -60,8 +60,16 @@ export class BinaryHasPartRedundancyRule extends ValidationRule {
         `${path}relatedConcepts`,
         `${binaryTargets.size} binary has_part edges on this concept; ` +
         `consider converting to a PartitiveRelation (which can carry ` +
-        `completeness, multiplicity, and criterion metadata)`,
+        `completeness, plurality, and criterion metadata)`,
       );
     }
   }
+}
+
+function _refKey(ref) {
+  if (!ref) return null;
+  const source = ref.source ?? '';
+  const id = ref.id ?? '';
+  if (!source && !id) return null;
+  return `${source}:${id}`;
 }

@@ -21,6 +21,25 @@
 // A v1 hyperedge with exactly 1 part cannot migrate to v2 and is
 // returned with a `migrationWarning` field set so callers can decide
 // whether to surface it (the parser drops these with a warning).
+//
+// ─── Migration decision table (v1 markers → v2 multiplicity) ──────
+//
+// v1 markers encoded per-relation plurality claims. v2 multiplicity
+// is per-member. The mapping is lossy; reviewers must set per-member
+// multiplicity individually after migration.
+//
+//   | v1 markers              | Likely multiplicity for each partitive         | Notes                                                  |
+//   |-------------------------|------------------------------------------------|--------------------------------------------------------|
+//   | (none)                  | `compulsory`                                   | Default; reviewer confirms                             |
+//   | `[double]`              | `compulsory_multiple` or `compulsory_at_least_one` | Reviewer distinguishes "all required" from "≥1 required" |
+//   | `[dashed]`              | `optional` or `optional_multiple`              | Reviewer distinguishes single vs multiple              |
+//   | `[double, dashed]`      | `optional_multiple` or `compulsory_at_least_one` | Plurality claim; reviewer distinguishes uncertain vs required |
+//   | (single-part v1 edge)   | (cannot migrate — needs ≥2 partitives)         | Convert to a binary `has_part` edge                    |
+//
+// `is_delimiting` is NEVER set by migration. ISO 704:2022 says
+// delimiting depends on the concept system and coordinate concepts,
+// which migration cannot infer. Reviewer sets it based on domain
+// knowledge (see DelimitingCoherenceRule for cross-relation checks).
 
 export function migrateHyperedgeToRelation(v1Hash) {
   if (v1Hash == null) return null;

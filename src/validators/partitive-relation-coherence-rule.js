@@ -17,6 +17,7 @@
 // validators enforce semantics.
 
 import { ValidationRule } from './validation-rule.js';
+import { refKey, criterionKey } from './ref-keys.js';
 
 export class PartitiveRelationCoherenceRule extends ValidationRule {
   constructor() { super('partitive-relation-coherence'); }
@@ -43,8 +44,8 @@ export class PartitiveRelationCoherenceRule extends ValidationRule {
     const seen = new Map();
     for (let i = 0; i < relations.length; i++) {
       const rel = relations[i];
-      const compKey = _conceptRefKey(rel?.comprehensive);
-      const critKey = _criterionKey(rel?.criterion);
+      const compKey = refKey(rel?.comprehensive);
+      const critKey = criterionKey(rel?.criterion);
       if (compKey == null || critKey == null) continue;
       const key = `${compKey}|${critKey}`;
       if (seen.has(key)) {
@@ -76,23 +77,4 @@ export class PartitiveRelationCoherenceRule extends ValidationRule {
     // uses per-member multiplicity + is_delimiting, which are validated
     // at construction by PartitiveMember itself.)
   }
-}
-
-function _conceptRefKey(ref) {
-  if (!ref) return null;
-  const source = ref.source ?? '';
-  const id = ref.id ?? '';
-  if (!source && !id) return null;
-  return `${source}:${id}`;
-}
-
-function _criterionKey(criterion) {
-  if (!criterion || typeof criterion !== 'object') return null;
-  // Sort values for stable comparison regardless of language key order.
-  const values = Object.values(criterion)
-    .filter(v => typeof v === 'string')
-    .map(s => s.trim())
-    .filter(s => s.length > 0)
-    .sort();
-  return values.length > 0 ? values.join('|') : null;
 }

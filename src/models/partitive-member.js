@@ -6,15 +6,19 @@
 // ISO 704:2022 partitive member notation:
 //
 //   multiplicity (diagram line notation):
-//     compulsory          — 1 solid line (must exist in every instance)
-//     optional            — 1 dashed line (exists in some instances only)
-//     compulsory_multiple — 2 solid lines (multiple must exist)
-//     optional_multiple   — 2 dashed lines (multiple may exist)
-//     compulsory_at_least_one        — 1 solid + 1 dashed line (≥1 must exist)
+//     compulsory                — 1 solid line         (must exist in every instance)
+//     optional                  — 1 dashed line        (exists in some instances only)
+//     compulsory_multiple       — 2 solid lines        (multiple must exist)
+//     optional_multiple         — 2 dashed lines       (multiple may exist)
+//     compulsory_at_least_one  — 1 solid + 1 dashed   (≥1 must exist)
 //
 //   is_delimiting (orthogonal, bold 3x-width line in diagram):
 //     A delimiting part behaves like a delimiting characteristic:
 //     it distinguishes the comprehensive from coordinate concepts.
+//
+// Whether a part is delimiting depends on the concept system, the
+// coordinate concepts, the inheritance principle, and the criterion
+// of subdivision used (ISO 704:2022 §5.5.4.2.1).
 
 import { GlossaristModel } from './base.js';
 import { ConceptRef } from './concept-ref.js';
@@ -32,17 +36,32 @@ export class PartitiveMember extends GlossaristModel {
       ? data.ref
       : new ConceptRef(data.ref ?? {});
     this.multiplicity = _resolveMultiplicity(data.multiplicity);
-    this.is_delimiting = data.is_delimiting === true;
+    this.is_delimiting = _resolveBoolean(data.is_delimiting, 'is_delimiting');
 
     _assertNonEmptyRef(this.ref);
   }
 
+  // Per-value multiplicity predicates. Each new enum value gets one
+  // line — OCP-friendly: the predicates grow with the enum without
+  // touching unrelated code. (TODO.partitive-relation-v3/05.)
   get isCompulsory() {
     return this.multiplicity === MULTIPLICITY.COMPULSORY;
   }
 
   get isOptional() {
     return this.multiplicity === MULTIPLICITY.OPTIONAL;
+  }
+
+  get isCompulsoryMultiple() {
+    return this.multiplicity === MULTIPLICITY.COMPULSORY_MULTIPLE;
+  }
+
+  get isOptionalMultiple() {
+    return this.multiplicity === MULTIPLICITY.OPTIONAL_MULTIPLE;
+  }
+
+  get isCompulsoryAtLeastOne() {
+    return this.multiplicity === MULTIPLICITY.COMPULSORY_AT_LEAST_ONE;
   }
 
   get isDelimiting() {
@@ -84,6 +103,17 @@ function _resolveMultiplicity(value) {
     );
   }
   return value;
+}
+
+// Boolean coercion with strict type check. Rejects strings, numbers,
+// objects (silent coercion was the v3 bug TODO.partitive-relation-v3/02).
+function _resolveBoolean(value, fieldName) {
+  if (value == null) return false;
+  if (typeof value === 'boolean') return value;
+  throw new Error(
+    `PartitiveMember.${fieldName} must be a boolean; got ${typeof value} ` +
+    `${JSON.stringify(value)}`,
+  );
 }
 
 function _assertNonEmptyRef(ref) {

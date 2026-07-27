@@ -21,7 +21,6 @@ import {
 } from '../../src/models/completeness.js';
 import {
   MULTIPLICITY,
-  MULTIPLICITY_VALUES,
   DEFAULT_MULTIPLICITY,
   isValidMultiplicity,
 } from '../../src/models/multiplicity.js';

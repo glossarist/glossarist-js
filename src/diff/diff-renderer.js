@@ -205,7 +205,10 @@ function relationLabel(r) {
   const partitives = Array.isArray(r.partitives)
     ? r.partitives.map(m => {
         const ref = m?.ref ?? m ?? {};
-        const tail = m?.certainty === 'possible' ? '?' : '';
+        let tail = '';
+        const mult = m?.multiplicity;
+        if (mult && mult !== 'compulsory') tail = ` (${mult})`;
+        if (m?.is_delimiting === true) tail += ' ⊘';
         return `${ref.id ?? ref.source ?? ref.text ?? '?'}${tail}`;
       }).join(', ')
     : '';
@@ -213,22 +216,25 @@ function relationLabel(r) {
   const criterion = r.criterion
     ? ` / ${Object.values(r.criterion)[0] ?? ''}`
     : '';
-  const plurality = r.plurality
-    ? ` [${_pluralityLabel(r.plurality)}]`
-    : '';
-  return `${head} → {${partitives}}${completeness}${criterion}${plurality}`;
+  return `${head} → {${partitives}}${completeness}${criterion}`;
 }
 
-function _pluralityLabel(p) {
-  if (!p) return '';
-  const flags = [];
-  if (p.is_shared) flags.push('shared');
-  if (p.is_uncertain) flags.push('uncertain');
-  if (p.shared_type) {
-    const t = p.shared_type;
-    flags.push(`type=${t.id ?? t.source ?? '?'}`);
+// Aggregate multiplicity + delimiting stats across a concept's
+// PartitiveRelations. Used by dataset-level summaries, not by the
+// per-relation diff label.
+export function multiplicityStats(relations) {
+  const byMultiplicity = {};
+  let delimitingCount = 0;
+  let total = 0;
+  for (const rel of relations ?? []) {
+    for (const m of rel?.partitives ?? []) {
+      total += 1;
+      const k = m?.multiplicity ?? 'compulsory';
+      byMultiplicity[k] = (byMultiplicity[k] ?? 0) + 1;
+      if (m?.is_delimiting === true) delimitingCount += 1;
+    }
   }
-  return flags.join(',');
+  return { total, byMultiplicity, delimiting: delimitingCount };
 }
 
 function itemLabel(item) {

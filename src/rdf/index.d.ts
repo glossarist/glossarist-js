@@ -11,7 +11,7 @@ import type { Designation } from '../models/index';
 import type { DetailedDefinition } from '../models/index';
 import type { ConceptSource } from '../models/index';
 import type { NonVerbRep, Figure, Table, Formula } from '../models/index';
-import type { PartitiveHyperedge, PartitiveRelation } from '../models/index';
+import type { PartitiveHyperedge, PartitiveRelation, PartitiveMember } from '../models/index';
 
 export { PRED, PREFIXES } from './predicates';
 export type PredicateMap = typeof PRED;
@@ -113,6 +113,19 @@ export declare function partitiveRelationSubjectUri(
   relation: PartitiveRelation,
   index: number,
 ): string;
+
+// ── PartitiveMember emitter (per-member multiplicity + is_delimiting) ──
+
+export interface PartitiveMemberEmitOptions {
+  memberUri: string;
+}
+
+export declare const MULTIPLICITY_NS: string;
+
+export declare function partitiveMemberToQuads(
+  member: PartitiveMember,
+  options: PartitiveMemberEmitOptions,
+): Generator<Quad, void, unknown>;
 
 // ── Non-verbal representation emitters ─────────────────────────────────
 

@@ -1,19 +1,33 @@
-// PartitiveRelation — an ISO 704 / ISO 1087-1 / ISO 12620
+// PartitiveRelation — an ISO 704:2022 / ISO 1087-1 / ISO 12620
 // partitive relation connecting a comprehensive concept
 // (superordinate concept partitive) to two or more partitive
 // concepts (subordinate concepts partitive) which fitted together
 // constitute the comprehensive.
 //
+// ISO 704:2022 rake diagram semantics:
+//
+//   comprehensive concept
+//   ─────────────────────
+//   │ partitive (one or more) with per-member multiplicity + optional delimiting
+//   ─────────────────────
+//
+// All partitives within one relation are coordinate concepts
+// (ISO 12620): they share the comprehensive AND share the
+// criterion of subdivision.
+//
+// "Delimiting" parts (bold/3x-width line in source diagrams) behave
+// like delimiting characteristics — they distinguish the comprehensive
+// from coordinate concepts. Whether a part is delimiting depends on
+// the concept system, the coordinate concepts, the inheritance
+// principle, and the criterion of subdivision used
+// (ISO 704:2022 §5.5.4.2.1).
+//
 // Field renames (v1 → v2):
 //   parts [1..*]              → partitives [2..*]  (as PartitiveMember)
 //   enumeration: closed|open  → completeness: complete|partial
+//   markers: [double, dashed] → (per-member multiplicity + is_delimiting)
 //   content: LocalizedString  → (dropped — structural edges carry no prose)
-//
-// Per-member metadata (ISO 704:2022):
-//   multiplicity (5 values) + is_delimiting (boolean)
-//
-// New field:
-//   criterion: LocalizedString [0..1]  (ISO 12620 coordinate-concept coherence)
+//   plural-positive is_shared / is_uncertain → multiplicity (ISO 704:2022)
 //
 // Distinguished from binary `has_part` / `is_part_of` edges, which
 // express pairwise part-of assertions without completeness,

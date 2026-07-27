@@ -99,8 +99,13 @@ describe('PartitiveRelation RDF shape — cross-repo contract', () => {
       q.predicate.value === 'https://www.glossarist.org/ontologies/completeness',
     );
     assert.ok(completenessQuad);
-    assert.equal(completenessQuad.object.termType, 'Literal');
-    assert.equal(completenessQuad.object.value, 'partial');
+    // Per JSON-LD context (`@type: @id`), completeness is a URI
+    // reference into the SKOS completeness taxonomy, not a literal.
+    assert.equal(completenessQuad.object.termType, 'NamedNode');
+    assert.equal(
+      completenessQuad.object.value,
+      'https://www.glossarist.org/ontologies/completeness/partial',
+    );
   });
 
   it('emits gloss:multiplicity and gloss:isDelimiting on member URIs', () => {
@@ -115,10 +120,17 @@ describe('PartitiveRelation RDF shape — cross-repo contract', () => {
       })],
     });
     const quads = quadsFor(concept);
-    assert.ok(quads.some(q =>
-      q.predicate.value === 'https://www.glossarist.org/ontologies/multiplicity' &&
-      q.object.value === 'optional',
-    ));
+    // multiplicity is `@type: @id` per JSON-LD context — URI reference.
+    const multQuad = quads.find(q =>
+      q.predicate.value === 'https://www.glossarist.org/ontologies/multiplicity'
+      && q.object.termType === 'NamedNode',
+    );
+    assert.ok(multQuad);
+    assert.equal(
+      multQuad.object.value,
+      'https://www.glossarist.org/ontologies/multiplicity/optional',
+    );
+    // isDelimiting is `xsd:boolean` literal.
     assert.ok(quads.some(q =>
       q.predicate.value === 'https://www.glossarist.org/ontologies/isDelimiting' &&
       q.object.termType === 'Literal',
@@ -171,10 +183,15 @@ describe('PartitiveRelation RDF shape — cross-repo contract', () => {
     assert.ok(quads.some(q =>
       q.predicate.value === 'https://www.glossarist.org/ontologies/hasPartitiveRelation',
     ));
-    assert.ok(quads.some(q =>
-      q.predicate.value === 'https://www.glossarist.org/ontologies/completeness' &&
-      q.object.value === 'complete',
-    ));
+    const completenessQuad = quads.find(q =>
+      q.predicate.value === 'https://www.glossarist.org/ontologies/completeness',
+    );
+    assert.ok(completenessQuad);
+    assert.equal(completenessQuad.object.termType, 'NamedNode');
+    assert.equal(
+      completenessQuad.object.value,
+      'https://www.glossarist.org/ontologies/completeness/complete',
+    );
     // v1 markers are dropped during migration (v2 uses per-member
     // multiplicity + is_delimiting, not plurality bnodes).
   });

@@ -5,7 +5,7 @@
 //   optional            — 1 dashed line (exists in some instances only)
 //   compulsory_multiple — 2 solid lines (multiple must exist)
 //   optional_multiple   — 2 dashed lines (multiple may exist)
-//   at_least_one        — 1 solid + 1 dashed line (at least one must exist)
+//   compulsory_at_least_one        — 1 solid + 1 dashed line (at least one must exist)
 //
 // Defaults to `compulsory` when omitted.
 
@@ -16,7 +16,7 @@ export const MULTIPLICITY = makeEnum('MULTIPLICITY', {
   OPTIONAL: 'optional',
   COMPULSORY_MULTIPLE: 'compulsory_multiple',
   OPTIONAL_MULTIPLE: 'optional_multiple',
-  AT_LEAST_ONE: 'at_least_one',
+  COMPULSORY_AT_LEAST_ONE: 'compulsory_at_least_one',
 });
 
 export const MULTIPLICITY_VALUES = MULTIPLICITY.VALUES;

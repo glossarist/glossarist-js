@@ -2,7 +2,7 @@
 //
 // Covers:
 //   - Construction and validation for PartitiveRelation, PartitiveMember,
-//     TypeSharedPlurality, Completeness, MemberCertainty.
+//     Completeness, Multiplicity (ISO 704:2022).
 //   - Identity for diff/patch.
 //   - Migration from v1 PartitiveHyperedge shape.
 //   - toJSON / fromJSON round-trip.
@@ -13,7 +13,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { PartitiveRelation } from '../../src/models/partitive-relation.js';
 import { PartitiveMember } from '../../src/models/partitive-member.js';
-import { TypeSharedPlurality } from '../../src/models/type-shared-plurality.js';
 import {
   COMPLETENESS,
   COMPLETENESS_VALUES,
@@ -21,10 +20,11 @@ import {
   isValidCompleteness,
 } from '../../src/models/completeness.js';
 import {
-  MEMBER_CERTAINTY,
-  DEFAULT_MEMBER_CERTAINTY,
-  isValidMemberCertainty,
-} from '../../src/models/member-certainty.js';
+  MULTIPLICITY,
+  MULTIPLICITY_VALUES,
+  DEFAULT_MULTIPLICITY,
+  isValidMultiplicity,
+} from '../../src/models/multiplicity.js';
 import {
   migrateHyperedgeToRelation,
   downgradeRelationToHyperedge,
@@ -52,73 +52,24 @@ describe('Completeness enum', () => {
   });
 });
 
-describe('MemberCertainty enum', () => {
-  it('exposes confirmed and possible', () => {
-    assert.equal(MEMBER_CERTAINTY.CONFIRMED, 'confirmed');
-    assert.equal(MEMBER_CERTAINTY.POSSIBLE, 'possible');
+describe('Multiplicity enum (ISO 704:2022)', () => {
+  it('exposes all 5 values', () => {
+    assert.equal(MULTIPLICITY.COMPULSORY, 'compulsory');
+    assert.equal(MULTIPLICITY.OPTIONAL, 'optional');
+    assert.equal(MULTIPLICITY.COMPULSORY_MULTIPLE, 'compulsory_multiple');
+    assert.equal(MULTIPLICITY.OPTIONAL_MULTIPLE, 'optional_multiple');
+    assert.equal(MULTIPLICITY.AT_LEAST_ONE, 'at_least_one');
   });
 
-  it('default is confirmed', () => {
-    assert.equal(DEFAULT_MEMBER_CERTAINTY, 'confirmed');
+  it('default is compulsory', () => {
+    assert.equal(DEFAULT_MULTIPLICITY, 'compulsory');
   });
 
   it('validates values', () => {
-    assert.equal(isValidMemberCertainty('confirmed'), true);
-    assert.equal(isValidMemberCertainty('possible'), true);
-    assert.equal(isValidMemberCertainty('dashed'), false);
-    assert.equal(isValidMemberCertainty(null), false);
-  });
-});
-
-describe('TypeSharedPlurality', () => {
-  it('requires isShared boolean', () => {
-    assert.throws(
-      () => new TypeSharedPlurality({}),
-      /requires isShared/,
-    );
-    assert.throws(
-      () => new TypeSharedPlurality({ isShared: 'yes' }),
-      /requires isShared/,
-    );
-  });
-
-  it('defaults isUncertain to false', () => {
-    const p = new TypeSharedPlurality({ isShared: true });
-    assert.equal(p.isUncertain, false);
-  });
-
-  it('accepts both camelCase and snake_case input', () => {
-    const p1 = new TypeSharedPlurality({ isShared: true, isUncertain: true });
-    const p2 = new TypeSharedPlurality({ is_shared: true, is_uncertain: true });
-    assert.equal(p1.isShared, true);
-    assert.equal(p1.isUncertain, true);
-    assert.equal(p2.isShared, true);
-    assert.equal(p2.isUncertain, true);
-  });
-
-  it('toJSON emits snake_case wire names; omits default isUncertain', () => {
-    const p1 = new TypeSharedPlurality({ isShared: true });
-    assert.deepEqual(p1.toJSON(), { is_shared: true });
-
-    const p2 = new TypeSharedPlurality({ isShared: true, isUncertain: true });
-    assert.deepEqual(p2.toJSON(), { is_shared: true, is_uncertain: true });
-  });
-
-  it('round-trips through toJSON / fromJSON', () => {
-    const p = new TypeSharedPlurality({ isShared: true, isUncertain: true });
-    const restored = TypeSharedPlurality.fromJSON(p.toJSON());
-    assert.equal(restored.isShared, true);
-    assert.equal(restored.isUncertain, true);
-  });
-
-  it('hasSharedType predicate works', () => {
-    const withType = new TypeSharedPlurality({
-      isShared: true,
-      sharedType: { conceptId: 'phys-quantity', refType: 'domain', source: 'VIM' },
-    });
-    const withoutType = new TypeSharedPlurality({ isShared: true });
-    assert.equal(withType.hasSharedType(), true);
-    assert.equal(withoutType.hasSharedType(), false);
+    assert.equal(isValidMultiplicity('compulsory'), true);
+    assert.equal(isValidMultiplicity('optional'), true);
+    assert.equal(isValidMultiplicity('confirmed'), false);  // old certainty name rejected
+    assert.equal(isValidMultiplicity(null), false);
   });
 });
 
@@ -130,39 +81,51 @@ describe('PartitiveMember', () => {
     );
   });
 
-  it('defaults certainty to confirmed', () => {
+  it('defaults multiplicity to compulsory and is_delimiting to false', () => {
     const m = new PartitiveMember({ ref: { source: 'VIM', id: '1' } });
-    assert.equal(m.certainty, 'confirmed');
-    assert.equal(m.isConfirmed, true);
-    assert.equal(m.isPossible, false);
+    assert.equal(m.multiplicity, 'compulsory');
+    assert.equal(m.isCompulsory, true);
+    assert.equal(m.isOptional, false);
+    assert.equal(m.is_delimiting, false);
+    assert.equal(m.isDelimiting, false);
   });
 
-  it('accepts certainty: possible', () => {
-    const m = new PartitiveMember({ ref: { source: 'VIM', id: '1' }, certainty: 'possible' });
-    assert.equal(m.isPossible, true);
+  it('accepts multiplicity: optional + is_delimiting: true', () => {
+    const m = new PartitiveMember({
+      ref: { source: 'VIM', id: '1' },
+      multiplicity: 'optional',
+      is_delimiting: true,
+    });
+    assert.equal(m.isOptional, true);
+    assert.equal(m.isDelimiting, true);
   });
 
-  it('rejects invalid certainty', () => {
+  it('rejects invalid multiplicity', () => {
     assert.throws(
-      () => new PartitiveMember({ ref: { source: 'VIM', id: '1' }, certainty: 'dashed' }),
-      /invalid value/,
+      () => new PartitiveMember({ ref: { source: 'VIM', id: '1' }, multiplicity: 'maybe' }),
+      /invalid multiplicity/,
     );
   });
 
-  it('toJSON omits default certainty', () => {
+  it('toJSON omits defaults', () => {
     const m = new PartitiveMember({ ref: { source: 'VIM', id: '1' } });
     assert.deepEqual(m.toJSON(), { ref: { source: 'VIM', id: '1' } });
   });
 
-  it('toJSON includes non-default certainty', () => {
-    const m = new PartitiveMember({ ref: { source: 'VIM', id: '1' }, certainty: 'possible' });
-    assert.equal(m.toJSON().certainty, 'possible');
+  it('toJSON includes non-default multiplicity and is_delimiting', () => {
+    const m = new PartitiveMember({
+      ref: { source: 'VIM', id: '1' },
+      multiplicity: 'optional',
+      is_delimiting: true,
+    });
+    assert.equal(m.toJSON().multiplicity, 'optional');
+    assert.equal(m.toJSON().is_delimiting, true);
   });
 
-  it('identity includes ref + certainty', () => {
+  it('identity includes ref only', () => {
     const a = new PartitiveMember({ ref: { source: 'VIM', id: '1' } });
-    const b = new PartitiveMember({ ref: { source: 'VIM', id: '1' }, certainty: 'possible' });
-    assert.notEqual(a.identity(), b.identity());
+    const b = new PartitiveMember({ ref: { source: 'VIM', id: '1' }, multiplicity: 'optional' });
+    assert.equal(a.identity(), b.identity());
   });
 });
 
@@ -267,25 +230,27 @@ describe('PartitiveRelation', () => {
     });
   });
 
-  describe('plurality (v2 structured form)', () => {
-    it('accepts plurality block', () => {
+  describe('per-member multiplicity + is_delimiting (ISO 704:2022)', () => {
+    it('accepts members with non-default multiplicity and delimiting', () => {
       const rel = new PartitiveRelation({
         comprehensive: { source: 'VIM', id: '1' },
-        partitives: [makeMember('2'), makeMember('3')],
-        plurality: { is_shared: true, is_uncertain: true },
+        partitives: [
+          { ref: { source: 'VIM', id: '2' }, multiplicity: 'optional', is_delimiting: true },
+          { ref: { source: 'VIM', id: '3' }, multiplicity: 'compulsory' },
+        ],
       });
-      assert.equal(rel.plurality.isShared, true);
-      assert.equal(rel.plurality.isUncertain, true);
-      assert.equal(rel.hasPlurality(), true);
+      assert.equal(rel.partitives[0].isOptional, true);
+      assert.equal(rel.partitives[0].isDelimiting, true);
+      assert.equal(rel.partitives[1].isCompulsory, true);
     });
 
-    it('null plurality preserved', () => {
+    it('defaults multiplicity to compulsory and is_delimiting to false', () => {
       const rel = new PartitiveRelation({
         comprehensive: { source: 'VIM', id: '1' },
         partitives: [makeMember('2'), makeMember('3')],
       });
-      assert.equal(rel.plurality, null);
-      assert.equal(rel.hasPlurality(), false);
+      assert.equal(rel.partitives[0].multiplicity, 'compulsory');
+      assert.equal(rel.partitives[0].is_delimiting, false);
     });
   });
 
@@ -294,8 +259,8 @@ describe('PartitiveRelation', () => {
       const rel = new PartitiveRelation({
         comprehensive: { source: 'VIM', id: '1' },
         partitives: [
-          { ref: { source: 'VIM', id: '2' }, certainty: 'confirmed' },
-          { ref: { source: 'VIM', id: '3' }, certainty: 'possible' },
+          { ref: { source: 'VIM', id: '2' }, multiplicity: 'compulsory' },
+          { ref: { source: 'VIM', id: '3' }, multiplicity: 'optional' },
         ],
         completeness: 'partial',
         criterion: { eng: 'functional subsystem' },
@@ -304,19 +269,18 @@ describe('PartitiveRelation', () => {
       assert.equal(restored.comprehensive.id, '1');
       assert.equal(restored.partitives.length, 2);
       assert.equal(restored.partitives[0].ref.id, '2');
-      assert.equal(restored.partitives[0].certainty, 'confirmed');
-      assert.equal(restored.partitives[1].certainty, 'possible');
+      assert.equal(restored.partitives[0].multiplicity, 'compulsory');
+      assert.equal(restored.partitives[1].multiplicity, 'optional');
       assert.equal(restored.completeness, 'partial');
       assert.deepEqual(restored.criterion, { eng: 'functional subsystem' });
     });
 
-    it('omits plurality and criterion from JSON when absent', () => {
+    it('omits criterion from JSON when absent', () => {
       const rel = new PartitiveRelation({
         comprehensive: { source: 'VIM', id: '1' },
         partitives: [makeMember('2'), makeMember('3')],
       });
       const json = rel.toJSON();
-      assert.equal('plurality' in json, false);
       assert.equal('criterion' in json, false);
     });
   });
@@ -334,7 +298,7 @@ describe('PartitiveRelation', () => {
       assert.equal(a.identity(), b.identity());
     });
 
-    it('criterion/completeness/plurality changes do NOT change identity', () => {
+    it('criterion/completeness/multiplicity changes do NOT change identity', () => {
       const a = new PartitiveRelation({
         comprehensive: { source: 'VIM', id: '1' },
         partitives: [makeMember('2'), makeMember('3')],
@@ -361,8 +325,8 @@ describe('v1 → v2 migration', () => {
     const v2 = migrateHyperedgeToRelation(v1);
     assert.equal(v2.completeness, 'complete');
     assert.deepEqual(v2.partitives, [
-      { ref: { source: 'VIM', id: '2' }, certainty: 'confirmed' },
-      { ref: { source: 'VIM', id: '3' }, certainty: 'confirmed' },
+      { ref: { source: 'VIM', id: '2' }, multiplicity: 'compulsory' },
+      { ref: { source: 'VIM', id: '3' }, multiplicity: 'compulsory' },
     ]);
   });
 
@@ -376,24 +340,26 @@ describe('v1 → v2 migration', () => {
     assert.equal(v2.completeness, 'partial');
   });
 
-  it('migrates [double] marker to plurality.is_shared=true', () => {
+  it('drops markers with migration warning (v2 uses per-member multiplicity)', () => {
     const v1 = {
       comprehensive: { source: 'VIM', id: '1' },
       parts: [{ source: 'VIM', id: '2' }, { source: 'VIM', id: '3' }],
       markers: ['double'],
     };
     const v2 = migrateHyperedgeToRelation(v1);
-    assert.deepEqual(v2.plurality, { is_shared: true, is_uncertain: false });
+    assert.equal(v2.plurality, undefined);
+    assert.match(v2.migrationWarning, /markers.*dropped/);
   });
 
-  it('migrates [double, dashed] markers to full plurality block', () => {
+  it('drops multiple markers with migration warning', () => {
     const v1 = {
       comprehensive: { source: 'VIM', id: '1' },
       parts: [{ source: 'VIM', id: '2' }, { source: 'VIM', id: '3' }],
       markers: ['double', 'dashed'],
     };
     const v2 = migrateHyperedgeToRelation(v1);
-    assert.deepEqual(v2.plurality, { is_shared: true, is_uncertain: true });
+    assert.equal(v2.plurality, undefined);
+    assert.match(v2.migrationWarning, /markers.*dropped/);
   });
 
   it('drops content field with migration warning', () => {
@@ -433,7 +399,6 @@ describe('v1 → v2 migration', () => {
       comprehensive: { source: 'VIM', id: '1' },
       parts: [{ source: 'VIM', id: '2' }, { source: 'VIM', id: '3' }],
       enumeration: 'closed',
-      markers: ['double'],
     };
     const v2 = migrateHyperedgeToRelation(v1);
     delete v2.migrationWarning;
@@ -441,6 +406,7 @@ describe('v1 → v2 migration', () => {
     assert.deepEqual(back.comprehensive, v1.comprehensive);
     assert.deepEqual(back.parts, v1.parts);
     assert.equal(back.enumeration, 'closed');
-    assert.deepEqual(back.markers, ['double']);
+    // markers are lossily dropped in v2 (no longer round-trip through
+    // plurality; v2 uses per-member multiplicity + is_delimiting)
   });
 });

@@ -102,16 +102,9 @@ describe('PartitiveRelationCoherenceRule', () => {
     assert.ok(result.warnings.some(w => /criterion/.test(w.message)));
   });
 
-  it('warns on plurality isUncertain without isShared', () => {
-    const concept = new Concept({
-      id: '1',
-      partitiveRelations: [makeRelation({
-        plurality: { is_shared: false, is_uncertain: true },
-      })],
-    });
-    const result = runRule(PartitiveRelationCoherenceRule, concept);
-    assert.ok(result.warnings.some(w => /isUncertain/.test(w.message)));
-  });
+  // (plurality coherence check removed — ISO 704:2022 correction
+  // replaced plurality with per-member multiplicity + is_delimiting,
+  // which are validated at construction by PartitiveMember itself.)
 });
 
 describe('ExternalConceptShapeRule', () => {

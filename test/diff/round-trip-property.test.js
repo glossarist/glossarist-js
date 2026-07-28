@@ -105,12 +105,12 @@ describe('diff round-trip property', () => {
       new: makeConcept(),
     },
     {
-      name: 'change relation member multiplicity',
+      name: 'change relation member presence/count',
       old: makeConcept({
         partitiveRelations: [new PartitiveRelation({
           comprehensive: { source: 'VIM', id: '1' },
           partitives: [
-            { ref: { source: 'VIM', id: '2' }, multiplicity: 'compulsory' },
+            { ref: { source: 'VIM', id: '2' } },
             { ref: { source: 'VIM', id: '3' } },
           ],
           completeness: 'complete',
@@ -120,7 +120,7 @@ describe('diff round-trip property', () => {
         partitiveRelations: [new PartitiveRelation({
           comprehensive: { source: 'VIM', id: '1' },
           partitives: [
-            { ref: { source: 'VIM', id: '2' }, multiplicity: 'optional' },
+            { ref: { source: 'VIM', id: '2' }, presence: 'optional', count: 'multiple' },
             { ref: { source: 'VIM', id: '3' } },
           ],
           completeness: 'complete',

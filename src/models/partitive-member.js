@@ -1,33 +1,22 @@
 // PartitiveMember — one member of a PartitiveRelation.
 //
 // Carries a ConceptRef (the subordinate concept partitive) plus
-// ISO 704:2022 multiplicity and delimiting metadata.
-//
-// ISO 704:2022 partitive member notation:
-//
-//   multiplicity (diagram line notation):
-//     compulsory                — 1 solid line         (must exist in every instance)
-//     optional                  — 1 dashed line        (exists in some instances only)
-//     compulsory_multiple       — 2 solid lines        (multiple must exist)
-//     optional_multiple         — 2 dashed lines       (multiple may exist)
-//     compulsory_at_least_one  — 1 solid + 1 dashed   (≥1 must exist)
-//
-//   is_delimiting (orthogonal, bold 3x-width line in diagram):
-//     A delimiting part behaves like a delimiting characteristic:
-//     it distinguishes the comprehensive from coordinate concepts.
-//
-// Whether a part is delimiting depends on the concept system, the
-// coordinate concepts, the inheritance principle, and the criterion
-// of subdivision used (ISO 704:2022 §5.5.4.2.1).
+// ISO 704:2022 presence + count (MECE multiplicity) and is_delimiting.
 
 import { GlossaristModel } from './base.js';
 import { ConceptRef } from './concept-ref.js';
 import {
-  MULTIPLICITY,
-  DEFAULT_MULTIPLICITY,
-  MULTIPLICITY_VALUES,
-  isValidMultiplicity,
-} from './multiplicity.js';
+  PARTITIVE_PRESENCE,
+  DEFAULT_PRESENCE,
+  PARTITIVE_PRESENCE_VALUES,
+  isValidPresence,
+} from './partitive-presence.js';
+import {
+  PARTITIVE_COUNT,
+  DEFAULT_COUNT,
+  PARTITIVE_COUNT_VALUES,
+  isValidCount,
+} from './partitive-count.js';
 
 export class PartitiveMember extends GlossaristModel {
   constructor(data = {}) {
@@ -35,37 +24,22 @@ export class PartitiveMember extends GlossaristModel {
     this.ref = data.ref instanceof ConceptRef
       ? data.ref
       : new ConceptRef(data.ref ?? {});
-    this.multiplicity = _resolveMultiplicity(data.multiplicity);
-    this.is_delimiting = _resolveBoolean(data.is_delimiting, 'is_delimiting');
+    this.presence = _resolvePresence(data.presence);
+    this.count = _resolveCount(data.count);
+    this.is_delimiting = data.is_delimiting === true;
 
     _assertNonEmptyRef(this.ref);
+    _assertValidCombination(this.presence, this.count);
   }
 
-  // Per-value multiplicity predicates. Each new enum value gets one
-  // line — OCP-friendly: the predicates grow with the enum without
-  // touching unrelated code. (TODO.partitive-relation-v3/05.)
-  get isCompulsory() {
-    return this.multiplicity === MULTIPLICITY.COMPULSORY;
-  }
+  get isRequired() { return this.presence === PARTITIVE_PRESENCE.REQUIRED; }
+  get isOptional() { return this.presence === PARTITIVE_PRESENCE.OPTIONAL; }
+  get isDelimiting() { return this.is_delimiting === true; }
 
-  get isOptional() {
-    return this.multiplicity === MULTIPLICITY.OPTIONAL;
-  }
-
-  get isCompulsoryMultiple() {
-    return this.multiplicity === MULTIPLICITY.COMPULSORY_MULTIPLE;
-  }
-
-  get isOptionalMultiple() {
-    return this.multiplicity === MULTIPLICITY.OPTIONAL_MULTIPLE;
-  }
-
-  get isCompulsoryAtLeastOne() {
-    return this.multiplicity === MULTIPLICITY.COMPULSORY_AT_LEAST_ONE;
-  }
-
-  get isDelimiting() {
-    return this.is_delimiting === true;
+  // Derived ISO 704 name for display.
+  get iso704Name() {
+    const key = `${this.presence}+${this.count}`;
+    return ISO704_NAMES[key] ?? 'unknown';
   }
 
   identity() {
@@ -74,12 +48,9 @@ export class PartitiveMember extends GlossaristModel {
 
   toJSON() {
     const obj = { ref: this.ref.toJSON() };
-    if (this.multiplicity !== DEFAULT_MULTIPLICITY) {
-      obj.multiplicity = this.multiplicity;
-    }
-    if (this.is_delimiting === true) {
-      obj.is_delimiting = true;
-    }
+    if (this.presence !== DEFAULT_PRESENCE) obj.presence = this.presence;
+    if (this.count !== DEFAULT_COUNT) obj.count = this.count;
+    if (this.is_delimiting === true) obj.is_delimiting = true;
     return obj;
   }
 
@@ -94,33 +65,42 @@ export class PartitiveMember extends GlossaristModel {
   }
 }
 
-function _resolveMultiplicity(value) {
-  if (value == null) return DEFAULT_MULTIPLICITY;
-  if (!isValidMultiplicity(value)) {
-    throw new Error(
-      `invalid multiplicity ${JSON.stringify(value)}; ` +
-      `must be one of ${MULTIPLICITY_VALUES.join(', ')}`,
-    );
+const ISO704_NAMES = {
+  'required+exactly_one': 'compulsory',
+  'optional+exactly_one': 'optional',
+  'required+multiple': 'compulsory_multiple',
+  'optional+multiple': 'optional_multiple',
+  'required+at_least_one': 'compulsory_at_least_one',
+};
+
+function _resolvePresence(value) {
+  if (value == null) return DEFAULT_PRESENCE;
+  if (!isValidPresence(value)) {
+    throw new Error(`invalid presence ${JSON.stringify(value)}; must be one of ${PARTITIVE_PRESENCE_VALUES.join(', ')}`);
   }
   return value;
 }
 
-// Boolean coercion with strict type check. Rejects strings, numbers,
-// objects (silent coercion was the v3 bug TODO.partitive-relation-v3/02).
-function _resolveBoolean(value, fieldName) {
-  if (value == null) return false;
-  if (typeof value === 'boolean') return value;
-  throw new Error(
-    `PartitiveMember.${fieldName} must be a boolean; got ${typeof value} ` +
-    `${JSON.stringify(value)}`,
-  );
+function _resolveCount(value) {
+  if (value == null) return DEFAULT_COUNT;
+  if (!isValidCount(value)) {
+    throw new Error(`invalid count ${JSON.stringify(value)}; must be one of ${PARTITIVE_COUNT_VALUES.join(', ')}`);
+  }
+  return value;
 }
 
 function _assertNonEmptyRef(ref) {
   if (!ref.source && !ref.id && !ref.text) {
+    throw new Error('PartitiveMember#ref must be a non-empty ConceptRef (source, id, or text required)');
+  }
+}
+
+function _assertValidCombination(presence, count) {
+  if (presence === 'optional' && count === 'at_least_one') {
     throw new Error(
-      'PartitiveMember#ref must be a non-empty ConceptRef ' +
-      '(source, id, or text required)',
+      'PartitiveMember presence=optional + count=at_least_one is invalid — ' +
+      'it collapses to optional + multiple (zero or more). ' +
+      'Use presence: optional, count: multiple instead.',
     );
   }
 }

@@ -222,19 +222,30 @@ function relationLabel(r) {
 // Aggregate multiplicity + delimiting stats across a concept's
 // PartitiveRelations. Used by dataset-level summaries, not by the
 // per-relation diff label.
+//
+// v4: presence and count are independent dimensions. Stats include
+// byPresence and byCount breakdowns so tools can query each axis
+// independently ("show me all optional parts" or "show me all
+// multiple-count parts").
 export function multiplicityStats(relations) {
   const byMultiplicity = {};
+  const byPresence = {};
+  const byCount = {};
   let delimitingCount = 0;
   let total = 0;
   for (const rel of relations ?? []) {
     for (const m of rel?.partitives ?? []) {
       total += 1;
-      const k = m?.multiplicity ?? 'compulsory';
-      byMultiplicity[k] = (byMultiplicity[k] ?? 0) + 1;
+      const mult = m?.multiplicity ?? 'compulsory';
+      byMultiplicity[mult] = (byMultiplicity[mult] ?? 0) + 1;
+      const p = m?.presence ?? 'required';
+      const c = m?.count ?? 'exactly_one';
+      byPresence[p] = (byPresence[p] ?? 0) + 1;
+      byCount[c] = (byCount[c] ?? 0) + 1;
       if (m?.is_delimiting === true) delimitingCount += 1;
     }
   }
-  return { total, byMultiplicity, delimiting: delimitingCount };
+  return { total, byMultiplicity, byPresence, byCount, delimiting: delimitingCount };
 }
 
 function itemLabel(item) {

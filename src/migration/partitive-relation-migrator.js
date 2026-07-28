@@ -8,7 +8,7 @@
 // ISO 704:2022 correction):
 //
 //   comprehensive      → comprehensive     (unchanged shape)
-//   parts: [ref, ...]  → partitives: [{ ref, multiplicity: 'compulsory' }, ...]
+//   parts: [ref, ...]  → partitives: [{ ref, presence: 'required', count: 'exactly_one' }, ...]
 //   enumeration: open  → completeness: partial
 //   enumeration: closed→ completeness: complete
 //   markers: [...]     → (dropped — v2 uses per-member multiplicity

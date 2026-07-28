@@ -39,6 +39,18 @@ export {
 export { PartitiveRelation } from './partitive-relation.js';
 export { PartitiveMember } from './partitive-member.js';
 export {
+  PARTITIVE_PRESENCE,
+  PARTITIVE_PRESENCE_VALUES,
+  DEFAULT_PRESENCE,
+  isValidPresence,
+} from './partitive-presence.js';
+export {
+  PARTITIVE_COUNT,
+  PARTITIVE_COUNT_VALUES,
+  DEFAULT_COUNT,
+  isValidCount,
+} from './partitive-count.js';
+export {
   COMPLETENESS,
   COMPLETENESS_VALUES,
   DEFAULT_COMPLETENESS,
@@ -49,6 +61,8 @@ export {
   MULTIPLICITY_VALUES,
   DEFAULT_MULTIPLICITY,
   isValidMultiplicity,
+  multiplicityFromPair,
+  pairFromMultiplicity,
 } from './multiplicity.js';
 
 // v1 → v2 migration helper. Pure function; idempotent.

@@ -131,6 +131,8 @@
     "hasPartitiveRelation":   { "@id": "gloss:hasPartitiveRelation", "@type": "@id" },
     "hasPartitive":           { "@id": "gloss:hasPartitive",         "@type": "@id" },
     "completeness":           { "@id": "gloss:completeness",         "@type": "@id" },
+    "presence":               { "@id": "gloss:presence",             "@type": "@id" },
+    "count":                  { "@id": "gloss:count",                "@type": "@id" },
     "multiplicity":           { "@id": "gloss:multiplicity",         "@type": "@id" },
     "isDelimiting":           { "@id": "gloss:isDelimiting",         "@type": "xsd:boolean" },
     "criterion":              { "@id": "gloss:criterion",            "@container": "@language" },

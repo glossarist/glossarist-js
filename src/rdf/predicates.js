@@ -110,6 +110,8 @@ export const PRED = {
     "hasPartitiveRelation": "https://www.glossarist.org/ontologies/hasPartitiveRelation",
     "hasPartitive": "https://www.glossarist.org/ontologies/hasPartitive",
     "completeness": "https://www.glossarist.org/ontologies/completeness",
+    "presence": "https://www.glossarist.org/ontologies/presence",
+    "count": "https://www.glossarist.org/ontologies/count",
     "multiplicity": "https://www.glossarist.org/ontologies/multiplicity",
     "isDelimiting": "https://www.glossarist.org/ontologies/isDelimiting",
     "criterion": "https://www.glossarist.org/ontologies/criterion",

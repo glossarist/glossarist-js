@@ -121,6 +121,8 @@ export interface PartitiveMemberEmitOptions {
 }
 
 export declare const MULTIPLICITY_NS: string;
+export declare const PRESENCE_NS: string;
+export declare const COUNT_NS: string;
 
 export declare function partitiveMemberToQuads(
   member: PartitiveMember,

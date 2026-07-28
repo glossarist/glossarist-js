@@ -108,28 +108,29 @@ describe('PartitiveRelation RDF shape — cross-repo contract', () => {
     );
   });
 
-  it('emits gloss:multiplicity and gloss:isDelimiting on member URIs', () => {
+  it('emits gloss:presence, gloss:count, gloss:isDelimiting on member URIs', () => {
     const concept = new Concept({
       id: '1',
       partitiveRelations: [makeRelation({
         comprehensive: { source: 'VIM', id: '1' },
         partitives: [
-          { ref: { source: 'VIM', id: '2' }, multiplicity: 'optional', is_delimiting: true },
+          { ref: { source: 'VIM', id: '2' }, presence: 'optional', count: 'exactly_one', is_delimiting: true },
           { ref: { source: 'VIM', id: '3' } },
         ],
       })],
     });
     const quads = quadsFor(concept);
-    // multiplicity is `@type: @id` per JSON-LD context — URI reference.
-    const multQuad = quads.find(q =>
-      q.predicate.value === 'https://www.glossarist.org/ontologies/multiplicity'
-      && q.object.termType === 'NamedNode',
-    );
-    assert.ok(multQuad);
-    assert.equal(
-      multQuad.object.value,
-      'https://www.glossarist.org/ontologies/multiplicity/optional',
-    );
+    // presence is `@type: @id` per JSON-LD context — URI reference.
+    assert.ok(quads.some(q =>
+      q.predicate.value === 'https://www.glossarist.org/ontologies/presence' &&
+      q.object.termType === 'NamedNode' &&
+      q.object.value === 'https://www.glossarist.org/ontologies/presence/optional',
+    ));
+    // count is also `@type: @id`.
+    assert.ok(quads.some(q =>
+      q.predicate.value === 'https://www.glossarist.org/ontologies/count' &&
+      q.object.value === 'https://www.glossarist.org/ontologies/count/exactly_one',
+    ));
     // isDelimiting is `xsd:boolean` literal.
     assert.ok(quads.some(q =>
       q.predicate.value === 'https://www.glossarist.org/ontologies/isDelimiting' &&

@@ -1,7 +1,21 @@
 // PartitiveMember — one member of a PartitiveRelation.
 //
 // Carries a ConceptRef (the subordinate concept partitive) plus
-// ISO 704:2022 presence + count (MECE multiplicity) and is_delimiting.
+// ISO 704:2022 presence + count + is_delimiting.
+//
+// Matches concept-model/models/concepts/PartitiveMember.lutaml exactly:
+//   +ref            — ConceptRef [1]
+//   +presence       — PartitivePresence [0..1] (default: required)
+//   +count          — PartitiveCount [0..1] (default: exactly_one)
+//   +is_delimiting  — Boolean [0..1] (default: false)
+//
+// The combination (optional, at_least_one) is invalid: if a part is
+// optional, the at-least-one constraint is vacuous and collapses to
+// (optional, multiple). Rejected at construction.
+//
+// ISO 704 "name" strings (compulsory, optional, etc.) are NOT part of
+// the model — they're a display concern handled by multiplicityFromPair
+// in the renderer/viewer layer. The model is purely presence + count.
 
 import { GlossaristModel } from './base.js';
 import { ConceptRef } from './concept-ref.js';
@@ -12,7 +26,6 @@ import {
   isValidPresence,
 } from './partitive-presence.js';
 import {
-  PARTITIVE_COUNT,
   DEFAULT_COUNT,
   PARTITIVE_COUNT_VALUES,
   isValidCount,
@@ -36,12 +49,6 @@ export class PartitiveMember extends GlossaristModel {
   get isOptional() { return this.presence === PARTITIVE_PRESENCE.OPTIONAL; }
   get isDelimiting() { return this.is_delimiting === true; }
 
-  // Derived ISO 704 name for display.
-  get iso704Name() {
-    const key = `${this.presence}+${this.count}`;
-    return ISO704_NAMES[key] ?? 'unknown';
-  }
-
   identity() {
     return PartitiveMember.identityOf(this);
   }
@@ -64,14 +71,6 @@ export class PartitiveMember extends GlossaristModel {
     return new PartitiveMember(data);
   }
 }
-
-const ISO704_NAMES = {
-  'required+exactly_one': 'compulsory',
-  'optional+exactly_one': 'optional',
-  'required+multiple': 'compulsory_multiple',
-  'optional+multiple': 'optional_multiple',
-  'required+at_least_one': 'compulsory_at_least_one',
-};
 
 function _resolvePresence(value) {
   if (value == null) return DEFAULT_PRESENCE;

@@ -54,7 +54,8 @@ export function migrateHyperedgeToRelation(v1Hash) {
   const parts = Array.isArray(v1Hash.parts) ? v1Hash.parts : [];
   out.partitives = parts.map(ref => ({
     ref: { ...ref },
-    multiplicity: 'compulsory',
+    presence: 'required',
+    count: 'exactly_one',
   }));
 
   out.completeness = _migrateEnumeration(v1Hash.enumeration);

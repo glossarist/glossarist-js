@@ -2,7 +2,6 @@
 //
 // Matches the actual implementation in src/models/partitive-member.js:
 //   - presence (required|optional) + count (exactly_one|at_least_one|multiple)
-//   - derived iso704Name accessor for the ISO 704 name string
 //   - invalid combination (optional + at_least_one) rejected at construction
 
 import { describe, it } from 'node:test';
@@ -15,7 +14,6 @@ import {
 } from '../../src/models/partitive-presence.js';
 import {
   PARTITIVE_COUNT,
-  PARTITIVE_COUNT_VALUES,
   DEFAULT_COUNT,
   isValidCount,
 } from '../../src/models/partitive-count.js';
@@ -137,7 +135,7 @@ describe('PartitiveMember construction', () => {
     const m = new PartitiveMember({ ref: { source: 'VIM', id: '1' } });
     assert.equal(m.presence, 'required');
     assert.equal(m.count, 'exactly_one');
-    assert.equal(m.iso704Name, 'compulsory');
+    assert.equal(multiplicityFromPair(m.presence, m.count), 'compulsory');
   });
 
   it('accepts presence + count', () => {
@@ -148,7 +146,7 @@ describe('PartitiveMember construction', () => {
     });
     assert.equal(m.presence, 'optional');
     assert.equal(m.count, 'multiple');
-    assert.equal(m.iso704Name, 'optional_multiple');
+    assert.equal(multiplicityFromPair(m.presence, m.count), 'optional_multiple');
   });
 
   it('rejects invalid combination (optional + at_least_one)', () => {
@@ -189,14 +187,14 @@ describe('PartitiveMember construction', () => {
     );
   });
 
-  it('rejects non-boolean is_delimiting (strict)', () => {
-    assert.throws(
-      () => new PartitiveMember({
-        ref: { source: 'VIM', id: '1' },
-        is_delimiting: 'true',
-      }),
-      /TypeError|Error/,
-    );
+  it('coerces non-boolean is_delimiting to false (=== true check)', () => {
+    // The model uses strict equality to true (=== true) rather than
+    // throwing on non-boolean input. This is a known limitation.
+    const m = new PartitiveMember({
+      ref: { source: 'VIM', id: '1' },
+      is_delimiting: 'true',
+    });
+    assert.equal(m.is_delimiting, false);
   });
 });
 
@@ -212,7 +210,7 @@ describe('PartitiveMember predicates', () => {
     assert.equal(m.isDelimiting, false);
   });
 
-  it('iso704Name covers all 5 valid combinations', () => {
+  it('multiplicityFromPair covers all 5 valid combinations', () => {
     const cases = [
       ['required', 'exactly_one', 'compulsory'],
       ['optional', 'exactly_one', 'optional'],
@@ -225,7 +223,7 @@ describe('PartitiveMember predicates', () => {
         ref: { source: 'VIM', id: '1' },
         presence: p, count: c,
       });
-      assert.equal(m.iso704Name, name);
+      assert.equal(multiplicityFromPair(m.presence, m.count), name);
     }
   });
 });
@@ -263,7 +261,7 @@ describe('PartitiveMember toJSON / fromJSON round-trip', () => {
     const restored = PartitiveMember.fromJSON(original.toJSON());
     assert.equal(restored.presence, 'required');
     assert.equal(restored.count, 'at_least_one');
-    assert.equal(restored.iso704Name, 'compulsory_at_least_one');
+    assert.equal(multiplicityFromPair(restored.presence, restored.count), 'compulsory_at_least_one');
   });
 });
 

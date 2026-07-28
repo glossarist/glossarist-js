@@ -23,6 +23,7 @@ import {
   MULTIPLICITY,
   DEFAULT_MULTIPLICITY,
   isValidMultiplicity,
+  multiplicityFromPair,
 } from '../../src/models/multiplicity.js';
 import {
   migrateHyperedgeToRelation,
@@ -80,29 +81,29 @@ describe('PartitiveMember', () => {
     );
   });
 
-  it('defaults multiplicity to compulsory and is_delimiting to false', () => {
+  it('defaults to presence=required, count=exactly_one, is_delimiting=false', () => {
     const m = new PartitiveMember({ ref: { source: 'VIM', id: '1' } });
-    assert.equal(m.multiplicity, 'compulsory');
-    assert.equal(m.isCompulsory, true);
-    assert.equal(m.isOptional, false);
+    assert.equal(m.presence, 'required');
+    assert.equal(m.count, 'exactly_one');
+    assert.equal(multiplicityFromPair(m.presence, m.count), 'compulsory');
     assert.equal(m.is_delimiting, false);
     assert.equal(m.isDelimiting, false);
   });
 
-  it('accepts multiplicity: optional + is_delimiting: true', () => {
+  it('accepts presence=optional + is_delimiting: true', () => {
     const m = new PartitiveMember({
       ref: { source: 'VIM', id: '1' },
-      multiplicity: 'optional',
+      presence: 'optional',
       is_delimiting: true,
     });
     assert.equal(m.isOptional, true);
     assert.equal(m.isDelimiting, true);
   });
 
-  it('rejects invalid multiplicity', () => {
+  it('rejects invalid presence', () => {
     assert.throws(
-      () => new PartitiveMember({ ref: { source: 'VIM', id: '1' }, multiplicity: 'maybe' }),
-      /invalid multiplicity/,
+      () => new PartitiveMember({ ref: { source: 'VIM', id: '1' }, presence: 'maybe' }),
+      /invalid presence/,
     );
   });
 
@@ -111,19 +112,19 @@ describe('PartitiveMember', () => {
     assert.deepEqual(m.toJSON(), { ref: { source: 'VIM', id: '1' } });
   });
 
-  it('toJSON includes non-default multiplicity and is_delimiting', () => {
+  it('toJSON includes non-default presence/count and is_delimiting', () => {
     const m = new PartitiveMember({
       ref: { source: 'VIM', id: '1' },
-      multiplicity: 'optional',
+      presence: 'optional',
       is_delimiting: true,
     });
-    assert.equal(m.toJSON().multiplicity, 'optional');
+    assert.equal(m.toJSON().presence, 'optional');
     assert.equal(m.toJSON().is_delimiting, true);
   });
 
   it('identity includes ref only', () => {
     const a = new PartitiveMember({ ref: { source: 'VIM', id: '1' } });
-    const b = new PartitiveMember({ ref: { source: 'VIM', id: '1' }, multiplicity: 'optional' });
+    const b = new PartitiveMember({ ref: { source: 'VIM', id: '1' }, presence: 'optional' });
     assert.equal(a.identity(), b.identity());
   });
 });
@@ -229,26 +230,26 @@ describe('PartitiveRelation', () => {
     });
   });
 
-  describe('per-member multiplicity + is_delimiting (ISO 704:2022)', () => {
-    it('accepts members with non-default multiplicity and delimiting', () => {
+  describe('per-member presence/count + is_delimiting (ISO 704:2022)', () => {
+    it('accepts members with non-default presence/count and delimiting', () => {
       const rel = new PartitiveRelation({
         comprehensive: { source: 'VIM', id: '1' },
         partitives: [
-          { ref: { source: 'VIM', id: '2' }, multiplicity: 'optional', is_delimiting: true },
-          { ref: { source: 'VIM', id: '3' }, multiplicity: 'compulsory' },
+          { ref: { source: 'VIM', id: '2' }, presence: 'optional', is_delimiting: true },
+          { ref: { source: 'VIM', id: '3' } },
         ],
       });
       assert.equal(rel.partitives[0].isOptional, true);
       assert.equal(rel.partitives[0].isDelimiting, true);
-      assert.equal(rel.partitives[1].isCompulsory, true);
+      assert.equal(multiplicityFromPair(rel.partitives[1].presence, rel.partitives[1].count), 'compulsory');
     });
 
-    it('defaults multiplicity to compulsory and is_delimiting to false', () => {
+    it('defaults presence=required, count=exactly_one, is_delimiting=false', () => {
       const rel = new PartitiveRelation({
         comprehensive: { source: 'VIM', id: '1' },
         partitives: [makeMember('2'), makeMember('3')],
       });
-      assert.equal(rel.partitives[0].multiplicity, 'compulsory');
+      assert.equal(multiplicityFromPair(rel.partitives[0].presence, rel.partitives[0].count), 'compulsory');
       assert.equal(rel.partitives[0].is_delimiting, false);
     });
   });
@@ -258,8 +259,8 @@ describe('PartitiveRelation', () => {
       const rel = new PartitiveRelation({
         comprehensive: { source: 'VIM', id: '1' },
         partitives: [
-          { ref: { source: 'VIM', id: '2' }, multiplicity: 'compulsory' },
-          { ref: { source: 'VIM', id: '3' }, multiplicity: 'optional' },
+          { ref: { source: 'VIM', id: '2' } },
+          { ref: { source: 'VIM', id: '3' }, presence: 'optional' },
         ],
         completeness: 'partial',
         criterion: { eng: 'functional subsystem' },
@@ -268,8 +269,8 @@ describe('PartitiveRelation', () => {
       assert.equal(restored.comprehensive.id, '1');
       assert.equal(restored.partitives.length, 2);
       assert.equal(restored.partitives[0].ref.id, '2');
-      assert.equal(restored.partitives[0].multiplicity, 'compulsory');
-      assert.equal(restored.partitives[1].multiplicity, 'optional');
+      assert.equal(multiplicityFromPair(restored.partitives[0].presence, restored.partitives[0].count), 'compulsory');
+      assert.equal(multiplicityFromPair(restored.partitives[1].presence, restored.partitives[1].count), 'optional');
       assert.equal(restored.completeness, 'partial');
       assert.deepEqual(restored.criterion, { eng: 'functional subsystem' });
     });
@@ -324,8 +325,8 @@ describe('v1 → v2 migration', () => {
     const v2 = migrateHyperedgeToRelation(v1);
     assert.equal(v2.completeness, 'complete');
     assert.deepEqual(v2.partitives, [
-      { ref: { source: 'VIM', id: '2' }, multiplicity: 'compulsory' },
-      { ref: { source: 'VIM', id: '3' }, multiplicity: 'compulsory' },
+      { ref: { source: 'VIM', id: '2' }, presence: 'required', count: 'exactly_one' },
+      { ref: { source: 'VIM', id: '3' }, presence: 'required', count: 'exactly_one' },
     ]);
   });
 

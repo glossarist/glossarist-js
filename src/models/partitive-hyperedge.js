@@ -1,175 +1,76 @@
-// PartitiveHyperedge — a one-to-many partitive decomposition.
+// PartitiveHyperedge — an ISO 704:2022 / ISO 1087-1 / ISO 12620
+// partitive relation connecting a comprehensive concept
+// (superordinate concept partitive) to two or more partitive
+// concepts (subordinate concepts partitive) which fitted together
+// constitute the comprehensive.
 //
-// One comprehensive concept (the whole) is related to one or more
-// parts as a SINGLE relationship. Captures invariants that binary
-// RelatedConcept edges cannot:
+// Extends AbstractHyperedge; the leaf-specific concern is the
+// PartitiveMember type for `members`. The wire-level field name
+// stays `partitives` for v1/v2 backward compat.
 //
-//   - which comprehensive owns which parts (set membership)
-//   - plurality markers from the source diagram (double / dashed)
-//   - enumeration completeness (closed: all parts listed; open:
-//     other parts may exist)
+// ISO 704:2022 rake diagram semantics:
 //
-// See concept-model/TODO.hyperedge/00-design-overview.md for the
-// design rationale.
+//   comprehensive concept
+//   ─────────────────────
+//   │ partitive (one or more) with per-member multiplicity + optional delimiting
+//   ─────────────────────
 //
-// Hyperedges coexist with binary `broader_partitive` /
-// `narrower_partitive` edges. Use a binary edge for pairwise
-// relationships without diagram metadata; use a hyperedge when the
-// relationship is one-to-many with enumeration/marker metadata.
+// All partitives within one relation are coordinate concepts
+// (ISO 12620): they share the comprehensive AND share the
+// criterion of subdivision.
+//
+// "Delimiting" parts (bold/3x-width line in source diagrams) behave
+// like delimiting characteristics — they distinguish the comprehensive
+// from coordinate concepts. Whether a part is delimiting depends on
+// the concept system, the coordinate concepts, the inheritance
+// principle, and the criterion of subdivision used
+// (ISO 704:2022 §5.5.4.2.1).
+//
+// Distinguished from binary `has_part` / `is_part_of` edges, which
+// express pairwise part-of assertions without completeness,
+// multiplicity, or criterion claims. A single partitive should be
+// expressed as a binary edge, not a PartitiveHyperedge (ISO requires
+// "two or more").
 
-import { GlossaristModel } from './base.js';
-import { ConceptRef } from './concept-ref.js';
-import {
-  PARTITIVE_ENUMERATION,
-  PARTITIVE_ENUMERATION_VALUES,
-  isValidPartitiveEnumeration,
-} from './partitive-enumeration.js';
-import {
-  PLURALITY_MARKER_VALUES,
-  isValidPluralityMarker,
-} from './plurality-marker.js';
+import { AbstractHyperedge } from './abstract-hyperedge.js';
+import { PartitiveMember } from './partitive-member.js';
 
-const DEFAULT_ENUMERATION = PARTITIVE_ENUMERATION.CLOSED;
-
-export class PartitiveHyperedge extends GlossaristModel {
+export class PartitiveHyperedge extends AbstractHyperedge {
   constructor(data = {}) {
-    super();
-    this.comprehensive = ensureConceptRef(data.comprehensive, 'comprehensive');
-    this.parts = ensureConceptRefArray(data.parts, 'parts');
-    this.enumeration = resolveEnumeration(data.enumeration);
-    this.markers = validateMarkers(data.markers ?? []);
-    this.content = normalizeContent(data.content);
-
-    assertNonEmptyParts(this.parts);
-    assertNoSelfLoop(this.comprehensive, this.parts);
+    const members = data?.members ?? data?.partitives;
+    super({ ...data, members });
+    this.members = members == null
+      ? this.members
+      : (Array.isArray(members)
+          ? members.map(m =>
+              m instanceof PartitiveMember ? m : new PartitiveMember(m))
+          : this.members);
   }
 
-  get isClosed() { return this.enumeration === PARTITIVE_ENUMERATION.CLOSED; }
-  get isOpen() { return this.enumeration === PARTITIVE_ENUMERATION.OPEN; }
-  get isMarked() { return this.markers.length > 0; }
-
-  hasMarker(value) {
-    return this.markers.includes(value);
-  }
-
-  hasEnumeration(value) {
-    return this.enumeration === value;
-  }
-
-  get contentString() {
-    if (!this.content) return null;
-    const values = Object.values(this.content);
-    return values.length > 0 ? values[0] : null;
-  }
+  get partitives() { return this.members; }
 
   toJSON() {
-    const obj = {
-      comprehensive: this.comprehensive.toJSON(),
-      parts: this.parts.map(p => p.toJSON()),
-      enumeration: this.enumeration,
-    };
-    if (this.markers.length > 0) obj.markers = [...this.markers];
-    if (this.content != null) obj.content = this.content;
-    return obj;
+    const base = super.toJSON();
+    const { members, ...rest } = base;
+    return { ...rest, partitives: members };
   }
 
   static identityOf(value) {
     const v = value ?? {};
     const c = v.comprehensive ?? {};
-    const parts = Array.isArray(v.parts) ? v.parts : [];
-    const partsStr = parts
-      .map(p => `${p?.source ?? ''}:${p?.id ?? ''}`)
-      .sort();
-    return `${c.source ?? ''}:${c.id ?? ''}|${partsStr.join('|')}`;
-  }
-
-  identity() {
-    return PartitiveHyperedge.identityOf(this);
+    const partKeys = Array.isArray(v.partitives ?? v.members)
+      ? (v.partitives ?? v.members).map(p => {
+          const r = p?.ref ?? p ?? {};
+          return `${r.source ?? ''}:${r.id ?? ''}`;
+        }).sort()
+      : [];
+    return `${c.source ?? ''}:${c.id ?? ''}|${partKeys.join('|')}`;
   }
 
   static fromJSON(data) {
-    return new PartitiveHyperedge(data);
+    const normalized = { ...(data ?? {}), members: data?.partitives ?? data?.members };
+    return new PartitiveHyperedge(normalized);
   }
 }
 
-function resolveEnumeration(value) {
-  if (value == null) return DEFAULT_ENUMERATION;
-  if (!isValidPartitiveEnumeration(value)) {
-    throw new Error(
-      `invalid enumeration ${JSON.stringify(value)}; ` +
-      `must be one of ${PARTITIVE_ENUMERATION_VALUES.join(', ')}`,
-    );
-  }
-  return value;
-}
-
-function validateMarkers(values) {
-  const arr = Array.isArray(values) ? values : [values];
-  const seen = new Set();
-  for (const m of arr) {
-    if (!isValidPluralityMarker(m)) {
-      throw new Error(
-        `invalid plurality marker ${JSON.stringify(m)}; ` +
-        `must be one of ${PLURALITY_MARKER_VALUES.join(', ')}`,
-      );
-    }
-    if (seen.has(m)) {
-      throw new Error(
-        `duplicate plurality marker ${JSON.stringify(m)} in partitive_hyperedge`,
-      );
-    }
-    seen.add(m);
-  }
-  return arr;
-}
-
-function ensureConceptRef(value, fieldName) {
-  const ref = value instanceof ConceptRef ? value : new ConceptRef(value ?? {});
-  if (!ref.source && !ref.id) {
-    throw new Error(
-      `PartitiveHyperedge#${fieldName} must be a non-empty ConceptRef ` +
-      `(source or id required)`,
-    );
-  }
-  return ref;
-}
-
-function ensureConceptRefArray(values, fieldName) {
-  if (!Array.isArray(values)) values = values == null ? [] : [values];
-  return values.map((v, i) => ensureConceptRef(v, `${fieldName}[${i}]`));
-}
-
-function assertNonEmptyParts(parts) {
-  if (!parts || parts.length === 0) {
-    throw new Error('PartitiveHyperedge requires at least one part');
-  }
-}
-
-function assertNoSelfLoop(comprehensive, parts) {
-  const cKey = `${comprehensive.source ?? ''}:${comprehensive.id ?? ''}`;
-  for (const p of parts) {
-    const pKey = `${p.source ?? ''}:${p.id ?? ''}`;
-    if (pKey === cKey) {
-      throw new Error('PartitiveHyperedge#parts cannot include the comprehensive');
-    }
-  }
-}
-
-// Content is a localized string (language -> text). Plain strings on
-// input are normalized to `{ default: '...' }` so callers always see
-// the same shape. `null` is preserved.
-//
-// Cross-repo symmetry: glossarist-ruby's `PartitiveHyperedge#content=`
-// (lib/glossarist/v3/partitive_hyperedge.rb) applies the same
-// normalization since commit c917846 (was previously a plain string;
-// aligned with invariant I7 in TODO.hyperedges round 1, item 29).
-// Datasets now round-trip identically across repos.
-function normalizeContent(value) {
-  if (value == null) return null;
-  if (typeof value === 'string') return { default: value };
-  if (typeof value === 'object') {
-    const entries = Object.entries(value).filter(([, v]) => typeof v === 'string');
-    return entries.length > 0 ? Object.fromEntries(entries) : null;
-  }
-  return null;
-}
+export default PartitiveHyperedge;

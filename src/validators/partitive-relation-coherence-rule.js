@@ -1,4 +1,4 @@
-// Validates PartitiveRelation coherence per ISO 704 / ISO 12620.
+// Validates PartitiveHyperedge coherence per ISO 704 / ISO 12620.
 //
 // Checks (per TODO.partitive-relation-v2 item 13):
 //   1. ERROR: each relation has ≥2 partitives (ISO 704 "two or more")
@@ -34,7 +34,7 @@ export class PartitiveRelationCoherenceRule extends ValidationRule {
       if (partitiveCount < 2) {
         this.addIssue(result,
           `${path}partitiveRelations[${i}].partitives`,
-          `PartitiveRelation ${i + 1} has ${partitiveCount} partitive(s); ` +
+          `PartitiveHyperedge ${i + 1} has ${partitiveCount} partitive(s); ` +
           `ISO 704 requires ≥2 (use a binary has_part edge for pairwise facts)`,
         );
       }
@@ -51,7 +51,7 @@ export class PartitiveRelationCoherenceRule extends ValidationRule {
       if (seen.has(key)) {
         this.addIssue(result,
           `${path}partitiveRelations[${i}]`,
-          `duplicate PartitiveRelation (same comprehensive + same criterion ` +
+          `duplicate PartitiveHyperedge (same comprehensive + same criterion ` +
           `as relation ${seen.get(key) + 1}); violates ISO 12620 coordinate-concept coherence`,
         );
       } else {

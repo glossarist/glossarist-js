@@ -1,6 +1,6 @@
 import { GlossaristModel } from '../models/base.js';
-import { PartitiveRelation } from '../models/partitive-relation.js';
-import { GenericRelation } from '../models/generic-relation.js';
+import { PartitiveHyperedge } from '../models/partitive-hyperedge.js';
+import { GenericHyperedge } from '../models/generic-hyperedge.js';
 import { Added, Removed, Changed } from './change.js';
 import { ListDiff, diffList, diffSet } from './list-diff.js';
 import { identityOf } from './identity.js';
@@ -127,24 +127,24 @@ export class ConceptLevelDiff extends GlossaristModel {
   get sources() { return this._sources; }
   get dates() { return this._dates; }
   get relatedConcepts() { return this._relatedConcepts; }
-  /** Unified n-ary relations diff (PartitiveRelation + GenericRelation). */
+  /** Unified n-ary relations diff (PartitiveHyperedge + GenericHyperedge). */
   get relations() { return this._relations; }
   /**
-   * Filtered view of `relations` containing only PartitiveRelation
+   * Filtered view of `relations` containing only PartitiveHyperedge
    * entries. Backward compat for callers that read .partitiveRelations
    * directly on a ConceptLevelDiff.
    */
   get partitiveRelations() {
-    return filterListDiffByType(this._relations, PartitiveRelation);
+    return filterListDiffByType(this._relations, PartitiveHyperedge);
   }
   /** @deprecated use .relations */ get partitiveHyperedges() { return this.partitiveRelations; }
   /**
-   * Filtered view of `relations` containing only GenericRelation
+   * Filtered view of `relations` containing only GenericHyperedge
    * entries. Backward compat for callers that read .genericRelations
    * directly on a ConceptLevelDiff.
    */
   get genericRelations() {
-    return filterListDiffByType(this._relations, GenericRelation);
+    return filterListDiffByType(this._relations, GenericHyperedge);
   }
   get groups() { return this._groups; }
   get sections() { return this._sections; }
@@ -566,8 +566,8 @@ function diffRelatedConcepts(oldRC, newRC) {
 }
 
 // Diff two unified n-ary relations arrays. Identity is polymorphic —
-// dispatches via value.constructor.identityOf so PartitiveRelation
-// and GenericRelation (and any future n-ary subclass) coexist in
+// dispatches via value.constructor.identityOf so PartitiveHyperedge
+// and GenericHyperedge (and any future n-ary subclass) coexist in
 // the same list. Cross-type entries with matching identity are still
 // treated as different (because their constructor differs and they
 // live under different wire keys).

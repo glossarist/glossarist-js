@@ -1,8 +1,8 @@
 // RelationLoader — runtime loader for per-file n-ary relation YAMLs.
 //
 // Walks a `relations/<comprehensive-id>/<slug>.yaml` directory and
-// dispatches each file to the appropriate class (PartitiveRelation
-// or GenericRelation) based on its `type` field.
+// dispatches each file to the appropriate class (PartitiveHyperedge
+// or GenericHyperedge) based on its `type` field.
 //
 // The wire-shape contract is owned by the JSON Schema at
 // `schemas/v3/relation.yaml` (concept-model repo) — this loader
@@ -48,10 +48,10 @@ export class RelationLoadError extends Error {
  * @param {string} relationsDir — path to a `relations/` directory
  *   containing `<comprehensive-id>/<slug>.yaml` files (per the
  *   schema in schemas/v3/relation.yaml).
- * @returns {Map<string, Array<AbstractNaryRelation>>} — for each
+ * @returns {Map<string, Array<AbstractHyperedge>>} — for each
  *   comprehensive id, the list of relations that have it as their
- *   comprehensive. Type-discriminated (PartitiveRelation or
- *   GenericRelation).
+ *   comprehensive. Type-discriminated (PartitiveHyperedge or
+ *   GenericHyperedge).
  */
 export function loadAll(relationsDir) {
   const result = new Map();

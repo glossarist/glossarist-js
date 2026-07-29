@@ -1,4 +1,4 @@
-// Completeness — whether a PartitiveRelation's encoded partitives
+// Completeness — whether a PartitiveHyperedge's encoded partitives
 // constitute the whole comprehensive (complete) or only some of it
 // (partial).
 //

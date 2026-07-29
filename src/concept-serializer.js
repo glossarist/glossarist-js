@@ -1,6 +1,6 @@
 import * as yaml from 'js-yaml';
-import { PartitiveRelation } from './models/partitive-relation.js';
-import { GenericRelation } from './models/generic-relation.js';
+import { PartitiveHyperedge } from './models/partitive-hyperedge.js';
+import { GenericHyperedge } from './models/generic-hyperedge.js';
 
 const DUMP_OPTS = { lineWidth: -1, noRefs: true, sortKeys: false, skipInvalid: true };
 
@@ -9,8 +9,8 @@ const DUMP_OPTS = { lineWidth: -1, noRefs: true, sortKeys: false, skipInvalid: t
 // types; the wire format stays split for backward compat with
 // existing consumers and the JSON Schema in concept-model.
 function _emitTypedRelations(concept) {
-  const partitiveRels = concept.relations.filter(r => r instanceof PartitiveRelation);
-  const genericRels = concept.relations.filter(r => r instanceof GenericRelation);
+  const partitiveRels = concept.relations.filter(r => r instanceof PartitiveHyperedge);
+  const genericRels = concept.relations.filter(r => r instanceof GenericHyperedge);
   return {
     partitive: partitiveRels.map(r => r.toJSON()),
     generic: genericRels.map(r => r.toJSON()),

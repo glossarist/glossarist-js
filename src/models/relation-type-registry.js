@@ -11,12 +11,12 @@
 // pulls in node:fs, which is off-limits on the browser-gcr path that
 // transitively imports this registry via Concept.
 
-import { PartitiveRelation } from './partitive-relation.js';
-import { GenericRelation } from './generic-relation.js';
+import { PartitiveHyperedge } from './partitive-hyperedge.js';
+import { GenericHyperedge } from './generic-hyperedge.js';
 
 export const TYPE_TO_CLASS = Object.freeze({
-  partitive_relation: PartitiveRelation,
-  generic_relation: GenericRelation,
+  partitive_relation: PartitiveHyperedge,
+  generic_relation: GenericHyperedge,
 });
 
 export function classForRelationType(type) {

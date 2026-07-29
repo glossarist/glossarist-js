@@ -30,7 +30,7 @@ export class DelimitingCoherenceRule extends ValidationRule {
   constructor() { super('delimiting-coherence'); }
 
   validate(concept, path, result) {
-    const relations = concept.partitiveRelations ?? concept.partitiveHyperedges ?? [];
+    const relations = concept.relations ?? [];
     if (relations.length === 0) return;
 
     _checkOveruse(relations, path, result);

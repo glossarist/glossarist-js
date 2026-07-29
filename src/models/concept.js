@@ -1,11 +1,9 @@
 import { GlossaristModel } from './base.js';
 import { LocalizedConcept } from './localized-concept.js';
 import { RelatedConcept } from './related-concept.js';
-import { LegacyPartitiveHyperedge } from './partitive-hyperedge-v1.js';
 import { PartitiveHyperedge } from './partitive-hyperedge.js';
-import { GenericHyperedge } from './generic-hyperedge.js';
 import { AbstractHyperedge } from './abstract-hyperedge.js';
-import { TYPE_TO_CLASS } from './relation-type-registry.js';
+import { HyperedgeRegistry, groupHyperedgesByWireKey } from './hyperedge-registry.js';
 import { migrateHyperedgeToRelation } from '../migration/partitive-relation-migrator.js';
 import { ConceptReference } from './concept-reference.js';
 import { ConceptDate } from './concept-date.js';
@@ -38,16 +36,18 @@ export class Concept extends GlossaristModel {
 
     this.relatedConcepts = _mapInstances(data.relatedConcepts ?? data.related ?? data.related_concepts ?? [], RelatedConcept);
 
-    // Unified n-ary relations array. Both PartitiveHyperedge and
-    // GenericHyperedge live here. Adding a new n-ary type (Sequential,
-    // Associative) = adding to _resolveNaryRelations, not editing
-    // Concept, parser, serializer, diff, patch, or renderer.
+    // Unified hyperedge array. Every n-ary relation (PartitiveHyperedge,
+    // GenericHyperedge, future TemporalHyperedge / AssociativeHyperedge /
+    // SequentialHyperedge) lives here. The single public API is
+    // `.relations`; external systems that need to filter by type use
+    // `concept.relations.filter(r => r instanceof X)` or dispatch via
+    // HyperedgeRegistry (preferred — see Phases 6 and 11).
     //
-    // Backward-compat getters (.partitiveRelations, .partitiveHyperedges,
-    // .genericRelations) filter this single array by type. Callers that
-    // use the typed getters see the same behavior; new callers should
-    // iterate .relations directly and dispatch via instanceof.
-    this.relations = _resolveNaryRelations(data);
+    // Throws on ambiguous input (caller passed both `relations` and any
+    // typed wire key) and on duplicate relations (same identity twice).
+    // Silent drop / silent dedupe are footguns the audit (C4, C6)
+    // flagged; explicit throws make corruption loud.
+    this.relations = _resolveHyperedges(data);
 
     this.domains = _normalizeDomains(data.domains, data.groups);
     this.groups = Array.isArray(data.groups)
@@ -72,16 +72,17 @@ export class Concept extends GlossaristModel {
 
   get termid() { return this.id; }
 
-  // Typed getters that filter the unified relations array. Backward
-  // compat for callers that read .partitiveRelations directly.
-  get partitiveRelations() {
-    return this.relations.filter(r => r instanceof PartitiveHyperedge);
-  }
-  get genericRelations() {
-    return this.relations.filter(r => r instanceof GenericHyperedge);
-  }
-  // v1 alias
-  get partitiveHyperedges() { return this.partitiveRelations; }
+  // No typed projections. Use concept.relations directly and filter
+  // by instanceof, or dispatch via HyperedgeRegistry. The old
+  // .partitiveRelations / .genericRelations / .partitiveHyperedges
+  // getters were removed per TODO Phase 4 — they were footguns
+  // (audit C3: .partitiveHyperedges returned v2 instances but callers
+  // expected v1 shape; multiple validators silently no-op'd).
+  //
+  // Snippet migration guide:
+  //   concept.partitiveRelations      → concept.relations.filter(r => r instanceof PartitiveHyperedge)
+  //   concept.genericRelations        → concept.relations.filter(r => r instanceof GenericHyperedge)
+  //   concept.partitiveHyperedges     → concept.relations.filter(r => r instanceof PartitiveHyperedge)
 
   get languages() {
     return Object.keys(this._rawLocalizations);
@@ -222,16 +223,13 @@ export class Concept extends GlossaristModel {
     if (this.relatedConcepts.length > 0) {
       obj.related = this.relatedConcepts.map(rc => rc.toJSON());
     }
-    // Emit typed wire keys from the unified relations array.
-    // Each relation type gets its own wire key so existing consumers
-    // see no wire-shape change.
-    const partitiveRels = this.relations.filter(r => r instanceof PartitiveHyperedge);
-    const genericRels = this.relations.filter(r => r instanceof GenericHyperedge);
-    if (partitiveRels.length > 0) {
-      obj.partitive_relations = partitiveRels.map(r => r.toJSON());
-    }
-    if (genericRels.length > 0) {
-      obj.generic_relations = genericRels.map(r => r.toJSON());
+    // Emit per-type wire keys from the unified relations array,
+    // partitioned via HyperedgeRegistry. Adding a new hyperedge type
+    // means its wire key appears here automatically — no edits to
+    // Concept.toJSON.
+    const grouped = groupHyperedgesByWireKey(this.relations);
+    for (const [wireKey, rels] of Object.entries(grouped)) {
+      if (rels.length > 0) obj[wireKey] = rels.map(r => r.toJSON());
     }
     if (this.domains.length > 0) {
       obj.domains = this.domains.map(d => d.toJSON());
@@ -262,72 +260,147 @@ function _mapInstances(arr, Cls) {
   return arr.map(item => item instanceof Cls ? item : new Cls(item));
 }
 
-// Resolve the unified n-ary relations array from any input shape.
-// Order of precedence:
-//   1. data.relations (preferred unified shape — already typed instances
-//      or hashes carrying a `type` discriminator)
-//   2. data.partitiveRelations / data.partitive_relations (v2 typed)
-//      + data.genericRelations / data.generic_relations (v2 typed)
-//   3. data.partitiveHyperedges / data.partitive_hyperedges (v1, migrated)
+// Resolve the unified hyperedge array from any input shape.
 //
-// Hash dispatch uses TYPE_TO_CLASS from relation-type-registry.js —
-// the single source of truth shared with the per-file loader.
+// Three input categories are accepted; mixing them throws (audit C4 —
+// silent drop was a footgun):
 //
-// Adding a new n-ary relation type (Sequential, Associative, …) means
-// one entry in TYPE_TO_CLASS plus one new class — Concept, parser,
-// serializer, diff, patch, and renderer do not change.
-function _resolveNaryRelations(data) {
+//   1. data.relations               — preferred unified shape. Entries
+//                                     are typed instances or hashes
+//                                     carrying a `type` discriminator
+//                                     (looked up via HyperedgeRegistry).
+//   2. Per-type v2 wire keys        — one of HyperedgeRegistry.allWireKeys()
+//                                     (partitive_relations, generic_relations).
+//   3. Per-type v1 legacy keys      — declared on each class via
+//                                     `static v1WireKeys` (e.g.
+//                                     partitive_hyperedges → migrated).
+//
+// Adding a new hyperedge type means: declare the leaf class with its
+// metadata block, register it. Concept, parser, serializer, diff,
+// patch, renderer, RDF emitter do not change. (Phase 11 OCP contract.)
+function _resolveHyperedges(data) {
+  _assertNoAmbiguousInput(data);
+
   if (Array.isArray(data.relations)) {
-    return data.relations
-      .map(r => _coerceRelation(r))
-      .filter(r => r != null);
+    return _dedupeOrThrow(data.relations.map(r => _coerceHyperedge(r)).filter(r => r != null));
   }
 
   const out = [];
 
-  const v2Partitive = data.partitiveRelations ?? data.partitive_relations;
-  if (Array.isArray(v2Partitive)) {
-    for (const r of v2Partitive) {
-      const coerced = _coerceRelation(r, PartitiveHyperedge);
+  for (const cls of HyperedgeRegistry.allClasses()) {
+    const arr = data[cls.wireKey] ?? data[_camelCase(cls.wireKey)];
+    if (!Array.isArray(arr)) continue;
+    for (const r of arr) {
+      const coerced = _coerceHyperedge(r, cls);
       if (coerced) out.push(coerced);
     }
   }
 
-  const v2Generic = data.genericRelations ?? data.generic_relations;
-  if (Array.isArray(v2Generic)) {
-    for (const r of v2Generic) {
-      const coerced = _coerceRelation(r, GenericHyperedge);
-      if (coerced) out.push(coerced);
+  for (const cls of HyperedgeRegistry.allClasses()) {
+    for (const v1Key of cls.v1WireKeys ?? []) {
+      const camelV1 = _camelCase(v1Key);
+      const arr = data[v1Key] ?? data[camelV1];
+      if (!Array.isArray(arr)) continue;
+      for (const h of arr) {
+        const migrated = _migrateV1Hash(cls, v1Key, h);
+        if (migrated) out.push(new cls(migrated));
+      }
     }
   }
 
-  const v1 = data.partitiveHyperedges ?? data.partitive_hyperedges;
-  if (Array.isArray(v1)) {
-    for (const h of v1) {
-      const hash = h instanceof LegacyPartitiveHyperedge ? h.toJSON() : h;
-      const migrated = migrateHyperedgeToRelation(hash);
-      if (migrated) out.push(new PartitiveHyperedge(migrated));
-    }
-  }
-
-  return out;
+  return _dedupeOrThrow(out);
 }
 
-function _coerceRelation(value, fallbackClass) {
+// Audit C4: silent drop on mixed input is a footgun. Throw instead.
+// Allows `relations` alone, or any combination of typed keys alone —
+// but not both at once.
+function _assertNoAmbiguousInput(data) {
+  if (!Array.isArray(data.relations)) return;
+  const typedKeys = [];
+  for (const cls of HyperedgeRegistry.allClasses()) {
+    if (Array.isArray(data[cls.wireKey])) typedKeys.push(cls.wireKey);
+    const camelWire = _camelCase(cls.wireKey);
+    if (camelWire !== cls.wireKey && Array.isArray(data[camelWire])) {
+      typedKeys.push(camelWire);
+    }
+    for (const v1 of cls.v1WireKeys ?? []) {
+      if (Array.isArray(data[v1])) typedKeys.push(v1);
+      const camelV1 = _camelCase(v1);
+      if (camelV1 !== v1 && Array.isArray(data[camelV1])) typedKeys.push(camelV1);
+    }
+  }
+  if (typedKeys.length > 0) {
+    throw new Error(
+      `Concept input is ambiguous: pass either 'relations' (unified) ` +
+      `or typed wire keys (${typedKeys.join(', ')}), not both. ` +
+      ` Mixing them silently drops the typed keys, which has caused ` +
+      ` data loss in production (see audit C4).`,
+    );
+  }
+}
+
+// Audit C6: do NOT silently dedupe. Duplicate relations indicate a bug
+// in the caller; surface it. The identity function delegates to each
+// class's static identityOf (polymorphic — handles mixed types).
+function _dedupeOrThrow(relations) {
+  const seen = new Map();
+  for (const r of relations) {
+    const id = _hyperedgeIdentity(r);
+    if (seen.has(id)) {
+      throw new Error(
+        `Concept input has duplicate hyperedge (identity=${id}). ` +
+        `Passing the same relation twice is a bug — the parser and ` +
+        `serializer would silently emit it twice on disk. ` +
+        `Audit C6 requires we surface this loudly instead.`,
+      );
+    }
+    seen.set(id, r);
+  }
+  return relations;
+}
+
+function _hyperedgeIdentity(r) {
+  if (r == null) return '';
+  const Cls = r.constructor;
+  if (typeof Cls?.identityOf === 'function') {
+    return `${Cls.name}::${Cls.identityOf(r)}`;
+  }
+  return String(r);
+}
+
+function _coerceHyperedge(value, fallbackClass) {
   if (value == null) return null;
   if (value instanceof AbstractHyperedge) return value;
 
   const hash = typeof value.toJSON === 'function' ? value.toJSON() : value;
-  const Cls = _classForHash(hash) ?? fallbackClass;
-  if (!Cls) return null;
-  return new Cls(hash);
+  const cls = _classForHash(hash) ?? fallbackClass;
+  if (!cls) return null;
+  return new cls(hash);
 }
 
 function _classForHash(hash) {
   if (!hash || typeof hash !== 'object') return null;
   const type = hash.type;
   if (typeof type !== 'string') return null;
-  return TYPE_TO_CLASS[type] ?? null;
+  return HyperedgeRegistry.forTypeTag(type);
+}
+
+// v1 → v2 migration for hashes from legacy wire keys. Currently only
+// PartitiveHyperedge has v1 wire keys (partitive_hyperedges). Future
+// types extend this dispatch — but it lives here in the migration
+// helper, not in the model classes, since v1 is a legacy concern.
+function _migrateV1Hash(cls, v1Key, hash) {
+  if (cls === PartitiveHyperedge && v1Key === 'partitive_hyperedges') {
+    const normalized = hash;
+    return migrateHyperedgeToRelation(normalized);
+  }
+  return null;
+}
+
+// snake_case → camelCase
+function _camelCase(s) {
+  if (typeof s !== 'string' || !s.includes('_')) return s;
+  return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 
 const CONCEPT_WIRE_NAMES = Object.freeze({

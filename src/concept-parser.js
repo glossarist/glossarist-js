@@ -5,13 +5,16 @@ import { migrateHyperedgeToRelation } from './migration/partitive-relation-migra
 import { InvalidInputError, YamlParseError } from './errors.js';
 
 // Structural keys are reserved at the concept level and excluded
-// from language localization discovery. Updated for v2:
-// `partitive_relations` is the v2 wire name; `partitive_hyperedges`
-// is accepted as v1 backward-compat input.
+// from language localization discovery. The unified `relations`
+// key, the v2 typed keys (`partitive_relations`, `generic_relations`),
+// and the v1 backward-compat key (`partitive_hyperedges`) are all
+// reserved.
 const STRUCTURAL_KEYS = new Set([
   'termid', 'term', 'figures', 'tables', 'formulas',
+  'relations',
   'partitive_hyperedges', 'partitiveHyperedges',
   'partitive_relations', 'partitiveRelations',
+  'generic_relations', 'genericRelations',
 ]);
 
 export class ConceptParser {
@@ -67,7 +70,7 @@ export class ConceptParser {
       figures: doc.figures,
       tables: doc.tables,
       formulas: doc.formulas,
-      partitiveRelations: _resolvePartitiveData(doc),
+      relations: _resolveNaryData(doc),
       raw: doc,
     });
   }
@@ -84,14 +87,20 @@ export class ConceptParser {
       localizations[lang] = lcData;
     }
 
-    assertConceptLevelOnly(mc, ['related', 'partitive_relations', 'partitive_hyperedges']);
+    assertConceptLevelOnly(mc, [
+      'related',
+      'relations',
+      'partitive_relations',
+      'partitive_hyperedges',
+      'generic_relations',
+    ]);
 
     return new Concept({
       id: String(mc.data.identifier),
       term: null,
       localizations,
       related: _normalizeRelated(mc.related),
-      partitiveRelations: _resolvePartitiveData(mc),
+      relations: _resolveNaryData(mc),
       domains: mc.data.domains,
       groups: mc.data.groups,
       dates: mc.dates ?? mc.data?.dates,
@@ -121,26 +130,63 @@ function assertConceptLevelOnly(mc, keys) {
   }
 }
 
-// Resolves partitive relation data from any of three input shapes:
-//   v2 wire:    { partitive_relations: [...] }
-//   v2 camel:   { partitiveRelations: [...] }
-//   v1 wire:    { partitive_hyperedges: [...] }   ← migrated to v2
-//   v1 camel:   { partitiveHyperedges: [...] }    ← migrated to v2
+// Resolve n-ary relation data from any input shape into a single
+// unified array. Accepts:
 //
-// Returns null when no partitive data is present, so Concept's
-// `_resolvePartitiveRelations` falls back to the empty-array default.
-function _resolvePartitiveData(container) {
-  const v2 = container?.partitive_relations ?? container?.partitiveRelations;
-  if (Array.isArray(v2)) return v2;
+//   unified wire:  { relations: [...] }                     (hashes with `type`)
+//   v2 partitive:  { partitive_relations: [...] }           (hashes)
+//   v2 generic:    { generic_relations: [...] }             (hashes)
+//   v1 partitive:  { partitive_hyperedges: [...] }           ← migrated
+//
+// Returns null when no relation data is present, so Concept's
+// `_resolveNaryRelations` falls back to the empty-array default.
+function _resolveNaryData(container) {
+  if (!container) return null;
 
-  const v1 = container?.partitive_hyperedges ?? container?.partitiveHyperedges;
-  if (Array.isArray(v1)) {
-    return v1
-      .map(h => (h?.toJSON && typeof h.toJSON === 'function') ? h.toJSON() : h)
-      .map(migrateHyperedgeToRelation)
-      .filter(h => h != null);
+  if (Array.isArray(container.relations)) {
+    return container.relations;
   }
-  return null;
+
+  const out = [];
+
+  const v2Partitive = container.partitive_relations ?? container.partitiveRelations;
+  if (Array.isArray(v2Partitive)) {
+    for (const r of v2Partitive) {
+      const tagged = _addTypeIfMissing(r, 'partitive_relation');
+      if (tagged != null) out.push(tagged);
+    }
+  }
+
+  const v2Generic = container.generic_relations ?? container.genericRelations;
+  if (Array.isArray(v2Generic)) {
+    for (const r of v2Generic) {
+      const tagged = _addTypeIfMissing(r, 'generic_relation');
+      if (tagged != null) out.push(tagged);
+    }
+  }
+
+  const v1 = container.partitive_hyperedges ?? container.partitiveHyperedges;
+  if (Array.isArray(v1)) {
+    for (const h of v1) {
+      const hash = h?.toJSON && typeof h.toJSON === 'function' ? h.toJSON() : h;
+      const migrated = migrateHyperedgeToRelation(hash);
+      if (migrated) out.push({ ...migrated, type: 'partitive_relation' });
+    }
+  }
+
+  return out.length > 0 ? out : null;
+}
+
+function _addTypeIfMissing(value, type) {
+  if (value == null) return null;
+  if (typeof value.toJSON === 'function') {
+    const hash = value.toJSON();
+    return hash.type ? hash : { ...hash, type };
+  }
+  if (typeof value === 'object') {
+    return value.type ? value : { ...value, type };
+  }
+  return value;
 }
 
 function _normalizeRelated(arr) {

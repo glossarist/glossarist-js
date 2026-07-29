@@ -3,6 +3,9 @@ import { LocalizedConcept } from './localized-concept.js';
 import { RelatedConcept } from './related-concept.js';
 import { PartitiveHyperedge } from './partitive-hyperedge.js';
 import { PartitiveRelation } from './partitive-relation.js';
+import { GenericRelation } from './generic-relation.js';
+import { AbstractNaryRelation } from './abstract-nary-relation.js';
+import { TYPE_TO_CLASS } from './relation-type-registry.js';
 import { migrateHyperedgeToRelation } from '../migration/partitive-relation-migrator.js';
 import { ConceptReference } from './concept-reference.js';
 import { ConceptDate } from './concept-date.js';
@@ -34,12 +37,18 @@ export class Concept extends GlossaristModel {
     this._cache = {};
 
     this.relatedConcepts = _mapInstances(data.relatedConcepts ?? data.related ?? data.related_concepts ?? [], RelatedConcept);
-    this.partitiveRelations = _resolvePartitiveRelations(data);
-    // Backward-compat alias: v1 callers reading .partitiveHyperedges
-    // get the v2 relations (the v1 model is preserved at
-    // ../partitive-hyperedge.js for direct instantiation, but Concept
-    // exposes only v2).
-    this.partitiveHyperedges = this.partitiveRelations;
+
+    // Unified n-ary relations array. Both PartitiveRelation and
+    // GenericRelation live here. Adding a new n-ary type (Sequential,
+    // Associative) = adding to _resolveNaryRelations, not editing
+    // Concept, parser, serializer, diff, patch, or renderer.
+    //
+    // Backward-compat getters (.partitiveRelations, .partitiveHyperedges,
+    // .genericRelations) filter this single array by type. Callers that
+    // use the typed getters see the same behavior; new callers should
+    // iterate .relations directly and dispatch via instanceof.
+    this.relations = _resolveNaryRelations(data);
+
     this.domains = _normalizeDomains(data.domains, data.groups);
     this.groups = Array.isArray(data.groups)
       ? data.groups.map(g => typeof g === 'string' ? g : (g?.id ?? g?.sectionId ?? null)).filter(Boolean)
@@ -62,6 +71,17 @@ export class Concept extends GlossaristModel {
   }
 
   get termid() { return this.id; }
+
+  // Typed getters that filter the unified relations array. Backward
+  // compat for callers that read .partitiveRelations directly.
+  get partitiveRelations() {
+    return this.relations.filter(r => r instanceof PartitiveRelation);
+  }
+  get genericRelations() {
+    return this.relations.filter(r => r instanceof GenericRelation);
+  }
+  // v1 alias
+  get partitiveHyperedges() { return this.partitiveRelations; }
 
   get languages() {
     return Object.keys(this._rawLocalizations);
@@ -202,8 +222,16 @@ export class Concept extends GlossaristModel {
     if (this.relatedConcepts.length > 0) {
       obj.related = this.relatedConcepts.map(rc => rc.toJSON());
     }
-    if (this.partitiveRelations.length > 0) {
-      obj.partitive_relations = this.partitiveRelations.map(r => r.toJSON());
+    // Emit typed wire keys from the unified relations array.
+    // Each relation type gets its own wire key so existing consumers
+    // see no wire-shape change.
+    const partitiveRels = this.relations.filter(r => r instanceof PartitiveRelation);
+    const genericRels = this.relations.filter(r => r instanceof GenericRelation);
+    if (partitiveRels.length > 0) {
+      obj.partitive_relations = partitiveRels.map(r => r.toJSON());
+    }
+    if (genericRels.length > 0) {
+      obj.generic_relations = genericRels.map(r => r.toJSON());
     }
     if (this.domains.length > 0) {
       obj.domains = this.domains.map(d => d.toJSON());
@@ -234,31 +262,72 @@ function _mapInstances(arr, Cls) {
   return arr.map(item => item instanceof Cls ? item : new Cls(item));
 }
 
-// Resolve partitive relations from any of three input shapes:
-//   1. data.partitiveRelations (v2, preferred)
-//   2. data.partitive_relations (v2 wire name)
+// Resolve the unified n-ary relations array from any input shape.
+// Order of precedence:
+//   1. data.relations (preferred unified shape — already typed instances
+//      or hashes carrying a `type` discriminator)
+//   2. data.partitiveRelations / data.partitive_relations (v2 typed)
+//      + data.genericRelations / data.generic_relations (v2 typed)
 //   3. data.partitiveHyperedges / data.partitive_hyperedges (v1, migrated)
 //
-// v1 input is auto-migrated to v2 via the migrator. v1 instances
-// already constructed (rare — only direct callers) are migrated field
-// by field. The parser produces plain hashes so the common path is (3).
-function _resolvePartitiveRelations(data) {
-  if (Array.isArray(data.partitiveRelations)) {
-    return data.partitiveRelations.map(r =>
-      r instanceof PartitiveRelation ? r : new PartitiveRelation(r));
+// Hash dispatch uses TYPE_TO_CLASS from relation-type-registry.js —
+// the single source of truth shared with the per-file loader.
+//
+// Adding a new n-ary relation type (Sequential, Associative, …) means
+// one entry in TYPE_TO_CLASS plus one new class — Concept, parser,
+// serializer, diff, patch, and renderer do not change.
+function _resolveNaryRelations(data) {
+  if (Array.isArray(data.relations)) {
+    return data.relations
+      .map(r => _coerceRelation(r))
+      .filter(r => r != null);
   }
-  if (Array.isArray(data.partitive_relations)) {
-    return data.partitive_relations.map(r => new PartitiveRelation(r));
+
+  const out = [];
+
+  const v2Partitive = data.partitiveRelations ?? data.partitive_relations;
+  if (Array.isArray(v2Partitive)) {
+    for (const r of v2Partitive) {
+      const coerced = _coerceRelation(r, PartitiveRelation);
+      if (coerced) out.push(coerced);
+    }
   }
+
+  const v2Generic = data.genericRelations ?? data.generic_relations;
+  if (Array.isArray(v2Generic)) {
+    for (const r of v2Generic) {
+      const coerced = _coerceRelation(r, GenericRelation);
+      if (coerced) out.push(coerced);
+    }
+  }
+
   const v1 = data.partitiveHyperedges ?? data.partitive_hyperedges;
   if (Array.isArray(v1)) {
-    return v1
-      .map(h => h instanceof PartitiveHyperedge ? h.toJSON() : h)
-      .map(migrateHyperedgeToRelation)
-      .filter(h => h != null)
-      .map(h => new PartitiveRelation(h));
+    for (const h of v1) {
+      const hash = h instanceof PartitiveHyperedge ? h.toJSON() : h;
+      const migrated = migrateHyperedgeToRelation(hash);
+      if (migrated) out.push(new PartitiveRelation(migrated));
+    }
   }
-  return [];
+
+  return out;
+}
+
+function _coerceRelation(value, fallbackClass) {
+  if (value == null) return null;
+  if (value instanceof AbstractNaryRelation) return value;
+
+  const hash = typeof value.toJSON === 'function' ? value.toJSON() : value;
+  const Cls = _classForHash(hash) ?? fallbackClass;
+  if (!Cls) return null;
+  return new Cls(hash);
+}
+
+function _classForHash(hash) {
+  if (!hash || typeof hash !== 'object') return null;
+  const type = hash.type;
+  if (typeof type !== 'string') return null;
+  return TYPE_TO_CLASS[type] ?? null;
 }
 
 const CONCEPT_WIRE_NAMES = Object.freeze({

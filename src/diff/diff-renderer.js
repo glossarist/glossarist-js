@@ -125,7 +125,10 @@ function renderConceptLevel(diff, colors) {
   lines.push(...renderListDiff('Sources', diff.sources, colors, itemLabel));
   lines.push(...renderListDiff('Dates', diff.dates, colors, itemLabel));
   lines.push(...renderListDiff('Related', diff.relatedConcepts, colors, itemLabel));
-  lines.push(...renderListDiff('Partitive relations', diff.partitiveRelations ?? diff.partitiveHyperedges, colors, relationLabel));
+  // Unified n-ary relations section. Replaces the per-type sections
+  // (Partitive relations, Generic relations) — the underlying diff
+  // is a single ListDiff over the unified .relations array.
+  lines.push(...renderListDiff('N-ary relations', diff.relations, colors, relationLabel));
   lines.push(...renderListDiff('Groups', diff.groups, colors, itemLabel));
   lines.push(...renderListDiff('Sections', diff.sections, colors, itemLabel));
   lines.push(...renderListDiff('Tags', diff.tags, colors, itemLabel));
@@ -203,8 +206,11 @@ function relationLabel(r) {
   if (!r) return '?';
   const c = r.comprehensive;
   const head = c?.id ?? c?.source ?? c?.text ?? '?';
-  const partitives = Array.isArray(r.partitives)
-    ? r.partitives.map(m => {
+  // PartitiveRelation exposes .partitives as the wire alias for
+  // .members; GenericRelation uses .members directly. Read both.
+  const members = Array.isArray(r.partitives) ? r.partitives : r.members;
+  const memberText = Array.isArray(members)
+    ? members.map(m => {
         const ref = m?.ref ?? m ?? {};
         let tail = '';
         const mult = resolveMultiplicity(m);
@@ -217,7 +223,8 @@ function relationLabel(r) {
   const criterion = r.criterion
     ? ` / ${Object.values(r.criterion)[0] ?? ''}`
     : '';
-  return `${head} → {${partitives}}${completeness}${criterion}`;
+  const typeTag = r?.constructor?.name === 'GenericRelation' ? 'GEN ' : '';
+  return `${typeTag}${head} → {${memberText}}${completeness}${criterion}`;
 }
 
 // Aggregate multiplicity + delimiting stats across a concept's

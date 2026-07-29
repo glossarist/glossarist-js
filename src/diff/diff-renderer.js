@@ -223,7 +223,12 @@ function relationLabel(r) {
   const criterion = r.criterion
     ? ` / ${Object.values(r.criterion)[0] ?? ''}`
     : '';
-  const typeTag = r?.constructor?.name === 'GenericHyperedge' ? 'GEN ' : '';
+  // Each hyperedge leaf declares a short static kindLabel (PART, GEN, …).
+  // Read it via the constructor so adding a new hyperedge type needs no
+  // renderer edit. The blank-string default keeps backward-compat with
+  // any AbstractHyperedge subclass that doesn't declare kindLabel.
+  const kindLabel = r?.constructor?.kindLabel ?? '';
+  const typeTag = kindLabel ? `${kindLabel} ` : '';
   return `${typeTag}${head} → {${memberText}}${completeness}${criterion}`;
 }
 

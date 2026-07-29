@@ -39,23 +39,27 @@ describe('PartitiveRelationCoherenceRule', () => {
     assert.equal(result.errors.length, 0);
   });
 
-  it('errors on duplicate (comprehensive + criterion)', () => {
-    const concept = new Concept({
-      id: '1',
-      partitiveRelations: [
-        makeRelation({
-          comprehensive: { source: 'VIM', id: '1' },
-          criterion: { eng: 'physical' },
-        }),
-        makeRelation({
-          comprehensive: { source: 'VIM', id: '1' },
-          criterion: { eng: 'physical' },
-        }),
-      ],
-    });
-    const result = runRule(PartitiveRelationCoherenceRule, concept);
-    assert.ok(result.errors.length >= 1);
-    assert.match(result.errors[0].message, /duplicate PartitiveHyperedge/);
+  it('Concept constructor rejects duplicate (comprehensive + criterion + members) at input', () => {
+    // After Phase 4 of TODO.abstract-hyperedge, Concept itself throws on
+    // duplicate hyperedge input (audit C6 — silent dedupe was a footgun).
+    // The coherence rule no longer needs to detect duplicates because
+    // Concept prevents them from reaching the validator.
+    assert.throws(
+      () => new Concept({
+        id: '1',
+        partitiveRelations: [
+          makeRelation({
+            comprehensive: { source: 'VIM', id: '1' },
+            criterion: { eng: 'physical' },
+          }),
+          makeRelation({
+            comprehensive: { source: 'VIM', id: '1' },
+            criterion: { eng: 'physical' },
+          }),
+        ],
+      }),
+      /duplicate hyperedge/,
+    );
   });
 
   it('passes when same comprehensive but different criterion', () => {

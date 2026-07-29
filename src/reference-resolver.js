@@ -84,29 +84,31 @@ export class ReferenceResolver {
       }
     }
 
-    // v2 model: concept.partitiveRelations is canonical; v1 alias
-    // concept.partitiveHyperedges points at the same array. Each
-    // relation has a comprehensive ConceptRef and 2+ partitive members
-    // each carrying a ConceptRef.
-    const relations = concept.partitiveRelations ?? concept.partitiveHyperedges ?? [];
+    // All hyperedges (Partitive + Generic + future types) live in
+    // concept.relations. Each has a comprehensive ConceptRef and 2+
+    // members each carrying a ConceptRef. The reference type is the
+    // relation's typeTag (partitive_relation, generic_relation, …).
+    const relations = concept.relations ?? [];
     for (let i = 0; i < relations.length; i++) {
       const rel = relations[i];
-      const relPath = `partitiveRelations[${i}]`;
+      const relType = rel?.constructor?.typeTag ?? 'hyperedge';
+      const relPath = `relations[${i}]`;
 
       const compTarget = hyperedgeRefTarget(rel.comprehensive);
       if (compTarget) {
         refs.push(new Reference(
           'concept',
           compTarget,
-          'partitive_relation',
+          relType,
           `${relPath}.comprehensive`,
           { lookupKey: { id: compTarget } },
         ));
       }
 
-      // v2 shape: rel.partitives is [{ ref, certainty }, ...].
-      // v1 shape: rel.parts is [ref, ...]. Accept both.
-      const members = rel.partitives ?? rel.parts ?? [];
+      // Member shape: members is [{ ref, presence, count, is_delimiting }, ...]
+      // (HyperedgeMember / PartitiveMember / GenericMember). The wire
+      // alias .partitives is also handled for backward compat with v2 wire consumers.
+      const members = rel.members ?? rel.partitives ?? rel.parts ?? [];
       for (let j = 0; j < members.length; j++) {
         const m = members[j];
         const memberRef = m?.ref ?? m;
@@ -115,8 +117,8 @@ export class ReferenceResolver {
         refs.push(new Reference(
           'concept',
           pTarget,
-          'partitive_relation',
-          `${relPath}.partitives[${j}]`,
+          relType,
+          `${relPath}.members[${j}]`,
           { lookupKey: { id: pTarget } },
         ));
       }

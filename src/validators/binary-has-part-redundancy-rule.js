@@ -20,7 +20,7 @@ export class BinaryHasPartRedundancyRule extends ValidationRule {
   constructor() { super('binary-has-part-redundancy', 'warning'); }
 
   validate(concept, path, result) {
-    const relations = concept.partitiveRelations ?? concept.partitiveHyperedges ?? [];
+    const relations = concept.relations ?? [];
 
     // Collect partitive refs from PartitiveRelations.
     const relationTargets = new Set();

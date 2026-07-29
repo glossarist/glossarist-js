@@ -98,4 +98,20 @@ class HyperedgeRegistry {
   }
 }
 
+// Helper: partition a unified hyperedge array by wire key. Used by
+// Concept.toJSON, ConceptSerializer, and diff-patch to emit per-type
+// wire keys without per-type branching in those files. Adding a new
+// hyperedge type "just works" because the group is keyed by the
+// class's static wireKey.
+export function groupHyperedgesByWireKey(hyperedges) {
+  const out = {};
+  for (const h of hyperedges ?? []) {
+    const key = h?.constructor?.wireKey;
+    if (!key) continue;
+    if (!out[key]) out[key] = [];
+    out[key].push(h);
+  }
+  return out;
+}
+
 export { HyperedgeRegistry };

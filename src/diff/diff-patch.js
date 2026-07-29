@@ -4,8 +4,7 @@ import { ConceptDate } from '../models/concept-date.js';
 import { RelatedConcept } from '../models/related-concept.js';
 import { Designation } from '../models/designation.js';
 import { DetailedDefinition } from '../models/detailed-definition.js';
-import { PartitiveHyperedge } from '../models/partitive-hyperedge.js';
-import { GenericHyperedge } from '../models/generic-hyperedge.js';
+import { HyperedgeRegistry } from '../models/hyperedge-registry.js';
 import { Added, Removed, Changed } from './change.js';
 import { ListDiff } from './list-diff.js';
 import { TextDiff, TextHunk } from './text-diff.js';
@@ -108,31 +107,24 @@ function applyConceptLevelPatch(json, conceptDiff) {
   json.dates = applyListPatch(json.dates ?? [], conceptDiff.dates, ConceptDate.identityOf);
   json.related = applyListPatch(json.related ?? [], conceptDiff.relatedConcepts, RelatedConcept.identityOf);
 
-  // Unified relations diff → typed wire keys. Partition the unified
-  // diff by concrete class and apply each half to its own wire key.
-  // The wire format stays split (partitive_relations + generic_relations)
-  // for backward compat with consumers; the in-memory model is unified.
-  const partitiveDiff = partitionListDiff(conceptDiff.relations, PartitiveHyperedge);
-  const genericDiff = partitionListDiff(conceptDiff.relations, GenericHyperedge);
-
-  if (partitiveDiff.hasChanges) {
-    json.partitive_relations = applyListPatch(
-      json.partitive_relations ?? json.partitive_hyperedges ?? [],
-      partitiveDiff,
-      PartitiveHyperedge.identityOf,
-    );
-    // v1 wire key is removed once v2 has replaced it; otherwise leave
-    // v1 data in place for backward-compat readers.
-    if (json.partitive_relations != null && json.partitive_hyperedges != null) {
-      delete json.partitive_hyperedges;
+  // Unified hyperedge diff → typed wire keys. Iterate the registry;
+  // for each registered class, partition the unified diff by that
+  // class and apply to the class's wireKey. Adding a new hyperedge
+  // type means this loop picks it up automatically — no edits here.
+  for (const cls of HyperedgeRegistry.allClasses()) {
+    const partition = partitionListDiff(conceptDiff.relations, cls);
+    if (!partition.hasChanges) continue;
+    const wireKey = cls.wireKey;
+    // v1 wire keys (partitive_hyperedges) on the input are migrated
+    // to v2 wire key here: read from either, write to v2 only.
+    const v1ReadKeys = cls.v1WireKeys ?? [];
+    const existing = v1ReadKeys
+      .map(k => json[k])
+      .find(arr => Array.isArray(arr)) ?? json[wireKey] ?? [];
+    json[wireKey] = applyListPatch(existing, partition, cls.identityOf);
+    for (const k of v1ReadKeys) {
+      if (json[k] != null && json[wireKey] != null) delete json[k];
     }
-  }
-  if (genericDiff.hasChanges) {
-    json.generic_relations = applyListPatch(
-      json.generic_relations ?? [],
-      genericDiff,
-      GenericHyperedge.identityOf,
-    );
   }
 
   json.tags = applyListPatch(json.tags ?? [], conceptDiff.tags);

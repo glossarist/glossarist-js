@@ -21,7 +21,6 @@ export { Citation } from './citation.js';
 export { ConceptRef } from './concept-ref.js';
 export { ConceptSource } from './concept-source.js';
 export { RelatedConcept, RELATIONSHIP_TYPES } from './related-concept.js';
-export { LegacyPartitiveHyperedge } from './partitive-hyperedge-v1.js';
 export {
   PARTITIVE_ENUMERATION,
   PARTITIVE_ENUMERATION_VALUES,

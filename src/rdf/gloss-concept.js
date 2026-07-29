@@ -8,8 +8,28 @@ import { WELL_KNOWN } from './prefixes.js';
 import { localizedConceptToQuads } from './gloss-localized-concept.js';
 import { conceptSourceToQuads } from './gloss-source.js';
 import { partitiveRelationToQuads, partitiveRelationSubjectUri } from './gloss-partitive-relation.js';
-import { hyperedgeToQuads, hyperedgeSubjectUri } from './gloss-hyperedge.js';
+import { genericHyperedgeToQuads, genericHyperedgeSubjectUri, GENERIC_HYPEREDGE_LINK_PREDICATE } from './gloss-generic-hyperedge.js';
+import { PartitiveHyperedge } from '../models/partitive-hyperedge.js';
+import { GenericHyperedge } from '../models/generic-hyperedge.js';
 import { namedNode, literal, quad } from './terms.js';
+
+// Per-type RDF emitter dispatch. Keyed by class. Adding a new hyperedge
+// type with its own emitter means: (1) write the emitter module,
+// (2) add one entry here. Per TODO Phase 6e this should be a
+// self-registering registry; for the two current types, the dispatch
+// table is simpler and keeps the dependency graph acyclic.
+const HYPEREDGE_EMITTERS = new Map([
+  [PartitiveHyperedge, {
+    linkPredicate: PRED.gloss.hasPartitiveRelation,
+    subjectUri: partitiveRelationSubjectUri,
+    toQuads: partitiveRelationToQuads,
+  }],
+  [GenericHyperedge, {
+    linkPredicate: GENERIC_HYPEREDGE_LINK_PREDICATE,
+    subjectUri: genericHyperedgeSubjectUri,
+    toQuads: genericHyperedgeToQuads,
+  }],
+]);
 
 // Kind tag → URI segment. Each NonVerbalReference subtype has a
 // predictable URL path so the same entity is reachable from any
@@ -72,27 +92,23 @@ export function* conceptToQuads(concept, options) {
     srcIndex += 1;
   }
 
-  // v2 canonical: concept.partitiveRelations. v1 alias
-  // (concept.partitiveHyperedges) points at the same array — both
-  // work here.
-  const relations = concept.partitiveRelations ?? concept.partitiveHyperedges ?? [];
+  // Iterate the unified relations array. Dispatch via per-type
+  // emitter table.
   let relIdx = 0;
-  for (const relation of relations) {
-    // Skip v1 PartitiveHyperedge instances — they have their own
-    // emitter (gloss-hyperedge.js) and would double-emit. The parser
-    // always produces v2 PartitiveHyperedge instances; only direct
-    // callers using the v1 model would see this branch.
-    const isV2 = !relation.enumeration && !relation.markers && !relation.parts
-      || (relation.completeness != null || relation.partitives != null);
-    if (!isV2) {
-      const heSubject = hyperedgeSubjectUri(subjectUri, relation, relIdx);
-      yield quad(s, namedNode(PRED.gloss.hasPartitiveHyperedge), namedNode(heSubject));
-      yield* hyperedgeToQuads(relation, { parentUri: subjectUri, index: relIdx });
-    } else {
-      const relSubject = partitiveRelationSubjectUri(subjectUri, relation, relIdx);
-      yield quad(s, namedNode(PRED.gloss.hasPartitiveRelation), namedNode(relSubject));
-      yield* partitiveRelationToQuads(relation, { parentUri: subjectUri, index: relIdx });
+  for (const relation of concept.relations ?? []) {
+    const emitter = HYPEREDGE_EMITTERS.get(relation.constructor);
+    if (!emitter) {
+      // Unknown hyperedge type — skip rather than crash. The OCP
+      // contract (Phase 11) tests that new types register an emitter;
+      // skipping here gives external consumers a soft-failure path
+      // when they pass around abstract hyperedges the JS layer doesn't
+      // recognize yet.
+      relIdx += 1;
+      continue;
     }
+    const relSubject = emitter.subjectUri(subjectUri, relation, relIdx);
+    yield quad(s, namedNode(emitter.linkPredicate), namedNode(relSubject));
+    yield* emitter.toQuads(relation, { parentUri: subjectUri, index: relIdx });
     relIdx += 1;
   }
 }

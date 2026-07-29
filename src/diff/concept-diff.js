@@ -108,6 +108,9 @@ export class ConceptLevelDiff extends GlossaristModel {
         ?? data.partitiveHyperedges
         ?? data.partitive_hyperedges,
     );
+    this._genericRelations = wrapListDiff(
+      data.genericRelations ?? data.generic_relations,
+    );
     this._groups = wrapListDiff(data.groups);
     this._sections = wrapListDiff(data.sections);
     this._tags = wrapListDiff(data.tags);
@@ -120,6 +123,7 @@ export class ConceptLevelDiff extends GlossaristModel {
   get dates() { return this._dates; }
   get relatedConcepts() { return this._relatedConcepts; }
   get partitiveRelations() { return this._partitiveRelations; }
+  get genericRelations() { return this._genericRelations; }
   /** @deprecated use partitiveRelations */ get partitiveHyperedges() { return this._partitiveRelations; }
   get groups() { return this._groups; }
   get sections() { return this._sections; }
@@ -142,6 +146,7 @@ export class ConceptLevelDiff extends GlossaristModel {
     yield* walkList('concept.dates', this._dates);
     yield* walkList('concept.relatedConcepts', this._relatedConcepts);
     yield* walkList('concept.partitiveRelations', this._partitiveRelations);
+    yield* walkList('concept.genericRelations', this._genericRelations);
     yield* walkList('concept.groups', this._groups);
     yield* walkList('concept.sections', this._sections);
     yield* walkList('concept.tags', this._tags);
@@ -154,6 +159,7 @@ export class ConceptLevelDiff extends GlossaristModel {
       dates: this._dates.toJSON(),
       related_concepts: this._relatedConcepts.toJSON(),
       partitive_relations: this._partitiveRelations.toJSON(),
+      generic_relations: this._genericRelations.toJSON(),
       groups: this._groups.toJSON(),
       sections: this._sections.toJSON(),
       tags: this._tags.toJSON(),
@@ -429,6 +435,7 @@ function diffConceptLevel(oldConcept, newConcept) {
       dates: fullListDiff(c.dates ?? [], Direction),
       relatedConcepts: fullListDiff(c.relatedConcepts ?? [], Direction),
       partitiveRelations: fullListDiff(c.partitiveRelations ?? c.partitiveHyperedges ?? [], Direction),
+      genericRelations: fullListDiff(c.genericRelations ?? [], Direction),
       groups: fullListDiff(c.groups ?? [], Direction),
       sections: fullListDiff(c.sections ?? [], Direction),
       tags: fullListDiff(c.tags ?? [], Direction),
@@ -443,6 +450,10 @@ function diffConceptLevel(oldConcept, newConcept) {
     partitiveRelations: diffPartitiveRelations(
       oldConcept.partitiveRelations ?? oldConcept.partitiveHyperedges ?? [],
       newConcept.partitiveRelations ?? newConcept.partitiveHyperedges ?? [],
+    ),
+    genericRelations: diffGenericRelations(
+      oldConcept.genericRelations ?? [],
+      newConcept.genericRelations ?? [],
     ),
     groups: diffStringSet(oldConcept.groups ?? [], newConcept.groups ?? []),
     sections: diffStringSet(oldConcept.sections ?? [], newConcept.sections ?? []),
@@ -541,6 +552,13 @@ function diffRelatedConcepts(oldRC, newRC) {
 }
 
 function diffPartitiveRelations(oldR, newR) {
+  return diffSet(oldR, newR, {
+    identityKey: identityOf,
+    textKey: relationText,
+  });
+}
+
+function diffGenericRelations(oldR, newR) {
   return diffSet(oldR, newR, {
     identityKey: identityOf,
     textKey: relationText,

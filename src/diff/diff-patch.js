@@ -5,6 +5,7 @@ import { RelatedConcept } from '../models/related-concept.js';
 import { Designation } from '../models/designation.js';
 import { DetailedDefinition } from '../models/detailed-definition.js';
 import { PartitiveRelation } from '../models/partitive-relation.js';
+import { GenericRelation } from '../models/generic-relation.js';
 import { Added, Removed, Changed } from './change.js';
 import { ListDiff } from './list-diff.js';
 import { TextDiff, TextHunk } from './text-diff.js';
@@ -70,6 +71,9 @@ export function reverseDiff(diff) {
     partitiveRelations: reverseListDiff(
       diff.concept.partitiveRelations ?? diff.concept.partitiveHyperedges,
     ),
+    genericRelations: reverseListDiff(
+      diff.concept.genericRelations ?? diff.concept.generic_relations,
+    ),
     groups: reverseListDiff(diff.concept.groups),
     sections: reverseListDiff(diff.concept.sections),
     tags: reverseListDiff(diff.concept.tags),
@@ -119,6 +123,11 @@ function applyConceptLevelPatch(json, conceptDiff) {
     delete json.partitive_hyperedges;
   }
 
+  json.generic_relations = applyListPatch(
+    json.generic_relations ?? [],
+    conceptDiff.genericRelations ?? conceptDiff.generic_relations,
+    GenericRelation.identityOf,
+  );
   json.tags = applyListPatch(json.tags ?? [], conceptDiff.tags);
 
   applyMetadataPatch(json, conceptDiff.metadata, CONCEPT_METADATA_JSON_KEYS);

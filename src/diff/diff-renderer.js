@@ -126,6 +126,7 @@ function renderConceptLevel(diff, colors) {
   lines.push(...renderListDiff('Dates', diff.dates, colors, itemLabel));
   lines.push(...renderListDiff('Related', diff.relatedConcepts, colors, itemLabel));
   lines.push(...renderListDiff('Partitive relations', diff.partitiveRelations ?? diff.partitiveHyperedges, colors, relationLabel));
+  lines.push(...renderListDiff('Generic relations', diff.genericRelations ?? diff.generic_relations, colors, relationLabel));
   lines.push(...renderListDiff('Groups', diff.groups, colors, itemLabel));
   lines.push(...renderListDiff('Sections', diff.sections, colors, itemLabel));
   lines.push(...renderListDiff('Tags', diff.tags, colors, itemLabel));

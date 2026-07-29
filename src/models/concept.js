@@ -3,6 +3,7 @@ import { LocalizedConcept } from './localized-concept.js';
 import { RelatedConcept } from './related-concept.js';
 import { PartitiveHyperedge } from './partitive-hyperedge.js';
 import { PartitiveRelation } from './partitive-relation.js';
+import { GenericRelation } from './generic-relation.js';
 import { migrateHyperedgeToRelation } from '../migration/partitive-relation-migrator.js';
 import { ConceptReference } from './concept-reference.js';
 import { ConceptDate } from './concept-date.js';
@@ -40,6 +41,7 @@ export class Concept extends GlossaristModel {
     // ../partitive-hyperedge.js for direct instantiation, but Concept
     // exposes only v2).
     this.partitiveHyperedges = this.partitiveRelations;
+    this.genericRelations = _mapInstances(data.genericRelations ?? data.generic_relations ?? [], GenericRelation);
     this.domains = _normalizeDomains(data.domains, data.groups);
     this.groups = Array.isArray(data.groups)
       ? data.groups.map(g => typeof g === 'string' ? g : (g?.id ?? g?.sectionId ?? null)).filter(Boolean)
@@ -201,6 +203,9 @@ export class Concept extends GlossaristModel {
 
     if (this.relatedConcepts.length > 0) {
       obj.related = this.relatedConcepts.map(rc => rc.toJSON());
+    }
+    if (this.genericRelations.length > 0) {
+      obj.generic_relations = this.genericRelations.map(r => r.toJSON());
     }
     if (this.partitiveRelations.length > 0) {
       obj.partitive_relations = this.partitiveRelations.map(r => r.toJSON());

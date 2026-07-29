@@ -10,6 +10,9 @@ export class ConceptSerializer {
     // v2: emit partitive_relations (was partitive_hyperedges in v1).
     // Concept.partitiveRelations is the canonical v2 property; the
     // v1 alias `partitiveHyperedges` points at the same array.
+    if (concept.genericRelations && concept.genericRelations.length > 0) {
+      doc.generic_relations = concept.genericRelations.map(r => r.toJSON());
+    }
     if (concept.partitiveRelations && concept.partitiveRelations.length > 0) {
       doc.partitive_relations = concept.partitiveRelations.map(r => r.toJSON());
     }
@@ -54,6 +57,9 @@ export class ConceptSerializer {
       mainDoc.related = concept.relatedConcepts.map(rc => rc.toJSON());
     }
     // v2 wire name. Concept loads both v1 and v2 input but emits only v2.
+    if (concept.genericRelations && concept.genericRelations.length > 0) {
+      mainDoc.generic_relations = concept.genericRelations.map(r => r.toJSON());
+    }
     if (concept.partitiveRelations && concept.partitiveRelations.length > 0) {
       mainDoc.partitive_relations = concept.partitiveRelations.map(r => r.toJSON());
     }

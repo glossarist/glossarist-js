@@ -68,6 +68,7 @@ export class ConceptParser {
       tables: doc.tables,
       formulas: doc.formulas,
       partitiveRelations: _resolvePartitiveData(doc),
+      genericRelations: _resolveGenericData(doc),
       raw: doc,
     });
   }
@@ -92,6 +93,7 @@ export class ConceptParser {
       localizations,
       related: _normalizeRelated(mc.related),
       partitiveRelations: _resolvePartitiveData(mc),
+      genericRelations: _resolveGenericData(mc),
       domains: mc.data.domains,
       groups: mc.data.groups,
       dates: mc.dates ?? mc.data?.dates,
@@ -141,6 +143,11 @@ function _resolvePartitiveData(container) {
       .filter(h => h != null);
   }
   return null;
+}
+
+function _resolveGenericData(container) {
+  const v = container?.generic_relations ?? container?.genericRelations;
+  return Array.isArray(v) ? v : [];
 }
 
 function _normalizeRelated(arr) {

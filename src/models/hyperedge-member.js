@@ -23,13 +23,7 @@ import {
   DEFAULT_COUNT,
   isValidCount,
 } from './partitive-count.js';
-
-// Module-private (not exported). Single source of truth for the
-// invalid (presence, count) combination rejected at construction.
-const INVALID_PRESENCE_COUNT_COMBO = {
-  presence: PARTITIVE_PRESENCE.OPTIONAL,
-  count: PARTITIVE_COUNT.AT_LEAST_ONE,
-};
+import { multiplicityFromPair } from './multiplicity.js';
 
 export class HyperedgeMember extends GlossaristModel {
   constructor(data = {}) {
@@ -113,14 +107,9 @@ function _resolveDelimiting(value) {
 }
 
 function _assertValidPair(presence, count) {
-  if (
-    presence === INVALID_PRESENCE_COUNT_COMBO.presence &&
-    count === INVALID_PRESENCE_COUNT_COMBO.count
-  ) {
-    throw new Error(
-      'HyperedgeMember presence=optional + count=at_least_one is invalid — ' +
-      'it collapses to optional + multiple (zero or more). ' +
-      'Use presence: optional, count: multiple instead.',
-    );
-  }
+  // Delegate to the multiplicity SSOT (Phase 8 of TODO.abstract-hyperedge).
+  // The canonical error string lives in one place: multiplicity.js.
+  // Calling multiplicityFromPair throws on the invalid combination;
+  // we don't need to duplicate the error message here.
+  multiplicityFromPair(presence, count);
 }

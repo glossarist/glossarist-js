@@ -1,32 +1,39 @@
-// RelationLoader — runtime loader for per-file n-ary relation YAMLs.
+// HyperedgeLoader — runtime loader for per-file hyperedge YAMLs.
 //
 // Walks a `relations/<comprehensive-id>/<slug>.yaml` directory and
-// dispatches each file to the appropriate class (PartitiveHyperedge
-// or GenericHyperedge) based on its `type` field.
+// dispatches each file to the appropriate class (PartitiveHyperedge,
+// GenericHyperedge, future leaves) based on its `type` field, via
+// HyperedgeRegistry.
 //
 // The wire-shape contract is owned by the JSON Schema at
 // `schemas/v3/relation.yaml` (concept-model repo) — this loader
 // produces the corresponding JS model instances. See
 // docs/design/relations-as-files.md (concept-model).
 //
-// This is the runtime equivalent of concept-model's
-// CheckPartitiveRelationCoherence#each_relation /
-// CheckGenericRelationCoherence#each_relation validators.
-// Both readers and validators must agree on the type-dispatch
-// table (TYPE_TO_CLASS). Keep them in sync via the JSON Schema.
+// Adding a new hyperedge type means: declare the leaf class with the
+// metadata block, register it. The loader picks it up automatically —
+// no edits here.
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import * as yaml from 'js-yaml';
-import { TYPE_TO_CLASS } from './relation-type-registry.js';
+import { HyperedgeRegistry } from './hyperedge-registry.js';
 
-/**
- * Per-type class dispatch. Re-exported from the registry so the
- * loader's old `TYPE_TO_CLASS` import path keeps working. The
- * registry is the single source of truth — adding a relation type
- * there makes it available to both the loader and Concept's
- * unified relations array.
- */
-export { TYPE_TO_CLASS };
+// Backward-compat: snapshot of registered classes keyed by typeTag.
+// Prefer HyperedgeRegistry.forTypeTag() for new code — this snapshot
+// is frozen at module load and won't pick up runtime registrations
+// from tests (the OCP test in Phase 11 registers a mock type after
+// import).
+export const TYPE_TO_CLASS = new Proxy({}, {
+  get(_target, prop) {
+    return HyperedgeRegistry.forTypeTag(prop);
+  },
+  ownKeys() {
+    return HyperedgeRegistry.allTypeTags();
+  },
+  getOwnPropertyDescriptor() {
+    return { enumerable: true, configurable: true };
+  },
+});
 
 /**
  * Thrown by `loadAll` when a relation file has an unknown `type`,
@@ -50,8 +57,7 @@ export class RelationLoadError extends Error {
  *   schema in schemas/v3/relation.yaml).
  * @returns {Map<string, Array<AbstractHyperedge>>} — for each
  *   comprehensive id, the list of relations that have it as their
- *   comprehensive. Type-discriminated (PartitiveHyperedge or
- *   GenericHyperedge).
+ *   comprehensive.
  */
 export function loadAll(relationsDir) {
   const result = new Map();
@@ -82,7 +88,7 @@ export function loadAll(relationsDir) {
  * `RelationLoader.loadAll(dir)`. The individual functions are also
  * exported directly for tree-shakeable single-call sites.
  */
-export const RelationLoader = Object.freeze({ loadAll });
+export const RelationLoader = Object.freeze({ loadAll, loadOne });
 
 /**
  * Load a single relation file. Returns null if the file is missing,
@@ -99,7 +105,7 @@ export function loadOne(path) {
   }
   if (!doc || typeof doc !== 'object') return null;
   if (!doc.type) return null;
-  const Cls = TYPE_TO_CLASS[doc.type];
+  const Cls = HyperedgeRegistry.forTypeTag(doc.type);
   if (!Cls) return null;  // Unknown type — let the validator report it
   return Cls.fromJSON(doc);
 }

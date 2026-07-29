@@ -26,7 +26,6 @@ export {
 } from './gloss-designation.js';
 export { detailedDefinitionToQuads } from './gloss-detailed-definition.js';
 export { conceptSourceToQuads } from './gloss-source.js';
-export { hyperedgeToQuads, hyperedgeSubjectUri } from './gloss-hyperedge.js';
 export { partitiveMemberToQuads, MULTIPLICITY_NS, PRESENCE_NS, COUNT_NS } from './gloss-partitive-member.js';
 export { partitiveRelationToQuads, partitiveRelationSubjectUri } from './gloss-partitive-relation.js';
 export {

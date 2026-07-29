@@ -4,8 +4,8 @@ import { ConceptDate } from '../models/concept-date.js';
 import { RelatedConcept } from '../models/related-concept.js';
 import { Designation } from '../models/designation.js';
 import { DetailedDefinition } from '../models/detailed-definition.js';
-import { PartitiveRelation } from '../models/partitive-relation.js';
-import { GenericRelation } from '../models/generic-relation.js';
+import { PartitiveHyperedge } from '../models/partitive-hyperedge.js';
+import { GenericHyperedge } from '../models/generic-hyperedge.js';
 import { Added, Removed, Changed } from './change.js';
 import { ListDiff } from './list-diff.js';
 import { TextDiff, TextHunk } from './text-diff.js';
@@ -112,14 +112,14 @@ function applyConceptLevelPatch(json, conceptDiff) {
   // diff by concrete class and apply each half to its own wire key.
   // The wire format stays split (partitive_relations + generic_relations)
   // for backward compat with consumers; the in-memory model is unified.
-  const partitiveDiff = partitionListDiff(conceptDiff.relations, PartitiveRelation);
-  const genericDiff = partitionListDiff(conceptDiff.relations, GenericRelation);
+  const partitiveDiff = partitionListDiff(conceptDiff.relations, PartitiveHyperedge);
+  const genericDiff = partitionListDiff(conceptDiff.relations, GenericHyperedge);
 
   if (partitiveDiff.hasChanges) {
     json.partitive_relations = applyListPatch(
       json.partitive_relations ?? json.partitive_hyperedges ?? [],
       partitiveDiff,
-      PartitiveRelation.identityOf,
+      PartitiveHyperedge.identityOf,
     );
     // v1 wire key is removed once v2 has replaced it; otherwise leave
     // v1 data in place for backward-compat readers.
@@ -131,7 +131,7 @@ function applyConceptLevelPatch(json, conceptDiff) {
     json.generic_relations = applyListPatch(
       json.generic_relations ?? [],
       genericDiff,
-      GenericRelation.identityOf,
+      GenericHyperedge.identityOf,
     );
   }
 
@@ -253,7 +253,7 @@ function toJsonValue(value) {
 // Project a unified relations ListDiff onto a single concrete class.
 // Entries whose value (old or new) is an instance of `Cls` survive;
 // everything else is filtered out. Cross-type changed entries (e.g.
-// old was PartitiveRelation, new is GenericRelation) are not yet
+// old was PartitiveHyperedge, new is GenericHyperedge) are not yet
 // supported — those would need to surface as a remove + add pair.
 function partitionListDiff(listDiff, Cls) {
   if (!listDiff) return new ListDiff({ added: [], removed: [], changed: [] });

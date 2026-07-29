@@ -1,18 +1,18 @@
-// GenericRelation — an ISO 704 / ISO 1087-1 / ISO 12620 generic
+// GenericHyperedge — an ISO 704 / ISO 1087-1 / ISO 12620 generic
 // relation connecting a comprehensive concept (the genus) to two
 // or more specific concepts (the species) which together constitute
 // a decomposition by some criterion of subdivision.
 //
-// Mirror of PartitiveRelation. Multiple GenericRelations on the same
+// Mirror of PartitiveHyperedge. Multiple GenericRelations on the same
 // comprehensive distinguished by `criterion` is the OIML pattern
 // (5.1 measurement standard has 6 criterion groups).
 //
 // See docs/design/generic-relation.md (concept-model repo).
 
-import { AbstractNaryRelation } from './abstract-nary-relation.js';
+import { AbstractHyperedge } from './abstract-hyperedge.js';
 import { GenericMember } from './generic-member.js';
 
-export class GenericRelation extends AbstractNaryRelation {
+export class GenericHyperedge extends AbstractHyperedge {
   constructor(data = {}) {
     super(data);
     this.members = data?.members == null
@@ -36,8 +36,8 @@ export class GenericRelation extends AbstractNaryRelation {
   }
 
   static fromJSON(data) {
-    return new GenericRelation(data);
+    return new GenericHyperedge(data);
   }
 }
 
-export default GenericRelation;
+export default GenericHyperedge;

@@ -1,287 +1,412 @@
+// Comprehensive specs for the v2 PartitiveHyperedge model suite.
+//
+// Covers:
+//   - Construction and validation for PartitiveHyperedge, PartitiveMember,
+//     Completeness, Multiplicity (ISO 704:2022).
+//   - Identity for diff/patch.
+//   - Migration from v1 PartitiveHyperedge shape.
+//   - toJSON / fromJSON round-trip.
+//   - ISO 704 invariants (≥2 partitives, no self-loop, etc.).
+//   - ISO 12620 coordinate-concept coherence (criterion field).
+
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { PartitiveHyperedge } from '../../src/models/partitive-hyperedge.js';
+import { PartitiveMember } from '../../src/models/partitive-member.js';
 import {
-  PARTITIVE_ENUMERATION,
-  PARTITIVE_ENUMERATION_VALUES,
-  isValidPartitiveEnumeration,
-} from '../../src/models/partitive-enumeration.js';
+  COMPLETENESS,
+  COMPLETENESS_VALUES,
+  DEFAULT_COMPLETENESS,
+  isValidCompleteness,
+} from '../../src/models/completeness.js';
 import {
-  PLURALITY_MARKER,
-  PLURALITY_MARKER_VALUES,
-  isValidPluralityMarker,
-} from '../../src/models/plurality-marker.js';
-import { Concept } from '../../src/models/concept.js';
+  MULTIPLICITY,
+  DEFAULT_MULTIPLICITY,
+  isValidMultiplicity,
+  multiplicityFromPair,
+} from '../../src/models/multiplicity.js';
+import {
+  migrateHyperedgeToRelation,
+  downgradeRelationToHyperedge,
+} from '../../src/migration/partitive-relation-migrator.js';
+
+describe('Completeness enum', () => {
+  it('exposes complete and partial', () => {
+    assert.equal(COMPLETENESS.COMPLETE, 'complete');
+    assert.equal(COMPLETENESS.PARTIAL, 'partial');
+  });
+
+  it('default is complete', () => {
+    assert.equal(DEFAULT_COMPLETENESS, 'complete');
+  });
+
+  it('validates values', () => {
+    assert.equal(isValidCompleteness('complete'), true);
+    assert.equal(isValidCompleteness('partial'), true);
+    assert.equal(isValidCompleteness('closed'), false);  // v1 name rejected
+    assert.equal(isValidCompleteness(null), false);
+  });
+
+  it('is frozen', () => {
+    assert.ok(Object.isFrozen(COMPLETENESS_VALUES));
+  });
+});
+
+describe('Multiplicity enum (ISO 704:2022)', () => {
+  it('exposes all 5 values', () => {
+    assert.equal(MULTIPLICITY.COMPULSORY, 'compulsory');
+    assert.equal(MULTIPLICITY.OPTIONAL, 'optional');
+    assert.equal(MULTIPLICITY.COMPULSORY_MULTIPLE, 'compulsory_multiple');
+    assert.equal(MULTIPLICITY.OPTIONAL_MULTIPLE, 'optional_multiple');
+    assert.equal(MULTIPLICITY.COMPULSORY_AT_LEAST_ONE, 'compulsory_at_least_one');
+  });
+
+  it('default is compulsory', () => {
+    assert.equal(DEFAULT_MULTIPLICITY, 'compulsory');
+  });
+
+  it('validates values', () => {
+    assert.equal(isValidMultiplicity('compulsory'), true);
+    assert.equal(isValidMultiplicity('optional'), true);
+    assert.equal(isValidMultiplicity('confirmed'), false);  // old certainty name rejected
+    assert.equal(isValidMultiplicity(null), false);
+  });
+});
+
+describe('PartitiveMember', () => {
+  it('requires a non-empty ref', () => {
+    assert.throws(
+      () => new PartitiveMember({ ref: {} }),
+      /non-empty/,
+    );
+  });
+
+  it('defaults to presence=required, count=exactly_one, is_delimiting=false', () => {
+    const m = new PartitiveMember({ ref: { source: 'VIM', id: '1' } });
+    assert.equal(m.presence, 'required');
+    assert.equal(m.count, 'exactly_one');
+    assert.equal(multiplicityFromPair(m.presence, m.count), 'compulsory');
+    assert.equal(m.is_delimiting, false);
+    assert.equal(m.isDelimiting, false);
+  });
+
+  it('accepts presence=optional + is_delimiting: true', () => {
+    const m = new PartitiveMember({
+      ref: { source: 'VIM', id: '1' },
+      presence: 'optional',
+      is_delimiting: true,
+    });
+    assert.equal(m.isOptional, true);
+    assert.equal(m.isDelimiting, true);
+  });
+
+  it('rejects invalid presence', () => {
+    assert.throws(
+      () => new PartitiveMember({ ref: { source: 'VIM', id: '1' }, presence: 'maybe' }),
+      /invalid presence/,
+    );
+  });
+
+  it('toJSON omits defaults', () => {
+    const m = new PartitiveMember({ ref: { source: 'VIM', id: '1' } });
+    assert.deepEqual(m.toJSON(), { ref: { source: 'VIM', id: '1' } });
+  });
+
+  it('toJSON includes non-default presence/count and is_delimiting', () => {
+    const m = new PartitiveMember({
+      ref: { source: 'VIM', id: '1' },
+      presence: 'optional',
+      is_delimiting: true,
+    });
+    assert.equal(m.toJSON().presence, 'optional');
+    assert.equal(m.toJSON().is_delimiting, true);
+  });
+
+  it('identity includes ref only', () => {
+    const a = new PartitiveMember({ ref: { source: 'VIM', id: '1' } });
+    const b = new PartitiveMember({ ref: { source: 'VIM', id: '1' }, presence: 'optional' });
+    assert.equal(a.identity(), b.identity());
+  });
+});
 
 describe('PartitiveHyperedge', () => {
+  function makeMember(id) {
+    return { ref: { source: 'VIM', id } };
+  }
+
   describe('construction', () => {
-    it('accepts comprehensive, parts, enumeration, markers, content', () => {
-      const he = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '2.9' },
-        parts: [
-          { source: 'VIM', id: '2.10' },
-          { source: 'VIM', id: '2.26' },
+    it('accepts comprehensive + 2 partitives', () => {
+      const rel = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('2'), makeMember('3')],
+      });
+      assert.equal(rel.completeness, 'complete');  // default
+      assert.equal(rel.isComplete, true);
+      assert.equal(rel.isPartial, false);
+      assert.equal(rel.isCoordinate, true);
+    });
+
+    it('requires ≥2 partitives (ISO 704)', () => {
+      assert.throws(
+        () => new PartitiveHyperedge({
+          comprehensive: { source: 'VIM', id: '1' },
+          partitives: [makeMember('2')],
+        }),
+        /≥2 partitives/,
+      );
+    });
+
+    it('requires non-empty comprehensive', () => {
+      assert.throws(
+        () => new PartitiveHyperedge({
+          comprehensive: {},
+          partitives: [makeMember('2'), makeMember('3')],
+        }),
+        /non-empty ConceptReference/,
+      );
+    });
+
+    it('rejects invalid completeness', () => {
+      assert.throws(
+        () => new PartitiveHyperedge({
+          comprehensive: { source: 'VIM', id: '1' },
+          partitives: [makeMember('2'), makeMember('3')],
+          completeness: 'closed',  // v1 name
+        }),
+        /invalid value/,
+      );
+    });
+
+    it('rejects self-loop (comprehensive as partitive)', () => {
+      assert.throws(
+        () => new PartitiveHyperedge({
+          comprehensive: { source: 'VIM', id: '1' },
+          partitives: [makeMember('1'), makeMember('2')],
+        }),
+        /self-loops/,
+      );
+    });
+  });
+
+  describe('criterion', () => {
+    it('normalizes plain string to { default: ... }', () => {
+      const rel = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('2'), makeMember('3')],
+        criterion: 'physical structure',
+      });
+      assert.deepEqual(rel.criterion, { default: 'physical structure' });
+      assert.equal(rel.hasCriterion(), true);
+    });
+
+    it('preserves lang-keyed hash', () => {
+      const rel = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('2'), makeMember('3')],
+        criterion: { eng: 'physical structure', fra: 'structure physique' },
+      });
+      assert.deepEqual(rel.criterion, {
+        eng: 'physical structure',
+        fra: 'structure physique',
+      });
+    });
+
+    it('filters non-string entries', () => {
+      const rel = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('2'), makeMember('3')],
+        criterion: { eng: 'x', num: 42 },
+      });
+      assert.deepEqual(rel.criterion, { eng: 'x' });
+    });
+
+    it('null criterion preserved', () => {
+      const rel = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('2'), makeMember('3')],
+      });
+      assert.equal(rel.criterion, null);
+      assert.equal(rel.hasCriterion(), false);
+    });
+  });
+
+  describe('per-member presence/count + is_delimiting (ISO 704:2022)', () => {
+    it('accepts members with non-default presence/count and delimiting', () => {
+      const rel = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [
+          { ref: { source: 'VIM', id: '2' }, presence: 'optional', is_delimiting: true },
+          { ref: { source: 'VIM', id: '3' } },
         ],
-        enumeration: 'closed',
-        markers: ['double'],
-        content: 'value + uncertainty',
       });
-
-      assert.equal(he.comprehensive.id, '2.9');
-      assert.deepEqual(he.parts.map(p => p.id), ['2.10', '2.26']);
-      assert.equal(he.enumeration, 'closed');
-      assert.deepEqual(he.markers, ['double']);
-      // Plain-string content is normalized to { default: '...' }
-      assert.deepEqual(he.content, { default: 'value + uncertainty' });
-      assert.equal(he.contentString, 'value + uncertainty');
+      assert.equal(rel.partitives[0].isOptional, true);
+      assert.equal(rel.partitives[0].isDelimiting, true);
+      assert.equal(multiplicityFromPair(rel.partitives[1].presence, rel.partitives[1].count), 'compulsory');
     });
 
-    it('defaults enumeration to closed when omitted', () => {
-      const he = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.1' },
-        parts: [{ source: 'VIM', id: '1.2' }],
+    it('defaults presence=required, count=exactly_one, is_delimiting=false', () => {
+      const rel = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('2'), makeMember('3')],
       });
-      assert.equal(he.enumeration, 'closed');
-      assert.equal(he.hasEnumeration(PARTITIVE_ENUMERATION.CLOSED), true);
-      assert.equal(he.hasEnumeration(PARTITIVE_ENUMERATION.OPEN), false);
-    });
-
-    it('initializes markers to empty array when omitted', () => {
-      const he = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.1' },
-        parts: [{ source: 'VIM', id: '1.2' }],
-      });
-      assert.deepEqual(he.markers, []);
-      assert.equal(he.isMarked, false);
-    });
-  });
-
-  describe('enumeration validation', () => {
-    it('rejects unknown enumeration values', () => {
-      assert.throws(
-        () => new PartitiveHyperedge({
-          comprehensive: { source: 'VIM', id: '1.1' },
-          parts: [{ source: 'VIM', id: '1.2' }],
-          enumeration: 'partial',
-        }),
-        /invalid enumeration/,
-      );
-    });
-
-    it('throws on invalid markers (per P1: symmetric with enumeration)', () => {
-      assert.throws(
-        () => new PartitiveHyperedge({
-          comprehensive: { source: 'VIM', id: '1.1' },
-          parts: [{ source: 'VIM', id: '1.2' }],
-          markers: ['double', 'dotted', 'dashed'],
-        }),
-        /invalid plurality marker/,
-      );
-    });
-
-    it('throws on duplicate markers', () => {
-      assert.throws(
-        () => new PartitiveHyperedge({
-          comprehensive: { source: 'VIM', id: '1.1' },
-          parts: [{ source: 'VIM', id: '1.2' }],
-          markers: ['double', 'double'],
-        }),
-        /duplicate plurality marker/,
-      );
-    });
-  });
-
-  describe('predicates', () => {
-    it('isMarked reflects presence of any marker', () => {
-      const marked = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.1' },
-        parts: [{ source: 'VIM', id: '1.2' }],
-        markers: ['dashed'],
-      });
-      const unmarked = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.1' },
-        parts: [{ source: 'VIM', id: '1.2' }],
-      });
-      assert.equal(marked.isMarked, true);
-      assert.equal(unmarked.isMarked, false);
-    });
-
-    it('hasMarker reflects specific markers (data-driven)', () => {
-      const double = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.1' },
-        parts: [{ source: 'VIM', id: '1.2' }],
-        markers: ['double'],
-      });
-      const dashed = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.1' },
-        parts: [{ source: 'VIM', id: '1.2' }],
-        markers: ['dashed'],
-      });
-      const both = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.1' },
-        parts: [{ source: 'VIM', id: '1.2' }],
-        markers: ['double', 'dashed'],
-      });
-      assert.equal(double.hasMarker(PLURALITY_MARKER.DOUBLE), true);
-      assert.equal(double.hasMarker(PLURALITY_MARKER.DASHED), false);
-      assert.equal(dashed.hasMarker(PLURALITY_MARKER.DOUBLE), false);
-      assert.equal(dashed.hasMarker(PLURALITY_MARKER.DASHED), true);
-      assert.equal(both.hasMarker(PLURALITY_MARKER.DOUBLE), true);
-      assert.equal(both.hasMarker(PLURALITY_MARKER.DASHED), true);
-    });
-
-    it('hasEnumeration reflects enumeration (data-driven)', () => {
-      const closed = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.1' },
-        parts: [{ source: 'VIM', id: '1.2' }],
-        enumeration: 'closed',
-      });
-      const open = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.1' },
-        parts: [{ source: 'VIM', id: '1.2' }],
-        enumeration: 'open',
-      });
-      assert.equal(closed.hasEnumeration(PARTITIVE_ENUMERATION.CLOSED), true);
-      assert.equal(closed.hasEnumeration(PARTITIVE_ENUMERATION.OPEN), false);
-      assert.equal(open.hasEnumeration(PARTITIVE_ENUMERATION.CLOSED), false);
-      assert.equal(open.hasEnumeration(PARTITIVE_ENUMERATION.OPEN), true);
+      assert.equal(multiplicityFromPair(rel.partitives[0].presence, rel.partitives[0].count), 'compulsory');
+      assert.equal(rel.partitives[0].is_delimiting, false);
     });
   });
 
   describe('toJSON / fromJSON round-trip', () => {
-    it('round-trips a closed hyperedge with markers and content', () => {
-      const he = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '2.9' },
-        parts: [
-          { source: 'VIM', id: '2.10' },
-          { source: 'VIM', id: '2.26' },
+    it('round-trips a complete relation with criterion', () => {
+      const rel = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [
+          { ref: { source: 'VIM', id: '2' } },
+          { ref: { source: 'VIM', id: '3' }, presence: 'optional' },
         ],
-        enumeration: 'closed',
-        markers: ['double'],
-        content: 'value + uncertainty',
+        completeness: 'partial',
+        criterion: { eng: 'functional subsystem' },
       });
-      const restored = PartitiveHyperedge.fromJSON(he.toJSON());
-
-      assert.equal(restored.comprehensive.id, '2.9');
-      assert.deepEqual(restored.parts.map(p => p.id), ['2.10', '2.26']);
-      assert.equal(restored.enumeration, 'closed');
-      assert.deepEqual(restored.markers, ['double']);
-      assert.deepEqual(restored.content, { default: 'value + uncertainty' });
+      const restored = PartitiveHyperedge.fromJSON(rel.toJSON());
+      assert.equal(restored.comprehensive.id, '1');
+      assert.equal(restored.partitives.length, 2);
+      assert.equal(restored.partitives[0].ref.id, '2');
+      assert.equal(multiplicityFromPair(restored.partitives[0].presence, restored.partitives[0].count), 'compulsory');
+      assert.equal(multiplicityFromPair(restored.partitives[1].presence, restored.partitives[1].count), 'optional');
+      assert.equal(restored.completeness, 'partial');
+      assert.deepEqual(restored.criterion, { eng: 'functional subsystem' });
     });
 
-    it('round-trips an open hyperedge without markers', () => {
-      const he = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.3' },
-        parts: [{ source: 'VIM', id: '1.4' }],
-        enumeration: 'open',
+    it('omits criterion from JSON when absent', () => {
+      const rel = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('2'), makeMember('3')],
       });
-      const restored = PartitiveHyperedge.fromJSON(he.toJSON());
-      assert.equal(restored.isOpen, true);
-      assert.equal(restored.isMarked, false);
-    });
-
-    it('omits markers and content from JSON when absent', () => {
-      const he = new PartitiveHyperedge({
-        comprehensive: { source: 'VIM', id: '1.3' },
-        parts: [{ source: 'VIM', id: '1.4' }],
-      });
-      const json = he.toJSON();
-      assert.equal('markers' in json, false);
-      assert.equal('content' in json, false);
+      const json = rel.toJSON();
+      assert.equal('criterion' in json, false);
     });
   });
 
-  describe('integration with Concept', () => {
-    // v2 wire-through: Concept auto-migrates v1 hyperedge data to v2
-    // PartitiveRelation instances. The .partitiveHyperedges property
-    // is now a backward-compat alias for .partitiveRelations.
-    it('Concept auto-migrates v1 partitive_hyperedges to v2 partitiveRelations', () => {
-      const c = new Concept({
-        id: '112-02-09',
-        partitive_hyperedges: [
-          {
-            comprehensive: { source: 'VIM', id: '112-02-09' },
-            parts: [
-              { source: 'VIM', id: '112-02-10' },
-              { source: 'VIM', id: '112-03-26' },
-            ],
-            enumeration: 'closed',
-            markers: ['double'],
-          },
-        ],
+  describe('identity', () => {
+    it('same comprehensive + same partitive set = same identity', () => {
+      const a = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('2'), makeMember('3')],
       });
-      assert.equal(c.partitiveRelations.length, 1);
-      const rel = c.partitiveRelations[0];
-      assert.equal(rel.comprehensive.id, '112-02-09');
-      assert.deepEqual(rel.partitives.map(p => p.ref.id), ['112-02-10', '112-03-26']);
-      assert.equal(rel.isComplete, true);  // 'closed' → 'complete'
-      // v1 'double' marker is dropped in v2 (markers are replaced by
-      // per-member multiplicity + is_delimiting per ISO 704:2022).
-      // Migration sets a warning but no longer maps to plurality.
+      const b = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('3'), makeMember('2')],  // different order
+      });
+      assert.equal(a.identity(), b.identity());
     });
 
-    it('Concept.toJSON emits partitive_relations (v2 wire name)', () => {
-      const c = new Concept({
-        id: '112-02-09',
-        partitive_hyperedges: [
-          {
-            comprehensive: { source: 'VIM', id: '112-02-09' },
-            parts: [
-              { source: 'VIM', id: '112-02-10' },
-              { source: 'VIM', id: '112-03-26' },
-            ],
-            enumeration: 'closed',
-          },
-        ],
+    it('criterion/completeness/multiplicity changes do NOT change identity', () => {
+      const a = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('2'), makeMember('3')],
+        completeness: 'complete',
       });
-      const json = c.toJSON();
-      assert.ok(Array.isArray(json.partitive_relations));
-      assert.equal(json.partitive_relations.length, 1);
-      assert.equal(json.partitive_relations[0].comprehensive.id, '112-02-09');
-      // v1 wire key is NOT emitted (v2 is canonical)
-      assert.equal('partitive_hyperedges' in json, false);
-    });
-
-    it('Concept tolerates absence of partitive_hyperedges', () => {
-      const c = new Concept({ id: '1' });
-      assert.deepEqual(c.partitiveRelations, []);
-      assert.equal('partitive_relations' in c.toJSON(), false);
+      const b = new PartitiveHyperedge({
+        comprehensive: { source: 'VIM', id: '1' },
+        partitives: [makeMember('2'), makeMember('3')],
+        completeness: 'partial',
+        criterion: { eng: 'criterion' },
+      });
+      assert.equal(a.identity(), b.identity());
     });
   });
 });
 
-describe('PartitiveEnumeration', () => {
-  it('exposes CLOSED and OPEN constants', () => {
-    assert.equal(PARTITIVE_ENUMERATION.CLOSED, 'closed');
-    assert.equal(PARTITIVE_ENUMERATION.OPEN, 'open');
+describe('v1 → v2 migration', () => {
+  it('migrates closed hyperedge to complete relation', () => {
+    const v1 = {
+      comprehensive: { source: 'VIM', id: '1' },
+      parts: [{ source: 'VIM', id: '2' }, { source: 'VIM', id: '3' }],
+      enumeration: 'closed',
+    };
+    const v2 = migrateHyperedgeToRelation(v1);
+    assert.equal(v2.completeness, 'complete');
+    assert.deepEqual(v2.partitives, [
+      { ref: { source: 'VIM', id: '2' }, presence: 'required', count: 'exactly_one' },
+      { ref: { source: 'VIM', id: '3' }, presence: 'required', count: 'exactly_one' },
+    ]);
   });
 
-  it('VALUES is frozen', () => {
-    assert.ok(Object.isFrozen(PARTITIVE_ENUMERATION_VALUES));
+  it('migrates open hyperedge to partial relation', () => {
+    const v1 = {
+      comprehensive: { source: 'VIM', id: '1' },
+      parts: [{ source: 'VIM', id: '2' }, { source: 'VIM', id: '3' }],
+      enumeration: 'open',
+    };
+    const v2 = migrateHyperedgeToRelation(v1);
+    assert.equal(v2.completeness, 'partial');
   });
 
-  it('isValidPartitiveEnumeration accepts closed and open, rejects others', () => {
-    assert.equal(isValidPartitiveEnumeration('closed'), true);
-    assert.equal(isValidPartitiveEnumeration('open'), true);
-    assert.equal(isValidPartitiveEnumeration('partial'), false);
-    assert.equal(isValidPartitiveEnumeration(null), false);
-  });
-});
-
-describe('PluralityMarker', () => {
-  it('exposes DOUBLE and DASHED constants', () => {
-    assert.equal(PLURALITY_MARKER.DOUBLE, 'double');
-    assert.equal(PLURALITY_MARKER.DASHED, 'dashed');
+  it('drops markers with migration warning (v2 uses per-member multiplicity)', () => {
+    const v1 = {
+      comprehensive: { source: 'VIM', id: '1' },
+      parts: [{ source: 'VIM', id: '2' }, { source: 'VIM', id: '3' }],
+      markers: ['double'],
+    };
+    const v2 = migrateHyperedgeToRelation(v1);
+    assert.equal(v2.plurality, undefined);
+    assert.match(v2.migrationWarning, /markers.*dropped/);
   });
 
-  it('VALUES is frozen', () => {
-    assert.ok(Object.isFrozen(PLURALITY_MARKER_VALUES));
+  it('drops multiple markers with migration warning', () => {
+    const v1 = {
+      comprehensive: { source: 'VIM', id: '1' },
+      parts: [{ source: 'VIM', id: '2' }, { source: 'VIM', id: '3' }],
+      markers: ['double', 'dashed'],
+    };
+    const v2 = migrateHyperedgeToRelation(v1);
+    assert.equal(v2.plurality, undefined);
+    assert.match(v2.migrationWarning, /markers.*dropped/);
   });
 
-  it('isValidPluralityMarker accepts double and dashed, rejects others', () => {
-    assert.equal(isValidPluralityMarker('double'), true);
-    assert.equal(isValidPluralityMarker('dashed'), true);
-    assert.equal(isValidPluralityMarker('dotted'), false);
-    assert.equal(isValidPluralityMarker(null), false);
+  it('drops content field with migration warning', () => {
+    const v1 = {
+      comprehensive: { source: 'VIM', id: '1' },
+      parts: [{ source: 'VIM', id: '2' }, { source: 'VIM', id: '3' }],
+      content: 'prose text',
+    };
+    const v2 = migrateHyperedgeToRelation(v1);
+    assert.equal('content' in v2, false);
+    assert.match(v2.migrationWarning, /content/);
+  });
+
+  it('flags single-part hyperedges with a warning (cannot construct v2)', () => {
+    const v1 = {
+      comprehensive: { source: 'VIM', id: '1' },
+      parts: [{ source: 'VIM', id: '2' }],
+    };
+    const v2 = migrateHyperedgeToRelation(v1);
+    assert.match(v2.migrationWarning, /≥2/);
+  });
+
+  it('idempotent on v2 input (no v1 fields present)', () => {
+    const v2 = {
+      comprehensive: { source: 'VIM', id: '1' },
+      partitives: [{ ref: { source: 'VIM', id: '2' } }, { ref: { source: 'VIM', id: '3' } }],
+      completeness: 'complete',
+    };
+    // migrateHyperedgeToRelation should not be called on v2 data,
+    // but if it is, it produces a harmless re-serialization.
+    const result = migrateHyperedgeToRelation(v2);
+    assert.equal(result.completeness, 'complete');
+  });
+
+  it('downgradeRelationToHyperedge is the inverse for round-trip tooling', () => {
+    const v1 = {
+      comprehensive: { source: 'VIM', id: '1' },
+      parts: [{ source: 'VIM', id: '2' }, { source: 'VIM', id: '3' }],
+      enumeration: 'closed',
+    };
+    const v2 = migrateHyperedgeToRelation(v1);
+    delete v2.migrationWarning;
+    const back = downgradeRelationToHyperedge(v2);
+    assert.deepEqual(back.comprehensive, v1.comprehensive);
+    assert.deepEqual(back.parts, v1.parts);
+    assert.equal(back.enumeration, 'closed');
+    // markers are lossily dropped in v2 (no longer round-trip through
+    // plurality; v2 uses per-member multiplicity + is_delimiting)
   });
 });

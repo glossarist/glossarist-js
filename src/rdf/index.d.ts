@@ -11,7 +11,7 @@ import type { Designation } from '../models/index';
 import type { DetailedDefinition } from '../models/index';
 import type { ConceptSource } from '../models/index';
 import type { NonVerbRep, Figure, Table, Formula } from '../models/index';
-import type { PartitiveHyperedge, PartitiveRelation, PartitiveMember } from '../models/index';
+import type { PartitiveHyperedge, PartitiveHyperedge, PartitiveMember } from '../models/index';
 
 export { PRED, PREFIXES } from './predicates';
 export type PredicateMap = typeof PRED;
@@ -96,7 +96,7 @@ export declare function hyperedgeSubjectUri(
   index: number,
 ): string;
 
-// ── PartitiveRelation emitter (v2) ────────────────────────────────────
+// ── PartitiveHyperedge emitter (v2) ────────────────────────────────────
 
 export interface PartitiveRelationEmitOptions {
   parentUri: string;
@@ -104,13 +104,13 @@ export interface PartitiveRelationEmitOptions {
 }
 
 export declare function partitiveRelationToQuads(
-  relation: PartitiveRelation,
+  relation: PartitiveHyperedge,
   options: PartitiveRelationEmitOptions,
 ): Generator<Quad, void, unknown>;
 
 export declare function partitiveRelationSubjectUri(
   parentUri: string,
-  relation: PartitiveRelation,
+  relation: PartitiveHyperedge,
   index: number,
 ): string;
 

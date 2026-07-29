@@ -328,11 +328,11 @@ export class PartitiveHyperedge extends GlossaristModel {
   static fromJSON(data: Record<string, unknown>): PartitiveHyperedge;
 }
 
-// v2 PartitiveRelation + GenericRelation (MECE per-member model).
+// v2 PartitiveHyperedge + GenericHyperedge (MECE per-member model).
 // These supersede the v1 PartitiveHyperedge model above. New code
 // should use v2 exclusively; the v1 model is kept for backward-compat
 // input.
-export class ConceptSystemMember extends GlossaristModel {
+export class HyperedgeMember extends GlossaristModel {
   readonly ref: ConceptRef;
   readonly presence: 'required' | 'optional';
   readonly count: 'exactly_one' | 'at_least_one' | 'multiple';
@@ -342,17 +342,17 @@ export class ConceptSystemMember extends GlossaristModel {
   delimiting(): boolean;
   identity(): string;
   toJSON(): Record<string, unknown>;
-  static fromJSON(data: Record<string, unknown>): ConceptSystemMember;
+  static fromJSON(data: Record<string, unknown>): HyperedgeMember;
   static identityOf(value: unknown): string;
 }
 
-export class PartitiveMember extends ConceptSystemMember {}
+export class PartitiveMember extends HyperedgeMember {}
 
-export class GenericMember extends ConceptSystemMember {}
+export class GenericMember extends HyperedgeMember {}
 
-export class AbstractNaryRelation extends GlossaristModel {
+export class AbstractHyperedge extends GlossaristModel {
   readonly comprehensive: ConceptRef;
-  readonly members: ConceptSystemMember[];
+  readonly members: HyperedgeMember[];
   readonly completeness: 'complete' | 'partial';
   readonly criterion: Record<string, string> | null;
   readonly sources: ConceptSource[];
@@ -362,19 +362,19 @@ export class AbstractNaryRelation extends GlossaristModel {
   readonly isPartial: boolean;
   readonly isCoordinate: boolean;
   toJSON(): Record<string, unknown>;
-  static fromJSON(data: Record<string, unknown>): AbstractNaryRelation;
+  static fromJSON(data: Record<string, unknown>): AbstractHyperedge;
   static identityOf(value: unknown): string;
 }
 
-export class PartitiveRelation extends AbstractNaryRelation {
+export class PartitiveHyperedge extends AbstractHyperedge {
   /** @deprecated use {@link members} — kept for v1/v2 wire compat. */
-  readonly partitives: ConceptSystemMember[];
-  static fromJSON(data: Record<string, unknown>): PartitiveRelation;
+  readonly partitives: HyperedgeMember[];
+  static fromJSON(data: Record<string, unknown>): PartitiveHyperedge;
   static identityOf(value: unknown): string;
 }
 
-export class GenericRelation extends AbstractNaryRelation {
-  static fromJSON(data: Record<string, unknown>): GenericRelation;
+export class GenericHyperedge extends AbstractHyperedge {
+  static fromJSON(data: Record<string, unknown>): GenericHyperedge;
   static identityOf(value: unknown): string;
 }
 
@@ -383,14 +383,14 @@ export const DEFINITION_TYPE: Readonly<Record<string, DefinitionType>>;
 export const DEFAULT_DEFINITION_TYPE: DefinitionType;
 export const DEFINITION_TYPE_VALUES: readonly DefinitionType[];
 
-export const RELATION_TYPE_TO_CLASS: Readonly<Record<string, typeof AbstractNaryRelation>>;
+export const RELATION_TYPE_TO_CLASS: Readonly<Record<string, typeof AbstractHyperedge>>;
 export class RelationLoadError extends Error {
   readonly path: string;
   constructor(path: string, message: string);
 }
 export const RelationLoader: {
-  loadAll(relationsDir: string): Map<string, AbstractNaryRelation[]>;
-  loadOne(path: string): AbstractNaryRelation | null;
+  loadAll(relationsDir: string): Map<string, AbstractHyperedge[]>;
+  loadOne(path: string): AbstractHyperedge | null;
 };
 
 export const DESIGNATION_RELATIONSHIP_TYPES: readonly string[];

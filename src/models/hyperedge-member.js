@@ -1,4 +1,4 @@
-// ConceptSystemMember — abstract base shape for members of any
+// HyperedgeMember — abstract base shape for members of any
 // n-ary concept-system relation (PartitiveMember, GenericMember,
 // future AssociativeMember, SequentialMember).
 //
@@ -31,7 +31,7 @@ const INVALID_PRESENCE_COUNT_COMBO = {
   count: PARTITIVE_COUNT.AT_LEAST_ONE,
 };
 
-export class ConceptSystemMember extends GlossaristModel {
+export class HyperedgeMember extends GlossaristModel {
   constructor(data = {}) {
     super();
     this.ref = _ensureRef(data.ref);
@@ -47,7 +47,7 @@ export class ConceptSystemMember extends GlossaristModel {
   get isDelimiting() { return this.is_delimiting === true; }
 
   identity() {
-    return ConceptSystemMember.identityOf(this);
+    return HyperedgeMember.identityOf(this);
   }
 
   toJSON() {
@@ -65,7 +65,7 @@ export class ConceptSystemMember extends GlossaristModel {
   }
 
   static fromJSON(data) {
-    return new ConceptSystemMember(data);
+    return new HyperedgeMember(data);
   }
 }
 
@@ -73,7 +73,7 @@ function _ensureRef(value) {
   const ref = value instanceof ConceptRef ? value : new ConceptRef(value ?? {});
   if (!ref.source && !ref.id && !ref.text) {
     throw new Error(
-      'ConceptSystemMember.ref must be a non-empty ConceptRef ' +
+      'HyperedgeMember.ref must be a non-empty ConceptRef ' +
       '(source, id, or text required)',
     );
   }
@@ -106,7 +106,7 @@ function _resolveDelimiting(value) {
   if (value == null) return false;
   if (typeof value !== 'boolean') {
     throw new Error(
-      `ConceptSystemMember.is_delimiting must be boolean; got ${typeof value}`,
+      `HyperedgeMember.is_delimiting must be boolean; got ${typeof value}`,
     );
   }
   return value;
@@ -118,7 +118,7 @@ function _assertValidPair(presence, count) {
     count === INVALID_PRESENCE_COUNT_COMBO.count
   ) {
     throw new Error(
-      'ConceptSystemMember presence=optional + count=at_least_one is invalid — ' +
+      'HyperedgeMember presence=optional + count=at_least_one is invalid — ' +
       'it collapses to optional + multiple (zero or more). ' +
       'Use presence: optional, count: multiple instead.',
     );

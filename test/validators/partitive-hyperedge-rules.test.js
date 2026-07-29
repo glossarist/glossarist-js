@@ -1,9 +1,9 @@
-// Specs for the three v2 PartitiveRelation validators.
+// Specs for the three v2 PartitiveHyperedge validators.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { Concept } from '../../src/models/concept.js';
-import { PartitiveRelation } from '../../src/models/partitive-relation.js';
+import { PartitiveHyperedge } from '../../src/models/partitive-hyperedge.js';
 import { PartitiveRelationCoherenceRule } from '../../src/validators/partitive-relation-coherence-rule.js';
 import { ExternalConceptShapeRule } from '../../src/validators/external-concept-shape-rule.js';
 import { BinaryHasPartRedundancyRule } from '../../src/validators/binary-has-part-redundancy-rule.js';
@@ -16,7 +16,7 @@ function runRule(Rule, concept) {
 }
 
 function makeRelation(opts = {}) {
-  return new PartitiveRelation({
+  return new PartitiveHyperedge({
     comprehensive: opts.comprehensive ?? { source: 'VIM', id: '1' },
     partitives: opts.partitives ?? [
       { ref: { source: 'VIM', id: '2' } },
@@ -55,7 +55,7 @@ describe('PartitiveRelationCoherenceRule', () => {
     });
     const result = runRule(PartitiveRelationCoherenceRule, concept);
     assert.ok(result.errors.length >= 1);
-    assert.match(result.errors[0].message, /duplicate PartitiveRelation/);
+    assert.match(result.errors[0].message, /duplicate PartitiveHyperedge/);
   });
 
   it('passes when same comprehensive but different criterion', () => {
@@ -189,7 +189,7 @@ describe('BinaryHasPartRedundancyRule', () => {
     assert.equal(result.warnings.length, 0);
   });
 
-  it('warns when binary has_part duplicates a PartitiveRelation member', () => {
+  it('warns when binary has_part duplicates a PartitiveHyperedge member', () => {
     const concept = new Concept({
       id: '1',
       partitiveRelations: [makeRelation({
@@ -207,7 +207,7 @@ describe('BinaryHasPartRedundancyRule', () => {
     assert.ok(result.warnings.some(w => /redundant/.test(w.message)));
   });
 
-  it('warns when 3+ binary has_part edges suggest PartitiveRelation territory', () => {
+  it('warns when 3+ binary has_part edges suggest PartitiveHyperedge territory', () => {
     const concept = new Concept({
       id: '1',
       relatedConcepts: [

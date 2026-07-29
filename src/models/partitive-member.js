@@ -1,6 +1,6 @@
-// PartitiveMember — one member of a PartitiveRelation. Inherits the
-// ISO 704:2022 MECE shape from ConceptSystemMember; the `comprehensive`
-// of its parent PartitiveRelation denotes the whole concept.
+// PartitiveMember — one member of a PartitiveHyperedge. Inherits the
+// ISO 704:2022 MECE shape from HyperedgeMember; the `comprehensive`
+// of its parent PartitiveHyperedge denotes the whole concept.
 //
 // Distinct leaf class for type safety and to leave room for
 // Partitive-specific extensions.
@@ -15,10 +15,10 @@
 // optional, the at-least-one constraint is vacuous and collapses to
 // (optional, multiple). Rejected at construction.
 
-import { ConceptSystemMember } from './concept-system-member.js';
+import { HyperedgeMember } from './hyperedge-member.js';
 
-export class PartitiveMember extends ConceptSystemMember {
-  // Inherits all attributes and validations from ConceptSystemMember.
+export class PartitiveMember extends HyperedgeMember {
+  // Inherits all attributes and validations from HyperedgeMember.
   // Declared as a distinct class for type safety and to leave room
   // for future partitive-specific extensions.
 }

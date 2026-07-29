@@ -5,6 +5,7 @@ import { RelatedConcept } from '../models/related-concept.js';
 import { Designation } from '../models/designation.js';
 import { DetailedDefinition } from '../models/detailed-definition.js';
 import { PartitiveRelation } from '../models/partitive-relation.js';
+import { GenericRelation } from '../models/generic-relation.js';
 import { Added, Removed, Changed } from './change.js';
 import { ListDiff } from './list-diff.js';
 import { TextDiff, TextHunk } from './text-diff.js';
@@ -67,9 +68,7 @@ export function reverseDiff(diff) {
     sources: reverseListDiff(diff.concept.sources),
     dates: reverseListDiff(diff.concept.dates),
     relatedConcepts: reverseListDiff(diff.concept.relatedConcepts),
-    partitiveRelations: reverseListDiff(
-      diff.concept.partitiveRelations ?? diff.concept.partitiveHyperedges,
-    ),
+    relations: reverseListDiff(diff.concept.relations),
     groups: reverseListDiff(diff.concept.groups),
     sections: reverseListDiff(diff.concept.sections),
     tags: reverseListDiff(diff.concept.tags),
@@ -108,15 +107,32 @@ function applyConceptLevelPatch(json, conceptDiff) {
   json.sources = applyListPatch(json.sources ?? [], conceptDiff.sources, ConceptSource.identityOf);
   json.dates = applyListPatch(json.dates ?? [], conceptDiff.dates, ConceptDate.identityOf);
   json.related = applyListPatch(json.related ?? [], conceptDiff.relatedConcepts, RelatedConcept.identityOf);
-  json.partitive_relations = applyListPatch(
-    json.partitive_relations ?? json.partitive_hyperedges ?? [],
-    conceptDiff.partitiveRelations ?? conceptDiff.partitiveHyperedges,
-    PartitiveRelation.identityOf,
-  );
-  // v1 wire key is removed once v2 has replaced it; otherwise leave
-  // v1 data in place for backward-compat readers.
-  if (json.partitive_relations != null && json.partitive_hyperedges != null) {
-    delete json.partitive_hyperedges;
+
+  // Unified relations diff → typed wire keys. Partition the unified
+  // diff by concrete class and apply each half to its own wire key.
+  // The wire format stays split (partitive_relations + generic_relations)
+  // for backward compat with consumers; the in-memory model is unified.
+  const partitiveDiff = partitionListDiff(conceptDiff.relations, PartitiveRelation);
+  const genericDiff = partitionListDiff(conceptDiff.relations, GenericRelation);
+
+  if (partitiveDiff.hasChanges) {
+    json.partitive_relations = applyListPatch(
+      json.partitive_relations ?? json.partitive_hyperedges ?? [],
+      partitiveDiff,
+      PartitiveRelation.identityOf,
+    );
+    // v1 wire key is removed once v2 has replaced it; otherwise leave
+    // v1 data in place for backward-compat readers.
+    if (json.partitive_relations != null && json.partitive_hyperedges != null) {
+      delete json.partitive_hyperedges;
+    }
+  }
+  if (genericDiff.hasChanges) {
+    json.generic_relations = applyListPatch(
+      json.generic_relations ?? [],
+      genericDiff,
+      GenericRelation.identityOf,
+    );
   }
 
   json.tags = applyListPatch(json.tags ?? [], conceptDiff.tags);
@@ -232,4 +248,20 @@ function toJsonValue(value) {
   }
   if (typeof value.toJSON === 'function') return value.toJSON();
   return value;
+}
+
+// Project a unified relations ListDiff onto a single concrete class.
+// Entries whose value (old or new) is an instance of `Cls` survive;
+// everything else is filtered out. Cross-type changed entries (e.g.
+// old was PartitiveRelation, new is GenericRelation) are not yet
+// supported — those would need to surface as a remove + add pair.
+function partitionListDiff(listDiff, Cls) {
+  if (!listDiff) return new ListDiff({ added: [], removed: [], changed: [] });
+  return new ListDiff({
+    added: listDiff.added.filter(e => e.value instanceof Cls),
+    removed: listDiff.removed.filter(e => e.value instanceof Cls),
+    changed: listDiff.changed.filter(e =>
+      (e.oldValue == null || e.oldValue instanceof Cls) &&
+      (e.newValue == null || e.newValue instanceof Cls)),
+  });
 }

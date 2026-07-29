@@ -1,18 +1,30 @@
 import * as yaml from 'js-yaml';
+import { PartitiveRelation } from './models/partitive-relation.js';
+import { GenericRelation } from './models/generic-relation.js';
 
 const DUMP_OPTS = { lineWidth: -1, noRefs: true, sortKeys: false, skipInvalid: true };
+
+// Partition the unified relations array by concrete type and emit
+// each type under its own wire key. Concept.relations holds mixed
+// types; the wire format stays split for backward compat with
+// existing consumers and the JSON Schema in concept-model.
+function _emitTypedRelations(concept) {
+  const partitiveRels = concept.relations.filter(r => r instanceof PartitiveRelation);
+  const genericRels = concept.relations.filter(r => r instanceof GenericRelation);
+  return {
+    partitive: partitiveRels.map(r => r.toJSON()),
+    generic: genericRels.map(r => r.toJSON()),
+  };
+}
 
 export class ConceptSerializer {
   toCanonicalYaml(concept) {
     const doc = { termid: concept.id };
     if (concept.term) doc.term = concept.term;
 
-    // v2: emit partitive_relations (was partitive_hyperedges in v1).
-    // Concept.partitiveRelations is the canonical v2 property; the
-    // v1 alias `partitiveHyperedges` points at the same array.
-    if (concept.partitiveRelations && concept.partitiveRelations.length > 0) {
-      doc.partitive_relations = concept.partitiveRelations.map(r => r.toJSON());
-    }
+    const { partitive, generic } = _emitTypedRelations(concept);
+    if (partitive.length > 0) doc.partitive_relations = partitive;
+    if (generic.length > 0) doc.generic_relations = generic;
 
     for (const lang of concept.languages) {
       const lc = concept.localization(lang);
@@ -53,10 +65,9 @@ export class ConceptSerializer {
     if (concept.relatedConcepts.length > 0) {
       mainDoc.related = concept.relatedConcepts.map(rc => rc.toJSON());
     }
-    // v2 wire name. Concept loads both v1 and v2 input but emits only v2.
-    if (concept.partitiveRelations && concept.partitiveRelations.length > 0) {
-      mainDoc.partitive_relations = concept.partitiveRelations.map(r => r.toJSON());
-    }
+    const { partitive, generic } = _emitTypedRelations(concept);
+    if (partitive.length > 0) mainDoc.partitive_relations = partitive;
+    if (generic.length > 0) mainDoc.generic_relations = generic;
     if (concept.sources.length > 0) {
       mainDoc.sources = concept.sources.map(s => s.toJSON());
     }

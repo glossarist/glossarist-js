@@ -23,6 +23,7 @@ import {
   multiplicityFromPair,
   pairFromMultiplicity,
   isValidMultiplicity,
+  resolveMultiplicity,
 } from '../../src/models/multiplicity.js';
 import { PartitiveMember } from '../../src/models/partitive-member.js';
 import { Concept } from '../../src/models/concept.js';
@@ -127,6 +128,40 @@ describe('Multiplicity pair ↔ name derivation', () => {
       () => pairFromMultiplicity('mandatory'),
       /Unknown multiplicity/,
     );
+  });
+
+  describe('resolveMultiplicity — member-aware resolver', () => {
+    it('derives from presence + count on v4 model instances', () => {
+      const m = { presence: 'required', count: 'multiple' };
+      assert.equal(resolveMultiplicity(m), 'compulsory_multiple');
+    });
+
+    it('falls back to literal multiplicity for pre-v4 JSON', () => {
+      const legacy = { multiplicity: 'optional_multiple' };
+      assert.equal(resolveMultiplicity(legacy), 'optional_multiple');
+    });
+
+    it('returns DEFAULT_MULTIPLICITY for empty member', () => {
+      assert.equal(resolveMultiplicity({}), 'compulsory');
+      assert.equal(resolveMultiplicity(null), 'compulsory');
+      assert.equal(resolveMultiplicity(undefined), 'compulsory');
+    });
+
+    it('propagates the invalid-combination error rather than swallowing it', () => {
+      // The model rejects this at construction. If a caller bypassed the
+      // model and passes raw {presence: optional, count: at_least_one},
+      // resolveMultiplicity must surface the error, not silently return
+      // 'compulsory' (which would mask the data corruption).
+      assert.throws(
+        () => resolveMultiplicity({ presence: 'optional', count: 'at_least_one' }),
+        /Invalid multiplicity combination/,
+      );
+    });
+
+    it('prefers (presence, count) over legacy multiplicity when both present', () => {
+      const m = { presence: 'required', count: 'exactly_one', multiplicity: 'optional_multiple' };
+      assert.equal(resolveMultiplicity(m), 'compulsory');
+    });
   });
 });
 

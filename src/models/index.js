@@ -63,6 +63,7 @@ export {
   isValidMultiplicity,
   multiplicityFromPair,
   pairFromMultiplicity,
+  resolveMultiplicity,
 } from './multiplicity.js';
 
 // v1 → v2 migration helper. Pure function; idempotent.

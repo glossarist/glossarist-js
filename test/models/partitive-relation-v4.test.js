@@ -222,14 +222,16 @@ describe('PartitiveMember construction', () => {
     );
   });
 
-  it('coerces non-boolean is_delimiting to false (=== true check)', () => {
-    // The model uses strict equality to true (=== true) rather than
-    // throwing on non-boolean input. This is a known limitation.
-    const m = new PartitiveMember({
-      ref: { source: 'VIM', id: '1' },
-      is_delimiting: 'true',
-    });
-    assert.equal(m.is_delimiting, false);
+  it('rejects non-boolean is_delimiting (strict, per v6 base)', () => {
+    // v6 refactor: PartitiveMember extends ConceptSystemMember, which
+    // validates is_delimiting as a boolean (throws on non-boolean).
+    assert.throws(
+      () => new PartitiveMember({
+        ref: { source: 'VIM', id: '1' },
+        is_delimiting: 'true',
+      }),
+      /is_delimiting must be boolean/,
+    );
   });
 });
 

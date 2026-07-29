@@ -191,7 +191,7 @@ describe('PartitiveMember construction', () => {
         presence: 'optional',
         count: 'at_least_one',
       }),
-      /invalid — it collapses to optional \+ multiple/,
+      /Invalid multiplicity combination.*collapses to optional \+ multiple/,
     );
   });
 

@@ -53,6 +53,17 @@ export function multiplicityFromPair(presence, count) {
   return name;
 }
 
+// Canonical error message for the invalid (presence, count) combination.
+// Single source of truth — hyperedge-member.js delegates to this so the
+// error string doesn't drift across the two files. Phase 8 of
+// TODO.abstract-hyperedge.
+export function invalidCombinationError(presence, count) {
+  return new Error(
+    `Invalid multiplicity combination: presence=${presence}, count=${count}. ` +
+    `(optional + at_least_one collapses to optional + multiple — use count=multiple.)`,
+  );
+}
+
 export function pairFromMultiplicity(name) {
   const pair = PAIR_BY_NAME[name];
   if (pair == null) {
@@ -92,9 +103,3 @@ export function resolveMultiplicity(member) {
   return DEFAULT_MULTIPLICITY;
 }
 
-function invalidCombinationError(presence, count) {
-  return new Error(
-    `Invalid multiplicity combination: presence=${presence}, count=${count}. ` +
-    `(optional + at_least_one collapses to optional + multiple — use count=multiple.)`,
-  );
-}

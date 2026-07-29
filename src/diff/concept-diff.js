@@ -1,4 +1,6 @@
 import { GlossaristModel } from '../models/base.js';
+import { PartitiveRelation } from '../models/partitive-relation.js';
+import { GenericRelation } from '../models/generic-relation.js';
 import { Added, Removed, Changed } from './change.js';
 import { ListDiff, diffList, diffSet } from './list-diff.js';
 import { identityOf } from './identity.js';
@@ -99,11 +101,17 @@ export class ConceptLevelDiff extends GlossaristModel {
     this._sources = wrapListDiff(data.sources);
     this._dates = wrapListDiff(data.dates);
     this._relatedConcepts = wrapListDiff(data.relatedConcepts ?? data.related_concepts);
-    // v2 canonical name is partitiveRelations. Accept v1 names
-    // (partitiveHyperedges / partitive_hyperedges) for backward compat
-    // with diffs serialized by older glossarist-js versions.
-    this._partitiveRelations = wrapListDiff(
-      data.partitiveRelations
+    // Unified n-ary relations diff. Accepts:
+    //   - data.relations                   (new unified shape)
+    //   - data.partitiveRelations /
+    //     data.partitive_relations /
+    //     data.partitiveHyperedges /
+    //     data.partitive_hyperedges        (legacy partitive-only shape)
+    // Old diffs only had partitive, so the legacy fallback treats them
+    // as a unified list with one type present.
+    this._relations = wrapListDiff(
+      data.relations
+        ?? data.partitiveRelations
         ?? data.partitive_relations
         ?? data.partitiveHyperedges
         ?? data.partitive_hyperedges,
@@ -119,8 +127,25 @@ export class ConceptLevelDiff extends GlossaristModel {
   get sources() { return this._sources; }
   get dates() { return this._dates; }
   get relatedConcepts() { return this._relatedConcepts; }
-  get partitiveRelations() { return this._partitiveRelations; }
-  /** @deprecated use partitiveRelations */ get partitiveHyperedges() { return this._partitiveRelations; }
+  /** Unified n-ary relations diff (PartitiveRelation + GenericRelation). */
+  get relations() { return this._relations; }
+  /**
+   * Filtered view of `relations` containing only PartitiveRelation
+   * entries. Backward compat for callers that read .partitiveRelations
+   * directly on a ConceptLevelDiff.
+   */
+  get partitiveRelations() {
+    return filterListDiffByType(this._relations, PartitiveRelation);
+  }
+  /** @deprecated use .relations */ get partitiveHyperedges() { return this.partitiveRelations; }
+  /**
+   * Filtered view of `relations` containing only GenericRelation
+   * entries. Backward compat for callers that read .genericRelations
+   * directly on a ConceptLevelDiff.
+   */
+  get genericRelations() {
+    return filterListDiffByType(this._relations, GenericRelation);
+  }
   get groups() { return this._groups; }
   get sections() { return this._sections; }
   get tags() { return this._tags; }
@@ -130,7 +155,7 @@ export class ConceptLevelDiff extends GlossaristModel {
     return this._sources.hasChanges
       || this._dates.hasChanges
       || this._relatedConcepts.hasChanges
-      || this._partitiveRelations.hasChanges
+      || this._relations.hasChanges
       || this._groups.hasChanges
       || this._sections.hasChanges
       || this._tags.hasChanges
@@ -141,7 +166,7 @@ export class ConceptLevelDiff extends GlossaristModel {
     yield* walkList('concept.sources', this._sources);
     yield* walkList('concept.dates', this._dates);
     yield* walkList('concept.relatedConcepts', this._relatedConcepts);
-    yield* walkList('concept.partitiveRelations', this._partitiveRelations);
+    yield* walkList('concept.relations', this._relations);
     yield* walkList('concept.groups', this._groups);
     yield* walkList('concept.sections', this._sections);
     yield* walkList('concept.tags', this._tags);
@@ -153,7 +178,7 @@ export class ConceptLevelDiff extends GlossaristModel {
       sources: this._sources.toJSON(),
       dates: this._dates.toJSON(),
       related_concepts: this._relatedConcepts.toJSON(),
-      partitive_relations: this._partitiveRelations.toJSON(),
+      relations: this._relations.toJSON(),
       groups: this._groups.toJSON(),
       sections: this._sections.toJSON(),
       tags: this._tags.toJSON(),
@@ -428,7 +453,7 @@ function diffConceptLevel(oldConcept, newConcept) {
       sources: fullListDiff(c.sources ?? [], Direction),
       dates: fullListDiff(c.dates ?? [], Direction),
       relatedConcepts: fullListDiff(c.relatedConcepts ?? [], Direction),
-      partitiveRelations: fullListDiff(c.partitiveRelations ?? c.partitiveHyperedges ?? [], Direction),
+      relations: fullListDiff(c.relations ?? [], Direction),
       groups: fullListDiff(c.groups ?? [], Direction),
       sections: fullListDiff(c.sections ?? [], Direction),
       tags: fullListDiff(c.tags ?? [], Direction),
@@ -440,9 +465,9 @@ function diffConceptLevel(oldConcept, newConcept) {
     sources: diffSources(oldConcept.sources ?? [], newConcept.sources ?? []),
     dates: diffDates(oldConcept.dates ?? [], newConcept.dates ?? []),
     relatedConcepts: diffRelatedConcepts(oldConcept.relatedConcepts ?? [], newConcept.relatedConcepts ?? []),
-    partitiveRelations: diffPartitiveRelations(
-      oldConcept.partitiveRelations ?? oldConcept.partitiveHyperedges ?? [],
-      newConcept.partitiveRelations ?? newConcept.partitiveHyperedges ?? [],
+    relations: diffNaryRelations(
+      oldConcept.relations ?? [],
+      newConcept.relations ?? [],
     ),
     groups: diffStringSet(oldConcept.groups ?? [], newConcept.groups ?? []),
     sections: diffStringSet(oldConcept.sections ?? [], newConcept.sections ?? []),
@@ -540,10 +565,37 @@ function diffRelatedConcepts(oldRC, newRC) {
   });
 }
 
-function diffPartitiveRelations(oldR, newR) {
+// Diff two unified n-ary relations arrays. Identity is polymorphic —
+// dispatches via value.constructor.identityOf so PartitiveRelation
+// and GenericRelation (and any future n-ary subclass) coexist in
+// the same list. Cross-type entries with matching identity are still
+// treated as different (because their constructor differs and they
+// live under different wire keys).
+function diffNaryRelations(oldR, newR) {
   return diffSet(oldR, newR, {
-    identityKey: identityOf,
+    identityKey: relationIdentityOf,
     textKey: relationText,
+  });
+}
+
+function relationIdentityOf(value) {
+  if (value == null) return '';
+  const Cls = value.constructor;
+  if (typeof Cls?.identityOf === 'function') {
+    const typed = Cls.identityOf(value);
+    return `${Cls.name}::${typed}`;
+  }
+  return identityOf(value);
+}
+
+function filterListDiffByType(listDiff, Cls) {
+  if (!listDiff) return listDiff;
+  return new ListDiff({
+    added: listDiff.added.filter(e => e.value instanceof Cls),
+    removed: listDiff.removed.filter(e => e.value instanceof Cls),
+    changed: listDiff.changed.filter(e =>
+      (e.oldValue == null || e.oldValue instanceof Cls) &&
+      (e.newValue == null || e.newValue instanceof Cls)),
   });
 }
 
@@ -598,8 +650,8 @@ function countConceptItems(oldConcept, newConcept, langs) {
   count += maxOf(oldConcept?.dates?.length, newConcept?.dates?.length);
   count += maxOf(oldConcept?.relatedConcepts?.length, newConcept?.relatedConcepts?.length);
   count += maxOf(
-    oldConcept?.partitiveRelations?.length ?? oldConcept?.partitiveHyperedges?.length,
-    newConcept?.partitiveRelations?.length ?? newConcept?.partitiveHyperedges?.length,
+    oldConcept?.relations?.length,
+    newConcept?.relations?.length,
   );
   count += maxOf(oldConcept?.groups?.length, newConcept?.groups?.length);
   count += maxOf(oldConcept?.sections?.length, newConcept?.sections?.length);

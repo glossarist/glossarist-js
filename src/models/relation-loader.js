@@ -17,18 +17,16 @@
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import * as yaml from 'js-yaml';
-import { PartitiveRelation } from './partitive-relation.js';
-import { GenericRelation } from './generic-relation.js';
+import { TYPE_TO_CLASS } from './relation-type-registry.js';
 
 /**
- * Per-type class dispatch. Keys are the `type` field of the relation
- * file. Adding a new relation type (e.g. AssociativeRelation) means
- * one entry here plus one new class.
+ * Per-type class dispatch. Re-exported from the registry so the
+ * loader's old `TYPE_TO_CLASS` import path keeps working. The
+ * registry is the single source of truth — adding a relation type
+ * there makes it available to both the loader and Concept's
+ * unified relations array.
  */
-export const TYPE_TO_CLASS = Object.freeze({
-  partitive_relation: PartitiveRelation,
-  generic_relation: GenericRelation,
-});
+export { TYPE_TO_CLASS };
 
 /**
  * Thrown by `loadAll` when a relation file has an unknown `type`,

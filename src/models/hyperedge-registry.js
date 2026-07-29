@@ -53,16 +53,14 @@ class HyperedgeRegistry {
     return true;
   }
 
-  // Test-only. Restores the registry to its post-auto-register state
-  // by re-running each registered class's re-register hook. Used by
-  // the OCP spec to clean up mock types it adds during a test run.
+  // Test-only. Removes a class from all three indexes. Used by the OCP
+  // spec to clean up mock types it adds during a test run.
   static unregister(cls) {
     if (!cls) return false;
-    const removed =
-      this._byWireKey.delete(cls.wireKey) ||
-      this._byTypeTag.delete(cls.typeTag) ||
-      this._byRdfType.delete(cls.rdfType);
-    return removed;
+    const r1 = this._byWireKey.delete(cls.wireKey);
+    const r2 = this._byTypeTag.delete(cls.typeTag);
+    const r3 = this._byRdfType.delete(cls.rdfType);
+    return r1 || r2 || r3;
   }
 
   static forWireKey(key) { return this._byWireKey.get(key) ?? null; }

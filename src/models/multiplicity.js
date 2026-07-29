@@ -66,6 +66,32 @@ export function isValidMultiplicity(name) {
   return Object.prototype.hasOwnProperty.call(PAIR_BY_NAME, name);
 }
 
+/**
+ * Resolve the ISO 704 multiplicity name from any object carrying
+ * `presence` + `count`, OR a legacy object that still has a literal
+ * `multiplicity` field (pre-v4 JSON).
+ *
+ * For v4 `PartitiveMember` instances, `presence` + `count` are always
+ * set (defaults applied at construction), so the legacy branch never
+ * fires on a real instance — it exists purely to round-trip raw JSON
+ * that bypassed the model constructor.
+ *
+ * Throws on the invalid `(optional, at_least_one)` combination — the
+ * model already rejects this at construction, so reaching the throw
+ * here means the caller bypassed the model. Let the error propagate
+ * rather than silently returning 'compulsory' (which would mask the
+ * data corruption).
+ */
+export function resolveMultiplicity(member) {
+  if (member?.presence && member?.count) {
+    return multiplicityFromPair(member.presence, member.count);
+  }
+  if (typeof member?.multiplicity === 'string') {
+    return member.multiplicity;
+  }
+  return DEFAULT_MULTIPLICITY;
+}
+
 function invalidCombinationError(presence, count) {
   return new Error(
     `Invalid multiplicity combination: presence=${presence}, count=${count}. ` +

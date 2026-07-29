@@ -21,7 +21,7 @@
 
 import { PRED } from './predicates.js';
 import { namedNode, literal, quad } from './terms.js';
-import { multiplicityFromPair } from '../models/multiplicity.js';
+import { resolveMultiplicity } from '../models/multiplicity.js';
 
 // SKOS taxonomy namespaces (concept-model will ship these taxonomies).
 // Until then, the URIs are forward-compatible and resolve once the
@@ -46,16 +46,15 @@ export function* partitiveMemberToQuads(member, { memberUri }) {
     );
   }
   // Derived multiplicity URI for v3 RDF consumer backward compat.
-  // v4 PartitiveMember no longer exposes .multiplicity — compute from
-  // presence + count via multiplicityFromPair. Accept raw JSON that
-  // still carries a literal multiplicity field for pre-v4 data.
-  let mult = null;
-  if (member?.presence && member?.count) {
-    try { mult = multiplicityFromPair(member.presence, member.count); }
-    catch { /* invalid combination — skip derived emission */ }
-  } else if (typeof member?.multiplicity === 'string') {
-    mult = member.multiplicity;
-  }
+  // v4 PartitiveMember carries presence + count natively; the legacy
+  // multiplicity name is derived via the SSOT resolveMultiplicity().
+  // For raw pre-v4 JSON that bypassed the model constructor and still
+  // carries a literal multiplicity field, the resolver falls back to
+  // that field. The invalid (optional, at_least_one) combination is
+  // rejected at model construction — if it reaches the throw here,
+  // the caller bypassed the model and we want the error to surface
+  // rather than silently producing wrong RDF.
+  const mult = resolveMultiplicity(member);
   if (mult) {
     yield quad(
       namedNode(memberUri),

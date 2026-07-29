@@ -1,4 +1,5 @@
 import { TextDiff } from './text-diff.js';
+import { resolveMultiplicity } from '../models/multiplicity.js';
 
 const COLORS = {
   red: s => `\x1b[31m${s}\x1b[0m`,
@@ -198,16 +199,6 @@ function definitionLabel(d) {
   return d.content ?? '?';
 }
 
-import { multiplicityFromPair } from '../models/multiplicity.js';
-
-function _resolveMultiplicity(m) {
-  if (m?.presence && m?.count) {
-    try { return multiplicityFromPair(m.presence, m.count); }
-    catch { return 'compulsory'; }
-  }
-  return m?.multiplicity ?? 'compulsory';
-}
-
 function relationLabel(r) {
   if (!r) return '?';
   const c = r.comprehensive;
@@ -216,7 +207,7 @@ function relationLabel(r) {
     ? r.partitives.map(m => {
         const ref = m?.ref ?? m ?? {};
         let tail = '';
-        const mult = _resolveMultiplicity(m);
+        const mult = resolveMultiplicity(m);
         if (mult && mult !== 'compulsory') tail = ` (${mult})`;
         if (m?.is_delimiting === true) tail += ' ⊘';
         return `${ref.id ?? ref.source ?? ref.text ?? '?'}${tail}`;
@@ -246,7 +237,7 @@ export function multiplicityStats(relations) {
   for (const rel of relations ?? []) {
     for (const m of rel?.partitives ?? []) {
       total += 1;
-      const mult = _resolveMultiplicity(m);
+      const mult = resolveMultiplicity(m);
       byMultiplicity[mult] = (byMultiplicity[mult] ?? 0) + 1;
       const p = m?.presence ?? 'required';
       const c = m?.count ?? 'exactly_one';

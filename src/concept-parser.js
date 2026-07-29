@@ -1,21 +1,40 @@
 import * as yaml from 'js-yaml';
 import { Concept } from './models/concept.js';
 import { RelatedConcept } from './models/related-concept.js';
+import { HyperedgeRegistry } from './models/hyperedge-registry.js';
 import { migrateHyperedgeToRelation } from './migration/partitive-relation-migrator.js';
 import { InvalidInputError, YamlParseError } from './errors.js';
 
 // Structural keys are reserved at the concept level and excluded
-// from language localization discovery. The unified `relations`
-// key, the v2 typed keys (`partitive_relations`, `generic_relations`),
-// and the v1 backward-compat key (`partitive_hyperedges`) are all
-// reserved.
+// from language localization discovery. The set is derived from
+// HyperedgeRegistry — every registered hyperedge class contributes
+// its wireKey and any v1WireKeys to the reserved set. Adding a new
+// hyperedge type means the parser reserves its wire key automatically;
+// no edits here.
 const STRUCTURAL_KEYS = new Set([
   'termid', 'term', 'figures', 'tables', 'formulas',
+  'related', 'relatedConcepts',
   'relations',
-  'partitive_hyperedges', 'partitiveHyperedges',
-  'partitive_relations', 'partitiveRelations',
-  'generic_relations', 'genericRelations',
+  ..._registryStructuralKeys(),
 ]);
+
+function _registryStructuralKeys() {
+  const out = [];
+  for (const cls of HyperedgeRegistry.allClasses()) {
+    out.push(cls.wireKey);
+    out.push(_camelCase(cls.wireKey));
+    for (const k of cls.v1WireKeys ?? []) {
+      out.push(k);
+      out.push(_camelCase(k));
+    }
+  }
+  return out;
+}
+
+function _camelCase(s) {
+  if (typeof s !== 'string' || !s.includes('_')) return s;
+  return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+}
 
 export class ConceptParser {
   parse(raw, context) {
@@ -70,7 +89,7 @@ export class ConceptParser {
       figures: doc.figures,
       tables: doc.tables,
       formulas: doc.formulas,
-      relations: _resolveNaryData(doc),
+      relations: _resolveHyperedgeData(doc),
       raw: doc,
     });
   }
@@ -87,20 +106,23 @@ export class ConceptParser {
       localizations[lang] = lcData;
     }
 
-    assertConceptLevelOnly(mc, [
+    // The hyperedge wire keys are reserved at concept level (top-level
+    // of the managed concept YAML), not under data:. Derive the list
+    // from the registry so adding a type doesn't require an edit here.
+    const conceptLevelOnlyKeys = [
       'related',
       'relations',
-      'partitive_relations',
-      'partitive_hyperedges',
-      'generic_relations',
-    ]);
+      ...HyperedgeRegistry.allWireAndLegacyKeys(),
+    ];
+
+    assertConceptLevelOnly(mc, conceptLevelOnlyKeys);
 
     return new Concept({
       id: String(mc.data.identifier),
       term: null,
       localizations,
       related: _normalizeRelated(mc.related),
-      relations: _resolveNaryData(mc),
+      relations: _resolveHyperedgeData(mc),
       domains: mc.data.domains,
       groups: mc.data.groups,
       dates: mc.dates ?? mc.data?.dates,
@@ -118,7 +140,7 @@ export class ConceptParser {
 function assertConceptLevelOnly(mc, keys) {
   const conceptId = mc?.data?.identifier ?? '<unknown>';
   for (const key of keys) {
-    const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    const camelKey = _camelCase(key);
     if (mc?.data?.[key] != null && mc[key] == null && mc[camelKey] == null) {
       throw new InvalidInputError(
         `'${key}' must live at concept level (top-level of the managed ` +
@@ -130,17 +152,18 @@ function assertConceptLevelOnly(mc, keys) {
   }
 }
 
-// Resolve n-ary relation data from any input shape into a single
-// unified array. Accepts:
-//
-//   unified wire:  { relations: [...] }                     (hashes with `type`)
-//   v2 partitive:  { partitive_relations: [...] }           (hashes)
-//   v2 generic:    { generic_relations: [...] }             (hashes)
-//   v1 partitive:  { partitive_hyperedges: [...] }           ← migrated
+// Resolve hyperedge data from any input shape into a single unified
+// array. Iterates HyperedgeRegistry — for each registered class:
+//   - read its wireKey from the container (e.g. partitive_relations)
+//   - read any v1WireKeys (e.g. partitive_hyperedges) and migrate
+//   - tag each entry with the class's typeTag
 //
 // Returns null when no relation data is present, so Concept's
-// `_resolveNaryRelations` falls back to the empty-array default.
-function _resolveNaryData(container) {
+// `_resolveHyperedges` falls back to the empty-array default.
+//
+// Adding a new hyperedge type means: declare it on a class, register.
+// The parser picks it up automatically — no edits here.
+function _resolveHyperedgeData(container) {
   if (!container) return null;
 
   if (Array.isArray(container.relations)) {
@@ -149,28 +172,27 @@ function _resolveNaryData(container) {
 
   const out = [];
 
-  const v2Partitive = container.partitive_relations ?? container.partitiveRelations;
-  if (Array.isArray(v2Partitive)) {
-    for (const r of v2Partitive) {
-      const tagged = _addTypeIfMissing(r, 'partitive_relation');
-      if (tagged != null) out.push(tagged);
+  for (const cls of HyperedgeRegistry.allClasses()) {
+    // v2 wire key (e.g. partitive_relations)
+    const arr = container[cls.wireKey] ?? container[_camelCase(cls.wireKey)];
+    if (Array.isArray(arr)) {
+      for (const r of arr) {
+        const tagged = _addTypeIfMissing(r, cls.typeTag);
+        if (tagged != null) out.push(tagged);
+      }
     }
-  }
 
-  const v2Generic = container.generic_relations ?? container.genericRelations;
-  if (Array.isArray(v2Generic)) {
-    for (const r of v2Generic) {
-      const tagged = _addTypeIfMissing(r, 'generic_relation');
-      if (tagged != null) out.push(tagged);
-    }
-  }
-
-  const v1 = container.partitive_hyperedges ?? container.partitiveHyperedges;
-  if (Array.isArray(v1)) {
-    for (const h of v1) {
-      const hash = h?.toJSON && typeof h.toJSON === 'function' ? h.toJSON() : h;
-      const migrated = migrateHyperedgeToRelation(hash);
-      if (migrated) out.push({ ...migrated, type: 'partitive_relation' });
+    // v1 legacy wire keys (e.g. partitive_hyperedges) — migrated.
+    // The migration helper produces a v2 hash; we tag it with the
+    // typeTag so Concept's registry dispatch finds the right class.
+    for (const v1Key of cls.v1WireKeys ?? []) {
+      const v1Arr = container[v1Key] ?? container[_camelCase(v1Key)];
+      if (!Array.isArray(v1Arr)) continue;
+      for (const h of v1Arr) {
+        const hash = h?.toJSON && typeof h.toJSON === 'function' ? h.toJSON() : h;
+        const migrated = migrateHyperedgeToRelation(hash);
+        if (migrated) out.push({ ...migrated, type: cls.typeTag });
+      }
     }
   }
 

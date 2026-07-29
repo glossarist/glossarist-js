@@ -38,6 +38,22 @@ export {
 // backward-compat input. New code should use v2 exclusively.
 export { PartitiveRelation } from './partitive-relation.js';
 export { PartitiveMember } from './partitive-member.js';
+
+// v2 GenericRelation models (per-file relation storage). Mirrors
+// PartitiveRelation shape; uses the same MECE member shape.
+export { AbstractNaryRelation } from './abstract-nary-relation.js';
+export { ConceptSystemMember } from './concept-system-member.js';
+export { GenericRelation } from './generic-relation.js';
+export { GenericMember } from './generic-member.js';
+export {
+  DEFINITION_TYPE,
+  DEFAULT_DEFINITION_TYPE,
+} from './definition-type.js';
+
+// Per-file relation loader (Node-side runtime; not browser-bundled).
+// Walks a relations/ directory and dispatches to PartitiveRelation /
+// GenericRelation by file type.
+export { RelationLoader, RelationLoadError, TYPE_TO_CLASS as RELATION_TYPE_TO_CLASS } from './relation-loader.js';
 export {
   PARTITIVE_PRESENCE,
   PARTITIVE_PRESENCE_VALUES,

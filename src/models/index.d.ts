@@ -328,6 +328,71 @@ export class PartitiveHyperedge extends GlossaristModel {
   static fromJSON(data: Record<string, unknown>): PartitiveHyperedge;
 }
 
+// v2 PartitiveRelation + GenericRelation (MECE per-member model).
+// These supersede the v1 PartitiveHyperedge model above. New code
+// should use v2 exclusively; the v1 model is kept for backward-compat
+// input.
+export class ConceptSystemMember extends GlossaristModel {
+  readonly ref: ConceptRef;
+  readonly presence: 'required' | 'optional';
+  readonly count: 'exactly_one' | 'at_least_one' | 'multiple';
+  readonly is_delimiting: boolean;
+  required(): boolean;
+  optional(): boolean;
+  delimiting(): boolean;
+  identity(): string;
+  toJSON(): Record<string, unknown>;
+  static fromJSON(data: Record<string, unknown>): ConceptSystemMember;
+  static identityOf(value: unknown): string;
+}
+
+export class PartitiveMember extends ConceptSystemMember {}
+
+export class GenericMember extends ConceptSystemMember {}
+
+export class AbstractNaryRelation extends GlossaristModel {
+  readonly comprehensive: ConceptRef;
+  readonly members: ConceptSystemMember[];
+  readonly completeness: 'complete' | 'partial';
+  readonly criterion: Record<string, string> | null;
+  readonly sources: ConceptSource[];
+  readonly notes: Record<string, string> | null;
+  readonly status: string | null;
+  readonly isComplete: boolean;
+  readonly isPartial: boolean;
+  readonly isCoordinate: boolean;
+  toJSON(): Record<string, unknown>;
+  static fromJSON(data: Record<string, unknown>): AbstractNaryRelation;
+  static identityOf(value: unknown): string;
+}
+
+export class PartitiveRelation extends AbstractNaryRelation {
+  /** @deprecated use {@link members} — kept for v1/v2 wire compat. */
+  readonly partitives: ConceptSystemMember[];
+  static fromJSON(data: Record<string, unknown>): PartitiveRelation;
+  static identityOf(value: unknown): string;
+}
+
+export class GenericRelation extends AbstractNaryRelation {
+  static fromJSON(data: Record<string, unknown>): GenericRelation;
+  static identityOf(value: unknown): string;
+}
+
+export type DefinitionType = 'intensional' | 'extensional' | 'partitive' | 'translated';
+export const DEFINITION_TYPE: Readonly<Record<string, DefinitionType>>;
+export const DEFAULT_DEFINITION_TYPE: DefinitionType;
+export const DEFINITION_TYPE_VALUES: readonly DefinitionType[];
+
+export const RELATION_TYPE_TO_CLASS: Readonly<Record<string, typeof AbstractNaryRelation>>;
+export class RelationLoadError extends Error {
+  readonly path: string;
+  constructor(path: string, message: string);
+}
+export const RelationLoader: {
+  loadAll(relationsDir: string): Map<string, AbstractNaryRelation[]>;
+  loadOne(path: string): AbstractNaryRelation | null;
+};
+
 export const DESIGNATION_RELATIONSHIP_TYPES: readonly string[];
 export class DesignationRelationship extends GlossaristModel {
   readonly type: string | null;

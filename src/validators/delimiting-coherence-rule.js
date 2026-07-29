@@ -9,7 +9,7 @@
 // This rule surfaces three categories of issues that the model
 // constructor cannot catch (they're cross-relation, not per-instance):
 //
-//   1. WARNING: A PartitiveRelation where every partitive is
+//   1. WARNING: A PartitiveHyperedge where every partitive is
 //      is_delimiting=true overuses delimiting. Typically only some
 //      parts distinguish the comprehensive from coordinate concepts.
 //   2. ERROR: Two PartitiveRelations on the same concept with the

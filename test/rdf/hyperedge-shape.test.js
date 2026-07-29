@@ -1,6 +1,6 @@
 // Cross-repo shape contract for the v1 PartitiveHyperedge RDF emitter.
 //
-// NOTE: v1 is deprecated; concept-model v3.2.0 ships v2 PartitiveRelation.
+// NOTE: v1 is deprecated; concept-model v3.2.0 ships v2 PartitiveHyperedge.
 // This file tests the v1 emitter (hyperedgeToQuads) DIRECTLY, bypassing
 // Concept's auto-migration to v2. The v2 contract is in
 // `partitive-relation-shape.test.js`.
@@ -11,7 +11,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { PartitiveHyperedge } from '../../src/models/partitive-hyperedge.js';
+import { LegacyPartitiveHyperedge as PartitiveHyperedge } from '../../src/models/partitive-hyperedge-v1.js';
 import { hyperedgeToQuads, hyperedgeSubjectUri } from '../../src/rdf/index.js';
 
 const PARENT_URI = 'https://example.org/vocab/concept/112-02-09';

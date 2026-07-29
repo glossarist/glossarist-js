@@ -1,4 +1,4 @@
-// Cross-repo shape contract for the PartitiveRelation RDF emitter.
+// Cross-repo shape contract for the PartitiveHyperedge RDF emitter.
 //
 // Locks in the subject URI scheme, predicate names, and object types
 // so JS output matches glossarist-ruby's `Rdf::GlossPartitiveRelation`
@@ -8,7 +8,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { Concept } from '../../src/models/concept.js';
-import { PartitiveRelation } from '../../src/models/partitive-relation.js';
+import { PartitiveHyperedge } from '../../src/models/partitive-hyperedge.js';
 import {
   conceptToQuads,
   partitiveRelationSubjectUri,
@@ -21,9 +21,9 @@ function quadsFor(concept) {
   return [...conceptToQuads(concept, { registerId: REGISTER, uriBase: BASE })];
 }
 
-describe('PartitiveRelation RDF shape — cross-repo contract', () => {
+describe('PartitiveHyperedge RDF shape — cross-repo contract', () => {
   function makeRelation(overrides = {}) {
-    return new PartitiveRelation({
+    return new PartitiveHyperedge({
       comprehensive: overrides.comprehensive ?? { source: 'VIM', id: '112-02-09' },
       partitives: overrides.partitives ?? [
         { ref: { source: 'VIM', id: '112-02-10' } },
@@ -43,12 +43,12 @@ describe('PartitiveRelation RDF shape — cross-repo contract', () => {
     );
   });
 
-  it('emits rdf:type gloss:PartitiveRelation', () => {
+  it('emits rdf:type gloss:PartitiveHyperedge', () => {
     const concept = new Concept({ id: '112-02-09', partitiveRelations: [makeRelation()] });
     const quads = quadsFor(concept);
     assert.ok(quads.some(q =>
       q.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' &&
-      q.object.value === 'https://www.glossarist.org/ontologies/PartitiveRelation' &&
+      q.object.value === 'https://www.glossarist.org/ontologies/PartitiveHyperedge' &&
       q.object.termType === 'NamedNode',
     ));
   });

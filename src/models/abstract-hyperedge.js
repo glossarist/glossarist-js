@@ -1,5 +1,5 @@
-// AbstractNaryRelation — shared base for n-ary concept-system
-// relations (PartitiveRelation, GenericRelation, future
+// AbstractHyperedge — shared base for n-ary concept-system
+// relations (PartitiveHyperedge, GenericHyperedge, future
 // SequentialRelation, AssociativeRelation).
 //
 // Carries the common shape:
@@ -20,7 +20,7 @@ import {
   isValidCompleteness,
 } from './completeness.js';
 
-export class AbstractNaryRelation extends GlossaristModel {
+export class AbstractHyperedge extends GlossaristModel {
   constructor(data = {}) {
     super();
     this.comprehensive = _ensureComprehensive(data.comprehensive);
@@ -62,7 +62,7 @@ function _ensureComprehensive(value) {
   const ref = value instanceof ConceptRef ? value : new ConceptRef(value ?? {});
   if (!ref.source && !ref.id && !ref.text) {
     throw new Error(
-      'AbstractNaryRelation.comprehensive must be a non-empty ConceptReference ' +
+      'AbstractHyperedge.comprehensive must be a non-empty ConceptReference ' +
       '(source, id, or text required)',
     );
   }

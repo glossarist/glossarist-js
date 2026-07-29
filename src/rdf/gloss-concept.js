@@ -80,7 +80,7 @@ export function* conceptToQuads(concept, options) {
   for (const relation of relations) {
     // Skip v1 PartitiveHyperedge instances — they have their own
     // emitter (gloss-hyperedge.js) and would double-emit. The parser
-    // always produces v2 PartitiveRelation instances; only direct
+    // always produces v2 PartitiveHyperedge instances; only direct
     // callers using the v1 model would see this branch.
     const isV2 = !relation.enumeration && !relation.markers && !relation.parts
       || (relation.completeness != null || relation.partitives != null);

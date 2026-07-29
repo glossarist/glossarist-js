@@ -21,7 +21,7 @@ export { Citation } from './citation.js';
 export { ConceptRef } from './concept-ref.js';
 export { ConceptSource } from './concept-source.js';
 export { RelatedConcept, RELATIONSHIP_TYPES } from './related-concept.js';
-export { PartitiveHyperedge } from './partitive-hyperedge.js';
+export { LegacyPartitiveHyperedge } from './partitive-hyperedge-v1.js';
 export {
   PARTITIVE_ENUMERATION,
   PARTITIVE_ENUMERATION_VALUES,
@@ -33,17 +33,17 @@ export {
   isValidPluralityMarker,
 } from './plurality-marker.js';
 
-// v2 PartitiveRelation models (TODO.partitive-relation-v2). These
+// v2 PartitiveHyperedge models (TODO.partitive-relation-v2). These
 // supersede the v1 hyperedge models above; the v1 models are kept for
 // backward-compat input. New code should use v2 exclusively.
-export { PartitiveRelation } from './partitive-relation.js';
+export { PartitiveHyperedge } from './partitive-hyperedge.js';
 export { PartitiveMember } from './partitive-member.js';
 
-// v2 GenericRelation models (per-file relation storage). Mirrors
-// PartitiveRelation shape; uses the same MECE member shape.
-export { AbstractNaryRelation } from './abstract-nary-relation.js';
-export { ConceptSystemMember } from './concept-system-member.js';
-export { GenericRelation } from './generic-relation.js';
+// v2 GenericHyperedge models (per-file relation storage). Mirrors
+// PartitiveHyperedge shape; uses the same MECE member shape.
+export { AbstractHyperedge } from './abstract-hyperedge.js';
+export { HyperedgeMember } from './hyperedge-member.js';
+export { GenericHyperedge } from './generic-hyperedge.js';
 export { GenericMember } from './generic-member.js';
 export {
   DEFINITION_TYPE,
@@ -51,8 +51,8 @@ export {
 } from './definition-type.js';
 
 // Per-file relation loader (Node-side runtime; not browser-bundled).
-// Walks a relations/ directory and dispatches to PartitiveRelation /
-// GenericRelation by file type.
+// Walks a relations/ directory and dispatches to PartitiveHyperedge /
+// GenericHyperedge by file type.
 export { RelationLoader, RelationLoadError, TYPE_TO_CLASS as RELATION_TYPE_TO_CLASS } from './relation-loader.js';
 export {
   PARTITIVE_PRESENCE,

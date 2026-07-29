@@ -1,9 +1,9 @@
-// PartitiveRelation → RDF quads.
+// PartitiveHyperedge → RDF quads.
 //
 // Shape (per concept-model ontology, v3.2.0):
 //
 //   <base>/partitive-relation/<carrying-id>/<comprehensive-id>
-//     rdf:type                       gloss:PartitiveRelation
+//     rdf:type                       gloss:PartitiveHyperedge
 //     gloss:comprehensive            <base>/concept/<comprehensive-id>      (named node)
 //     gloss:hasPartitive             <base>/concept/<partitive-id>         (named node, one per member)
 //     gloss:completeness             <.../completeness/complete|partial>   (named node, SKOS)
@@ -35,7 +35,7 @@ export function* partitiveRelationToQuads(relation, { parentUri, index }) {
   const subjectUri = partitiveRelationSubjectUri(parentUri, relation, index);
   const s = namedNode(subjectUri);
 
-  yield quad(s, namedNode(WELL_KNOWN.rdfType), namedNode(PRED.gloss.PartitiveRelation));
+  yield quad(s, namedNode(WELL_KNOWN.rdfType), namedNode(PRED.gloss.PartitiveHyperedge));
 
   const comp = relation.comprehensive;
   if (comp && (comp.source || comp.id)) {

@@ -27,7 +27,7 @@ import {
 } from '../../src/models/multiplicity.js';
 import { PartitiveMember } from '../../src/models/partitive-member.js';
 import { Concept } from '../../src/models/concept.js';
-import { PartitiveRelation } from '../../src/models/partitive-relation.js';
+import { PartitiveHyperedge } from '../../src/models/partitive-hyperedge.js';
 
 describe('PartitivePresence enum', () => {
   it('exposes required and optional', () => {
@@ -223,7 +223,7 @@ describe('PartitiveMember construction', () => {
   });
 
   it('rejects non-boolean is_delimiting (strict, per v6 base)', () => {
-    // v6 refactor: PartitiveMember extends ConceptSystemMember, which
+    // v6 refactor: PartitiveMember extends HyperedgeMember, which
     // validates is_delimiting as a boolean (throws on non-boolean).
     assert.throws(
       () => new PartitiveMember({
@@ -306,7 +306,7 @@ describe('Concept integration', () => {
   it('Concept.toJSON emits presence + count', () => {
     const c = new Concept({
       id: '1',
-      partitiveRelations: [new PartitiveRelation({
+      partitiveRelations: [new PartitiveHyperedge({
         comprehensive: { source: 'VIM', id: '1' },
         partitives: [
           { ref: { source: 'VIM', id: '2' }, presence: 'optional', count: 'multiple' },

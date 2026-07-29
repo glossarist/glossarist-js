@@ -1,10 +1,10 @@
 import { GlossaristModel } from './base.js';
 import { LocalizedConcept } from './localized-concept.js';
 import { RelatedConcept } from './related-concept.js';
+import { LegacyPartitiveHyperedge } from './partitive-hyperedge-v1.js';
 import { PartitiveHyperedge } from './partitive-hyperedge.js';
-import { PartitiveRelation } from './partitive-relation.js';
-import { GenericRelation } from './generic-relation.js';
-import { AbstractNaryRelation } from './abstract-nary-relation.js';
+import { GenericHyperedge } from './generic-hyperedge.js';
+import { AbstractHyperedge } from './abstract-hyperedge.js';
 import { TYPE_TO_CLASS } from './relation-type-registry.js';
 import { migrateHyperedgeToRelation } from '../migration/partitive-relation-migrator.js';
 import { ConceptReference } from './concept-reference.js';
@@ -38,8 +38,8 @@ export class Concept extends GlossaristModel {
 
     this.relatedConcepts = _mapInstances(data.relatedConcepts ?? data.related ?? data.related_concepts ?? [], RelatedConcept);
 
-    // Unified n-ary relations array. Both PartitiveRelation and
-    // GenericRelation live here. Adding a new n-ary type (Sequential,
+    // Unified n-ary relations array. Both PartitiveHyperedge and
+    // GenericHyperedge live here. Adding a new n-ary type (Sequential,
     // Associative) = adding to _resolveNaryRelations, not editing
     // Concept, parser, serializer, diff, patch, or renderer.
     //
@@ -75,10 +75,10 @@ export class Concept extends GlossaristModel {
   // Typed getters that filter the unified relations array. Backward
   // compat for callers that read .partitiveRelations directly.
   get partitiveRelations() {
-    return this.relations.filter(r => r instanceof PartitiveRelation);
+    return this.relations.filter(r => r instanceof PartitiveHyperedge);
   }
   get genericRelations() {
-    return this.relations.filter(r => r instanceof GenericRelation);
+    return this.relations.filter(r => r instanceof GenericHyperedge);
   }
   // v1 alias
   get partitiveHyperedges() { return this.partitiveRelations; }
@@ -225,8 +225,8 @@ export class Concept extends GlossaristModel {
     // Emit typed wire keys from the unified relations array.
     // Each relation type gets its own wire key so existing consumers
     // see no wire-shape change.
-    const partitiveRels = this.relations.filter(r => r instanceof PartitiveRelation);
-    const genericRels = this.relations.filter(r => r instanceof GenericRelation);
+    const partitiveRels = this.relations.filter(r => r instanceof PartitiveHyperedge);
+    const genericRels = this.relations.filter(r => r instanceof GenericHyperedge);
     if (partitiveRels.length > 0) {
       obj.partitive_relations = partitiveRels.map(r => r.toJSON());
     }
@@ -288,7 +288,7 @@ function _resolveNaryRelations(data) {
   const v2Partitive = data.partitiveRelations ?? data.partitive_relations;
   if (Array.isArray(v2Partitive)) {
     for (const r of v2Partitive) {
-      const coerced = _coerceRelation(r, PartitiveRelation);
+      const coerced = _coerceRelation(r, PartitiveHyperedge);
       if (coerced) out.push(coerced);
     }
   }
@@ -296,7 +296,7 @@ function _resolveNaryRelations(data) {
   const v2Generic = data.genericRelations ?? data.generic_relations;
   if (Array.isArray(v2Generic)) {
     for (const r of v2Generic) {
-      const coerced = _coerceRelation(r, GenericRelation);
+      const coerced = _coerceRelation(r, GenericHyperedge);
       if (coerced) out.push(coerced);
     }
   }
@@ -304,9 +304,9 @@ function _resolveNaryRelations(data) {
   const v1 = data.partitiveHyperedges ?? data.partitive_hyperedges;
   if (Array.isArray(v1)) {
     for (const h of v1) {
-      const hash = h instanceof PartitiveHyperedge ? h.toJSON() : h;
+      const hash = h instanceof LegacyPartitiveHyperedge ? h.toJSON() : h;
       const migrated = migrateHyperedgeToRelation(hash);
-      if (migrated) out.push(new PartitiveRelation(migrated));
+      if (migrated) out.push(new PartitiveHyperedge(migrated));
     }
   }
 
@@ -315,7 +315,7 @@ function _resolveNaryRelations(data) {
 
 function _coerceRelation(value, fallbackClass) {
   if (value == null) return null;
-  if (value instanceof AbstractNaryRelation) return value;
+  if (value instanceof AbstractHyperedge) return value;
 
   const hash = typeof value.toJSON === 'function' ? value.toJSON() : value;
   const Cls = _classForHash(hash) ?? fallbackClass;

@@ -1,6 +1,6 @@
 // Warns when binary `has_part` / `is_part_of` edges duplicate
-// PartitiveRelation members, or when a concept has many binary
-// has_part edges that should be consolidated into a PartitiveRelation.
+// PartitiveHyperedge members, or when a concept has many binary
+// has_part edges that should be consolidated into a PartitiveHyperedge.
 //
 // Per TODO.partitive-relation-v2 item 14, binary edges and
 // PartitiveRelations coexist by design. The asymmetry is pragmatic:
@@ -49,17 +49,17 @@ export class BinaryHasPartRedundancyRule extends ValidationRule {
         this.addIssue(result,
           `${path}relatedConcepts`,
           `binary has_part edge for (${target}) is redundant — already in a ` +
-          `PartitiveRelation member; pick one encoding to avoid divergence`,
+          `PartitiveHyperedge member; pick one encoding to avoid divergence`,
         );
       }
     }
 
-    // Cluster: 3+ binary has_part edges suggests PartitiveRelation territory.
+    // Cluster: 3+ binary has_part edges suggests PartitiveHyperedge territory.
     if (binaryTargets.size >= 3) {
       this.addIssue(result,
         `${path}relatedConcepts`,
         `${binaryTargets.size} binary has_part edges on this concept; ` +
-        `consider converting to a PartitiveRelation (which can carry ` +
+        `consider converting to a PartitiveHyperedge (which can carry ` +
         `completeness, multiplicity, and criterion metadata)`,
       );
     }

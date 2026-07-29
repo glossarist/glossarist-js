@@ -12,7 +12,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { Concept } from '../../src/models/concept.js';
-import { PartitiveRelation } from '../../src/models/partitive-relation.js';
+import { PartitiveHyperedge } from '../../src/models/partitive-hyperedge.js';
 import {
   diffConcepts,
   applyDiff,
@@ -80,7 +80,7 @@ describe('diff round-trip property', () => {
       name: 'add a partitive relation',
       old: makeConcept(),
       new: makeConcept({
-        partitiveRelations: [new PartitiveRelation({
+        partitiveRelations: [new PartitiveHyperedge({
           comprehensive: { source: 'VIM', id: '1' },
           partitives: [
             { ref: { source: 'VIM', id: '2' } },
@@ -93,7 +93,7 @@ describe('diff round-trip property', () => {
     {
       name: 'remove a partitive relation',
       old: makeConcept({
-        partitiveRelations: [new PartitiveRelation({
+        partitiveRelations: [new PartitiveHyperedge({
           comprehensive: { source: 'VIM', id: '1' },
           partitives: [
             { ref: { source: 'VIM', id: '2' } },
@@ -107,7 +107,7 @@ describe('diff round-trip property', () => {
     {
       name: 'change relation member presence/count',
       old: makeConcept({
-        partitiveRelations: [new PartitiveRelation({
+        partitiveRelations: [new PartitiveHyperedge({
           comprehensive: { source: 'VIM', id: '1' },
           partitives: [
             { ref: { source: 'VIM', id: '2' } },
@@ -117,7 +117,7 @@ describe('diff round-trip property', () => {
         })],
       }),
       new: makeConcept({
-        partitiveRelations: [new PartitiveRelation({
+        partitiveRelations: [new PartitiveHyperedge({
           comprehensive: { source: 'VIM', id: '1' },
           partitives: [
             { ref: { source: 'VIM', id: '2' }, presence: 'optional', count: 'multiple' },
@@ -130,7 +130,7 @@ describe('diff round-trip property', () => {
     {
       name: 'change relation completeness',
       old: makeConcept({
-        partitiveRelations: [new PartitiveRelation({
+        partitiveRelations: [new PartitiveHyperedge({
           comprehensive: { source: 'VIM', id: '1' },
           partitives: [
             { ref: { source: 'VIM', id: '2' } },
@@ -140,7 +140,7 @@ describe('diff round-trip property', () => {
         })],
       }),
       new: makeConcept({
-        partitiveRelations: [new PartitiveRelation({
+        partitiveRelations: [new PartitiveHyperedge({
           comprehensive: { source: 'VIM', id: '1' },
           partitives: [
             { ref: { source: 'VIM', id: '2' } },

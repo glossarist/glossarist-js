@@ -206,8 +206,8 @@ function relationLabel(r) {
   if (!r) return '?';
   const c = r.comprehensive;
   const head = c?.id ?? c?.source ?? c?.text ?? '?';
-  // PartitiveRelation exposes .partitives as the wire alias for
-  // .members; GenericRelation uses .members directly. Read both.
+  // PartitiveHyperedge exposes .partitives as the wire alias for
+  // .members; GenericHyperedge uses .members directly. Read both.
   const members = Array.isArray(r.partitives) ? r.partitives : r.members;
   const memberText = Array.isArray(members)
     ? members.map(m => {
@@ -223,7 +223,7 @@ function relationLabel(r) {
   const criterion = r.criterion
     ? ` / ${Object.values(r.criterion)[0] ?? ''}`
     : '';
-  const typeTag = r?.constructor?.name === 'GenericRelation' ? 'GEN ' : '';
+  const typeTag = r?.constructor?.name === 'GenericHyperedge' ? 'GEN ' : '';
   return `${typeTag}${head} → {${memberText}}${completeness}${criterion}`;
 }
 

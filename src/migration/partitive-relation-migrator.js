@@ -1,7 +1,7 @@
-// v1 → v2 PartitiveRelation migration.
+// v1 → v2 PartitiveHyperedge migration.
 //
 // Pure function: takes a v1 PartitiveHyperedge hash, returns a v2
-// PartitiveRelation hash. Idempotent. Used by the parser when loading
+// PartitiveHyperedge hash. Idempotent. Used by the parser when loading
 // legacy YAML; available as a public API for one-shot dataset migrations.
 //
 // Field mapping (per TODO.partitive-relation-v2 items 01–05 and the
@@ -69,7 +69,7 @@ export function migrateHyperedgeToRelation(v1Hash) {
 
   if (v1Hash.content != null) {
     out.migrationWarning = (out.migrationWarning ?? '') +
-      ` v1 'content' field was dropped (v2 PartitiveRelation carries no prose; ` +
+      ` v1 'content' field was dropped (v2 PartitiveHyperedge carries no prose; ` +
       `move valuable text to the comprehensive concept's notes).`;
   }
 

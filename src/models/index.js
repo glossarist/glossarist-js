@@ -53,6 +53,10 @@ export {
 // Walks a relations/ directory and dispatches to PartitiveHyperedge /
 // GenericHyperedge by file type.
 export { RelationLoader, RelationLoadError, TYPE_TO_CLASS as RELATION_TYPE_TO_CLASS } from './relation-loader.js';
+
+// Directional index over hyperedge sets. Built on demand from a flat
+// hyperedge list (typically concept.relations or a dataset union).
+export { HyperedgeIndex, buildDatasetIndex } from './hyperedge-index.js';
 export {
   PARTITIVE_PRESENCE,
   PARTITIVE_PRESENCE_VALUES,

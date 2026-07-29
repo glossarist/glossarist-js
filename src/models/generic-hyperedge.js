@@ -11,8 +11,18 @@
 
 import { AbstractHyperedge } from './abstract-hyperedge.js';
 import { GenericMember } from './generic-member.js';
+import { HyperedgeRegistry } from './hyperedge-registry.js';
 
 export class GenericHyperedge extends AbstractHyperedge {
+  // Per-class metadata block — the OCP contract. See PartitiveHyperedge
+  // for field documentation.
+  static wireKey     = 'generic_relations';
+  static typeTag     = 'generic_relation';
+  static rdfType     = 'gloss:GenericRelation';
+  static memberClass = GenericMember;
+  static v1WireKeys  = [];
+  static kindLabel   = 'GEN';
+
   constructor(data = {}) {
     super(data);
     this.members = data?.members == null
@@ -41,3 +51,5 @@ export class GenericHyperedge extends AbstractHyperedge {
 }
 
 export default GenericHyperedge;
+
+HyperedgeRegistry.register(GenericHyperedge);

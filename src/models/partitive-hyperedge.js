@@ -34,8 +34,21 @@
 
 import { AbstractHyperedge } from './abstract-hyperedge.js';
 import { PartitiveMember } from './partitive-member.js';
+import { HyperedgeRegistry } from './hyperedge-registry.js';
 
 export class PartitiveHyperedge extends AbstractHyperedge {
+  // Per-class metadata block — the OCP contract. External systems
+  // (parser, serializer, diff, RDF emitter, validators) read from
+  // these statics and the HyperedgeRegistry. Adding a new hyperedge
+  // type = declaring these fields on a new subclass + registering
+  // it. Nothing else in the codebase changes.
+  static wireKey     = 'partitive_relations';
+  static typeTag     = 'partitive_relation';
+  static rdfType     = 'gloss:PartitiveRelation';
+  static memberClass = PartitiveMember;
+  static v1WireKeys  = ['partitive_hyperedges'];
+  static kindLabel   = 'PART';
+
   constructor(data = {}) {
     const members = data?.members ?? data?.partitives;
     super({ ...data, members });
@@ -74,3 +87,5 @@ export class PartitiveHyperedge extends AbstractHyperedge {
 }
 
 export default PartitiveHyperedge;
+
+HyperedgeRegistry.register(PartitiveHyperedge);

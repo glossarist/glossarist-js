@@ -14,7 +14,7 @@
 //
 // The carrying concept links via `gloss:hasPartitiveRelation`.
 //
-// Replaces gloss-hyperedge.js (the v1 emitter) per
+// Per
 // TODO.partitive-relation-v2 item 01.
 // Cross-repo alignment with glossarist-ruby's Rdf::GlossPartitiveRelation.
 //

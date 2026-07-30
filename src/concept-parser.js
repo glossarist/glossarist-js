@@ -2,7 +2,7 @@ import * as yaml from 'js-yaml';
 import { Concept } from './models/concept.js';
 import { RelatedConcept } from './models/related-concept.js';
 import { HyperedgeRegistry } from './models/hyperedge-registry.js';
-import { migrateHyperedgeToRelation } from './migration/partitive-relation-migrator.js';
+import { migrateHyperedgeToRelation } from './migration/hyperedge-migrator.js';
 import { InvalidInputError, YamlParseError } from './errors.js';
 
 // Structural keys are reserved at the concept level and excluded

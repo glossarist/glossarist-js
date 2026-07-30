@@ -32,9 +32,9 @@ export {
   isValidPluralityMarker,
 } from './plurality-marker.js';
 
-// v2 PartitiveHyperedge models (TODO.partitive-relation-v2). These
-// supersede the v1 hyperedge models above; the v1 models are kept for
-// backward-compat input. New code should use v2 exclusively.
+// PartitiveHyperedge models. The wire format (partitive_relations)
+// is unchanged from earlier versions; the v1 wire key (partitive_hyperedges)
+// is parsed on input and migrated to v2 shape via hyperedge-migrator.js.
 export { PartitiveHyperedge } from './partitive-hyperedge.js';
 export { PartitiveMember } from './partitive-member.js';
 
@@ -89,7 +89,7 @@ export {
 export {
   migrateHyperedgeToRelation,
   downgradeRelationToHyperedge,
-} from '../migration/partitive-relation-migrator.js';
+} from '../migration/hyperedge-migrator.js';
 
 export { makeEnum } from './enum.js';
 export { resolveHyperedgeColor } from './hyperedge-colors.js';

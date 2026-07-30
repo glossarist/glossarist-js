@@ -1,13 +1,21 @@
-// HyperedgeMember — abstract base shape for members of any
-// n-ary concept-system relation (PartitiveMember, GenericMember,
-// future AssociativeMember, SequentialMember).
+// HyperedgeMember — abstract base shape for the members of any directed
+// 1→N hyperedge (PartitiveMember, GenericMember, future AssociativeMember,
+// SequentialMember).
 //
-// Carries the shared ISO 704:2022 MECE dimensions: presence × count,
-// plus the orthogonal is_delimiting flag.
+// Carries ONLY the dimensions shared by every hyperedge member type:
+//   ref       — ConceptRef [1] (the member concept)
+//   presence  — 'required' | 'optional' (default: required)
+//   count     — 'exactly_one' | 'at_least_one' | 'multiple' (default: exactly_one)
 //
-// Concrete leaf classes extend this with type-specific fields if
-// needed (currently none). See docs/design/abstract-nary-relation.md
-// (concept-model repo).
+// These three form the ISO 704:2022 MECE pair (presence × count). The
+// pair is the shared invariant across all hyperedge types — that's
+// why it lives on the base.
+//
+// Type-specific extensions live on the leaves:
+//   PartitiveMember  — is_delimiting (rake-diagram semantics, ISO 704 §5.5.4.2.2)
+//   GenericMember    — delimitingCharacteristic (intension difference, ISO 704 §5.5.4.2.1)
+//
+// See docs/design/abstract-hyperedge.md (concept-model repo).
 
 import { GlossaristModel } from './base.js';
 import { ConceptRef } from './concept-ref.js';
@@ -30,14 +38,12 @@ export class HyperedgeMember extends GlossaristModel {
     this.ref = _ensureRef(data.ref);
     this.presence = _resolvePresence(data.presence);
     this.count = _resolveCount(data.count);
-    this.is_delimiting = _resolveDelimiting(data.is_delimiting);
 
     _assertValidPair(this.presence, this.count);
   }
 
   get isRequired() { return this.presence === PARTITIVE_PRESENCE.REQUIRED; }
   get isOptional() { return this.presence === PARTITIVE_PRESENCE.OPTIONAL; }
-  get isDelimiting() { return this.is_delimiting === true; }
 
   identity() {
     return HyperedgeMember.identityOf(this);
@@ -47,7 +53,6 @@ export class HyperedgeMember extends GlossaristModel {
     const obj = { ref: this.ref.toJSON() };
     if (this.presence !== DEFAULT_PRESENCE) obj.presence = this.presence;
     if (this.count !== DEFAULT_COUNT) obj.count = this.count;
-    if (this.is_delimiting) obj.is_delimiting = true;
     return obj;
   }
 
@@ -95,20 +100,10 @@ function _resolveCount(value) {
   return c;
 }
 
-function _resolveDelimiting(value) {
-  if (value == null) return false;
-  if (typeof value !== 'boolean') {
-    throw new Error(
-      `HyperedgeMember.is_delimiting must be boolean; got ${typeof value}`,
-    );
-  }
-  return value;
-}
-
 function _assertValidPair(presence, count) {
-  // Delegate to the multiplicity SSOT (Phase 8 of TODO.abstract-hyperedge).
-  // The canonical error string lives in one place: multiplicity.js.
-  // Calling multiplicityFromPair throws on the invalid combination;
-  // we don't need to duplicate the error message here.
+  // Delegate to the multiplicity SSOT. The canonical error string
+  // lives in one place: multiplicity.js. Calling multiplicityFromPair
+  // throws on the invalid combination; we don't need to duplicate the
+  // error message here.
   multiplicityFromPair(presence, count);
 }

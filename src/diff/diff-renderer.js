@@ -125,10 +125,10 @@ function renderConceptLevel(diff, colors) {
   lines.push(...renderListDiff('Sources', diff.sources, colors, itemLabel));
   lines.push(...renderListDiff('Dates', diff.dates, colors, itemLabel));
   lines.push(...renderListDiff('Related', diff.relatedConcepts, colors, itemLabel));
-  // Unified n-ary relations section. Replaces the per-type sections
+  // Unified hyperedge section. Replaces the per-type sections
   // (Partitive relations, Generic relations) — the underlying diff
   // is a single ListDiff over the unified .relations array.
-  lines.push(...renderListDiff('N-ary relations', diff.relations, colors, relationLabel));
+  lines.push(...renderListDiff('Hyperedges', diff.relations, colors, relationLabel));
   lines.push(...renderListDiff('Groups', diff.groups, colors, itemLabel));
   lines.push(...renderListDiff('Sections', diff.sections, colors, itemLabel));
   lines.push(...renderListDiff('Tags', diff.tags, colors, itemLabel));
@@ -214,8 +214,16 @@ function relationLabel(r) {
         const ref = m?.ref ?? m ?? {};
         let tail = '';
         const mult = resolveMultiplicity(m);
-        if (mult && mult !== 'compulsory') tail = ` (${mult})`;
+        if (mult && mult !== 'compulsory') tail += ` (${mult})`;
+        // PartitiveMember uses is_delimiting (boolean flag).
         if (m?.is_delimiting === true) tail += ' ⊘';
+        // GenericMember uses delimitingCharacteristic (string value per
+        // ISO 704:2022 §5.5.4.2.1) — show the delimiting characteristic
+        // text so reviewers can see the intension difference.
+        if (m?.delimitingCharacteristic) {
+          const c = Object.values(m.delimitingCharacteristic)[0];
+          if (typeof c === 'string' && c.length > 0) tail += ` ⟨${c}⟩`;
+        }
         return `${ref.id ?? ref.source ?? ref.text ?? '?'}${tail}`;
       }).join(', ')
     : '';

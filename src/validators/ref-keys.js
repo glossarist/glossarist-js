@@ -1,7 +1,7 @@
 // Shared identity-key helpers for cross-relation validators.
 //
-// Extracted from PartitiveRelationCoherenceRule and
-// BinaryHasPartRedundancyRule per TODO.partitive-relation-v3/06.
+// Extracted from HyperedgeCoherenceRule and
+// BinaryHasPartRedundancyRule.
 // Eliminates drift: both rules now use the same notion of "same ref"
 // and "same criterion" instead of each defining its own _refKey and
 // _criterionKey with subtly different behaviors.

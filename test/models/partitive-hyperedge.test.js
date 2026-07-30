@@ -28,7 +28,7 @@ import {
 import {
   migrateHyperedgeToRelation,
   downgradeRelationToHyperedge,
-} from '../../src/migration/partitive-relation-migrator.js';
+} from '../../src/migration/hyperedge-migrator.js';
 
 describe('Completeness enum', () => {
   it('exposes complete and partial', () => {

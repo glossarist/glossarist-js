@@ -101,7 +101,7 @@ export class ConceptLevelDiff extends GlossaristModel {
     this._sources = wrapListDiff(data.sources);
     this._dates = wrapListDiff(data.dates);
     this._relatedConcepts = wrapListDiff(data.relatedConcepts ?? data.related_concepts);
-    // Unified n-ary relations diff. Accepts:
+    // Unified hyperedge diff. Accepts:
     //   - data.relations                   (new unified shape)
     //   - data.partitiveRelations /
     //     data.partitive_relations /
@@ -127,7 +127,7 @@ export class ConceptLevelDiff extends GlossaristModel {
   get sources() { return this._sources; }
   get dates() { return this._dates; }
   get relatedConcepts() { return this._relatedConcepts; }
-  /** Unified n-ary relations diff (PartitiveHyperedge + GenericHyperedge). */
+  /** Unified hyperedge diff (PartitiveHyperedge + GenericHyperedge). */
   get relations() { return this._relations; }
   /**
    * Filtered view of `relations` containing only PartitiveHyperedge
@@ -465,7 +465,7 @@ function diffConceptLevel(oldConcept, newConcept) {
     sources: diffSources(oldConcept.sources ?? [], newConcept.sources ?? []),
     dates: diffDates(oldConcept.dates ?? [], newConcept.dates ?? []),
     relatedConcepts: diffRelatedConcepts(oldConcept.relatedConcepts ?? [], newConcept.relatedConcepts ?? []),
-    relations: diffNaryRelations(
+    relations: diffHyperedges(
       oldConcept.relations ?? [],
       newConcept.relations ?? [],
     ),
@@ -565,13 +565,13 @@ function diffRelatedConcepts(oldRC, newRC) {
   });
 }
 
-// Diff two unified n-ary relations arrays. Identity is polymorphic —
+// Diff two unified hyperedge arrays. Identity is polymorphic —
 // dispatches via value.constructor.identityOf so PartitiveHyperedge
-// and GenericHyperedge (and any future n-ary subclass) coexist in
+// and GenericHyperedge (and any future hyperedge subclass) coexist in
 // the same list. Cross-type entries with matching identity are still
 // treated as different (because their constructor differs and they
 // live under different wire keys).
-function diffNaryRelations(oldR, newR) {
+function diffHyperedges(oldR, newR) {
   return diffSet(oldR, newR, {
     identityKey: relationIdentityOf,
     textKey: relationText,

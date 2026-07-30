@@ -30,8 +30,8 @@ function makeGeneric(overrides = {}) {
   return new GenericHyperedge({
     comprehensive: overrides.comprehensive ?? { source: 'OIML', id: '5.1' },
     members: overrides.members ?? [
-      { ref: { source: 'OIML', id: '5.4' } },
-      { ref: { source: 'OIML', id: '5.5' } },
+      { ref: { source: 'OIML', id: '5.4' }, delimitingCharacteristic: { eng: 'by physical realization' } },
+      { ref: { source: 'OIML', id: '5.5' }, delimitingCharacteristic: { eng: 'by digital realization' } },
     ],
     completeness: overrides.completeness ?? 'partial',
     criterion: overrides.criterion ?? { eng: 'by realization medium' },
@@ -77,7 +77,10 @@ describe('Concept.relations unified API', () => {
           {
             type: 'generic_relation',
             comprehensive: { source: 'A', id: '1' },
-            members: [{ ref: { source: 'A', id: '4' } }, { ref: { source: 'A', id: '5' } }],
+            members: [
+              { ref: { source: 'A', id: '4' }, delimitingCharacteristic: { eng: 'delimiting 4' } },
+              { ref: { source: 'A', id: '5' }, delimitingCharacteristic: { eng: 'delimiting 5' } },
+            ],
           },
         ],
       });
@@ -95,7 +98,10 @@ describe('Concept.relations unified API', () => {
         }],
         generic_relations: [{
           comprehensive: { source: 'A', id: '1' },
-          members: [{ ref: { source: 'A', id: '4' } }, { ref: { source: 'A', id: '5' } }],
+          members: [
+            { ref: { source: 'A', id: '4' }, delimitingCharacteristic: { eng: 'delimiting 4' } },
+            { ref: { source: 'A', id: '5' }, delimitingCharacteristic: { eng: 'delimiting 5' } },
+          ],
         }],
       });
       assert.equal(c.relations.length, 2);

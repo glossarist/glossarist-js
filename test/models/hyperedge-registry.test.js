@@ -144,7 +144,10 @@ describe('groupHyperedgesByWireKey', () => {
     });
     const g = new GenericHyperedge({
       comprehensive: { source: 'A', id: '1' },
-      members: [{ ref: { source: 'A', id: '4' } }, { ref: { source: 'A', id: '5' } }],
+      members: [
+        { ref: { source: 'A', id: '4' }, delimitingCharacteristic: { eng: 'delimiting 4' } },
+        { ref: { source: 'A', id: '5' }, delimitingCharacteristic: { eng: 'delimiting 5' } },
+      ],
     });
     const grouped = groupHyperedgesByWireKey([p, g]);
     assert.equal(grouped.partitive_relations.length, 1);

@@ -21,14 +21,24 @@ import { conceptParser } from '../../src/concept-parser.js';
 describe('parser reserves all registered hyperedge wire keys', () => {
   for (const cls of HyperedgeRegistry.allClasses()) {
     it(`${cls.name} wireKey '${cls.wireKey}' is structural (not treated as language)`, () => {
+      // GenericMember requires a delimitingCharacteristic per ISO 704:2022 §5.5.4.2.1.
+      // For other hyperedge types, the bare ref shape works.
+      const isGeneric = cls.typeTag === 'generic_relation';
+      const memberBlock = isGeneric
+        ? `    members:
+      - ref: { source: A, id: '2' }
+        delimitingCharacteristic: { eng: delimit-2 }
+      - ref: { source: A, id: '3' }
+        delimitingCharacteristic: { eng: delimit-3 }`
+        : `    members:
+      - ref: { source: A, id: '2' }
+      - ref: { source: A, id: '3' }`;
       const yaml = `termid: '1'
 ${cls.wireKey}:
   - comprehensive:
       source: A
       id: '1'
-    members:
-      - ref: { source: A, id: '2' }
-      - ref: { source: A, id: '3' }
+${memberBlock}
 eng:
   terms:
     - type: expression

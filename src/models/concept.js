@@ -4,7 +4,7 @@ import { RelatedConcept } from './related-concept.js';
 import { PartitiveHyperedge } from './partitive-hyperedge.js';
 import { AbstractHyperedge } from './abstract-hyperedge.js';
 import { HyperedgeRegistry, groupHyperedgesByWireKey } from './hyperedge-registry.js';
-import { migrateHyperedgeToRelation } from '../migration/partitive-relation-migrator.js';
+import { migrateHyperedgeToRelation } from '../migration/hyperedge-migrator.js';
 import { ConceptReference } from './concept-reference.js';
 import { ConceptDate } from './concept-date.js';
 import { ConceptSource } from './concept-source.js';
@@ -36,7 +36,7 @@ export class Concept extends GlossaristModel {
 
     this.relatedConcepts = _mapInstances(data.relatedConcepts ?? data.related ?? data.related_concepts ?? [], RelatedConcept);
 
-    // Unified hyperedge array. Every n-ary relation (PartitiveHyperedge,
+    // Unified hyperedge array. Every hyperedge (PartitiveHyperedge,
     // GenericHyperedge, future TemporalHyperedge / AssociativeHyperedge /
     // SequentialHyperedge) lives here. The single public API is
     // `.relations`; external systems that need to filter by type use

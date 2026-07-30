@@ -1,4 +1,4 @@
-// AbstractHyperedge — shared base for n-ary concept-system
+// AbstractHyperedge — shared base for directed 1→N hyperedges
 // relations (PartitiveHyperedge, GenericHyperedge, future
 // SequentialRelation, AssociativeRelation).
 //
@@ -10,7 +10,7 @@
 //   - sources / notes / status: administrative metadata
 //
 // Concrete leaves add type-specific fields if needed (currently none).
-// See docs/design/abstract-nary-relation.md (concept-model repo).
+// See docs/design/abstract-hyperedge.md (concept-model repo).
 
 import { GlossaristModel } from './base.js';
 import { ConceptRef } from './concept-ref.js';

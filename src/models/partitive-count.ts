@@ -9,6 +9,8 @@
 
 import { makeEnum } from './enum.js';
 
+export type PartitiveCount = 'exactly_one' | 'at_least_one' | 'multiple';
+
 export const PARTITIVE_COUNT = makeEnum('PARTITIVE_COUNT', {
   EXACTLY_ONE: 'exactly_one',
   AT_LEAST_ONE: 'at_least_one',
@@ -16,5 +18,5 @@ export const PARTITIVE_COUNT = makeEnum('PARTITIVE_COUNT', {
 });
 
 export const PARTITIVE_COUNT_VALUES = PARTITIVE_COUNT.VALUES;
-export const DEFAULT_COUNT = PARTITIVE_COUNT.EXACTLY_ONE;
+export const DEFAULT_COUNT: PartitiveCount = PARTITIVE_COUNT.EXACTLY_ONE;
 export const isValidCount = PARTITIVE_COUNT.isValid;

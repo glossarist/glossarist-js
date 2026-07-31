@@ -9,16 +9,23 @@
 // Orthogonal to PartitiveEnumeration — both may be set on the same
 // hyperedge.
 
-export const PLURALITY_MARKER = Object.freeze({
+export type PluralityMarker = 'double' | 'dashed';
+
+export const PLURALITY_MARKER: Readonly<
+  Record<'DOUBLE' | 'DASHED', PluralityMarker>
+> = Object.freeze({
   DOUBLE: 'double',
   DASHED: 'dashed',
 });
 
-export const PLURALITY_MARKER_VALUES = Object.freeze([
-  PLURALITY_MARKER.DOUBLE,
-  PLURALITY_MARKER.DASHED,
-]);
+export const PLURALITY_MARKER_VALUES: ReadonlyArray<PluralityMarker> =
+  Object.freeze([PLURALITY_MARKER.DOUBLE, PLURALITY_MARKER.DASHED]);
 
-export function isValidPluralityMarker(value) {
-  return PLURALITY_MARKER_VALUES.includes(value);
+export function isValidPluralityMarker(
+  value: unknown,
+): value is PluralityMarker {
+  return (
+    typeof value === 'string' &&
+    (PLURALITY_MARKER_VALUES as readonly string[]).includes(value)
+  );
 }

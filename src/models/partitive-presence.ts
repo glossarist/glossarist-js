@@ -8,11 +8,13 @@
 
 import { makeEnum } from './enum.js';
 
+export type PartitivePresence = 'required' | 'optional';
+
 export const PARTITIVE_PRESENCE = makeEnum('PARTITIVE_PRESENCE', {
   REQUIRED: 'required',
   OPTIONAL: 'optional',
 });
 
 export const PARTITIVE_PRESENCE_VALUES = PARTITIVE_PRESENCE.VALUES;
-export const DEFAULT_PRESENCE = PARTITIVE_PRESENCE.REQUIRED;
+export const DEFAULT_PRESENCE: PartitivePresence = PARTITIVE_PRESENCE.REQUIRED;
 export const isValidPresence = PARTITIVE_PRESENCE.isValid;

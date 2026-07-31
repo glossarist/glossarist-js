@@ -18,34 +18,47 @@
 // mapping. Both MULTIPLICITY constants and MULTIPLICITY_VALUES are
 // derived from this single table; no duplicate string literals.
 
-import { PARTITIVE_PRESENCE } from './partitive-presence.js';
-import { PARTITIVE_COUNT } from './partitive-count.js';
+import type { PartitivePresence } from './partitive-presence.js';
+import type { PartitiveCount } from './partitive-count.js';
 
-const NAME_BY_PAIR = Object.freeze({
-  [`${PARTITIVE_PRESENCE.REQUIRED}:${PARTITIVE_COUNT.EXACTLY_ONE}`]:  'compulsory',
-  [`${PARTITIVE_PRESENCE.OPTIONAL}:${PARTITIVE_COUNT.EXACTLY_ONE}`]:  'optional',
-  [`${PARTITIVE_PRESENCE.REQUIRED}:${PARTITIVE_COUNT.MULTIPLE}`]:     'compulsory_multiple',
-  [`${PARTITIVE_PRESENCE.OPTIONAL}:${PARTITIVE_COUNT.MULTIPLE}`]:     'optional_multiple',
-  [`${PARTITIVE_PRESENCE.REQUIRED}:${PARTITIVE_COUNT.AT_LEAST_ONE}`]: 'compulsory_at_least_one',
+export type MultiplicityName =
+  | 'compulsory'
+  | 'optional'
+  | 'compulsory_multiple'
+  | 'optional_multiple'
+  | 'compulsory_at_least_one';
+
+const NAME_BY_PAIR: Readonly<Record<string, MultiplicityName>> = Object.freeze({
+  'required:exactly_one': 'compulsory',
+  'optional:exactly_one': 'optional',
+  'required:multiple': 'compulsory_multiple',
+  'optional:multiple': 'optional_multiple',
+  'required:at_least_one': 'compulsory_at_least_one',
 });
 
-const PAIR_BY_NAME = Object.freeze(
+const PAIR_BY_NAME: Readonly<Record<MultiplicityName, string>> = Object.freeze(
   Object.fromEntries(
     Object.entries(NAME_BY_PAIR).map(([pair, name]) => [name, pair]),
-  ),
+  ) as Record<MultiplicityName, string>,
 );
 
-export const MULTIPLICITY = Object.freeze(
-  Object.fromEntries(
-    Object.values(NAME_BY_PAIR).map(name => [name.toUpperCase(), name]),
-  ),
+export const MULTIPLICITY: Readonly<Record<Uppercase<MultiplicityName>, MultiplicityName>> =
+  Object.freeze(
+    Object.fromEntries(
+      Object.values(NAME_BY_PAIR).map((name) => [name.toUpperCase(), name]),
+    ),
+  ) as Readonly<Record<Uppercase<MultiplicityName>, MultiplicityName>>;
+
+export const MULTIPLICITY_VALUES: ReadonlyArray<MultiplicityName> = Object.freeze(
+  Object.values(NAME_BY_PAIR),
 );
 
-export const MULTIPLICITY_VALUES = Object.freeze(Object.values(NAME_BY_PAIR));
+export const DEFAULT_MULTIPLICITY: MultiplicityName = MULTIPLICITY.COMPULSORY;
 
-export const DEFAULT_MULTIPLICITY = MULTIPLICITY.COMPULSORY;
-
-export function multiplicityFromPair(presence, count) {
+export function multiplicityFromPair(
+  presence: PartitivePresence,
+  count: PartitiveCount,
+): MultiplicityName {
   const name = NAME_BY_PAIR[`${presence}:${count}`];
   if (name == null) {
     throw invalidCombinationError(presence, count);
@@ -53,28 +66,43 @@ export function multiplicityFromPair(presence, count) {
   return name;
 }
 
-// Canonical error message for the invalid (presence, count) combination.
-// Single source of truth — hyperedge-member.js delegates to this so the
-// error string doesn't drift across the two files. Phase 8 of
-// TODO.abstract-hyperedge.
-export function invalidCombinationError(presence, count) {
+/**
+ * Canonical error for the invalid (presence, count) combination.
+ * Single source of truth — hyperedge-member.ts delegates to this so
+ * the error string doesn't drift across the two files.
+ */
+export function invalidCombinationError(
+  presence: unknown,
+  count: unknown,
+): Error {
   return new Error(
     `Invalid multiplicity combination: presence=${presence}, count=${count}. ` +
     `(optional + at_least_one collapses to optional + multiple — use count=multiple.)`,
   );
 }
 
-export function pairFromMultiplicity(name) {
+export function pairFromMultiplicity(
+  name: MultiplicityName,
+): { presence: PartitivePresence; count: PartitiveCount } {
   const pair = PAIR_BY_NAME[name];
   if (pair == null) {
     throw new Error(`Unknown multiplicity: ${JSON.stringify(name)}`);
   }
-  const [presence, count] = pair.split(':');
+  const [presence, count] = pair.split(':') as [PartitivePresence, PartitiveCount];
   return { presence, count };
 }
 
-export function isValidMultiplicity(name) {
-  return Object.prototype.hasOwnProperty.call(PAIR_BY_NAME, name);
+export function isValidMultiplicity(name: unknown): name is MultiplicityName {
+  return (
+    typeof name === 'string' &&
+    Object.prototype.hasOwnProperty.call(PAIR_BY_NAME, name)
+  );
+}
+
+interface MemberWithMultiplicity {
+  presence?: PartitivePresence;
+  count?: PartitiveCount;
+  multiplicity?: string;
 }
 
 /**
@@ -93,7 +121,9 @@ export function isValidMultiplicity(name) {
  * rather than silently returning 'compulsory' (which would mask the
  * data corruption).
  */
-export function resolveMultiplicity(member) {
+export function resolveMultiplicity(
+  member: MemberWithMultiplicity | null | undefined,
+): MultiplicityName | string {
   if (member?.presence && member?.count) {
     return multiplicityFromPair(member.presence, member.count);
   }
@@ -102,4 +132,3 @@ export function resolveMultiplicity(member) {
   }
   return DEFAULT_MULTIPLICITY;
 }
-

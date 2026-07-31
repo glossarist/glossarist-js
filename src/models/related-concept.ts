@@ -1,7 +1,9 @@
 import { GlossaristModel } from './base.js';
 import { ConceptRef } from './concept-ref.js';
+import type { ConceptRefJson } from './concept-ref.js';
+import type { LocalizedString } from './generic-member.js';
 
-export const RELATIONSHIP_TYPES = Object.freeze([
+export const RELATIONSHIP_TYPES: ReadonlyArray<string> = Object.freeze([
   // Lifecycle (ISO 10241-1)
   'deprecates', 'deprecated_by', 'supersedes', 'superseded_by',
   'replaces', 'replaced_by', 'invalidates', 'invalidated_by',
@@ -25,10 +27,9 @@ export const RELATIONSHIP_TYPES = Object.freeze([
   // Associative (ISO 10241-1 / ISO 25964)
   'see', 'related_concept', 'related_concept_broader', 'related_concept_narrower',
   'references',
-  // ExternalConcept resolution (Glossarist extension — v2 partitive-relation)
-  // Direction: real concept `provides` substance for an external concept;
-  // external concept `provided_by` real concept. Stored on the
-  // ExternalConcept. See TODO.partitive-relation-v2 item 07.
+  // ExternalConcept resolution (Glossarist extension). Direction: real
+  // concept `provides` substance for an external concept; external concept
+  // `provided_by` real concept. Stored on the ExternalConcept.
   'provides', 'provided_by',
   // Comparative (ISO 10241-1)
   'compare', 'contrast',
@@ -38,56 +39,79 @@ export const RELATIONSHIP_TYPES = Object.freeze([
   'homograph', 'false_friend',
 ]);
 
+export type RelationshipType = string;
+
+export interface RelatedConceptJson {
+  type?: RelationshipType;
+  content?: LocalizedString | string | null;
+  ref?: ConceptRefJson | ConceptRef | null;
+}
+
 export class RelatedConcept extends GlossaristModel {
-  constructor(data = {}) {
+  readonly type: RelationshipType;
+  readonly content: LocalizedString | null;
+  readonly ref: ConceptRef | null;
+
+  constructor(data: RelatedConceptJson = {}) {
     super();
     this.type = data.type ?? 'see';
-    this.content = normalizeContent(data.content);
+    this.content = _normalizeContent(data.content);
     this.ref = data.ref
-      ? (data.ref instanceof ConceptRef ? data.ref : new ConceptRef(data.ref))
+      ? data.ref instanceof ConceptRef
+        ? data.ref
+        : new ConceptRef(data.ref)
       : null;
   }
 
-  // Convenience reader: returns the first available string value
-  // from the localized hash, or null if absent. Mirrors
-  // PartitiveHyperedge#contentString.
-  get contentString() {
+  /**
+   * Convenience reader: returns the first available string value from
+   * the localized hash, or null if absent.
+   */
+  get contentString(): string | null {
     if (!this.content) return null;
     const values = Object.values(this.content);
-    return values.length > 0 ? values[0] : null;
+    return values.length > 0 ? (values[0] ?? null) : null;
   }
 
-  toJSON() {
-    const obj = { type: this.type };
+  override toJSON(): RelatedConceptJson {
+    const obj: RelatedConceptJson = { type: this.type };
     if (this.content != null) obj.content = this.content;
     if (this.ref != null) obj.ref = this.ref.toJSON();
     return obj;
   }
 
-  static identityOf(value) {
+  static identityOf(
+    value: {
+      type?: string;
+      ref?: { source?: string | null; id?: string | null } | null;
+    } | null | undefined,
+  ): string {
     const v = value ?? {};
-    const ref = v?.ref;
+    const ref = v.ref;
     return `${v.type ?? ''}|${ref?.source ?? ''}|${ref?.id ?? ''}`;
   }
 
-  identity() {
+  override identity(): string {
     return RelatedConcept.identityOf(this);
   }
 
-  static fromJSON(data) {
+  static override fromJSON(data: RelatedConceptJson): RelatedConcept {
     return new RelatedConcept(data);
   }
 }
 
-// Content is a localized string (language → text). Plain strings on
-// input are normalized to `{ default: '...' }` so callers always see
-// the same shape. Mirrors PartitiveHyperedge's normalizeContent.
-function normalizeContent(value) {
+function _normalizeContent(
+  value: LocalizedString | string | null | undefined,
+): LocalizedString | null {
   if (value == null) return null;
   if (typeof value === 'string') return { default: value };
   if (typeof value === 'object') {
-    const entries = Object.entries(value).filter(([, v]) => typeof v === 'string');
-    return entries.length > 0 ? Object.fromEntries(entries) : null;
+    const entries = Object.entries(value).filter(
+      ([, v]) => typeof v === 'string',
+    );
+    return entries.length > 0
+      ? (Object.fromEntries(entries) as LocalizedString)
+      : null;
   }
   return null;
 }

@@ -11,7 +11,7 @@
 // - dcterms:isPartOf (parent dataset)
 
 import { namedNode, literal, quad } from './terms.js';
-import { PREFIXES } from './predicates.js';
+import { PREFIXES } from './prefixes.js';
 import { RDF_TYPE } from './curie.js';
 
 // Namespace IRIs from canonical PREFIXES. foaf is absent from the

@@ -6,7 +6,7 @@
 // as a stable fallback that doesn't depend on prefix maps.
 import { Writer as N3Writer } from 'n3';
 import jsonld from 'jsonld';
-import { PREFIXES } from './predicates.js';
+import { PREFIXES } from './prefixes.js';
 
 // Collects all quads yielded by an emitter into an array. Useful for tests
 // and for callers that want to inspect the quad stream directly.

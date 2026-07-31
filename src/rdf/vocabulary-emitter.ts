@@ -13,7 +13,7 @@
 // PREFIXES.
 
 import { namedNode, literal, quad } from './terms.js';
-import { PREFIXES } from './predicates.js';
+import { PREFIXES } from './prefixes.js';
 import { resolveIri, RDF_TYPE, RDFS_LABEL } from './curie.js';
 
 const SKOS_NS = PREFIXES.skos;

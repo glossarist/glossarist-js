@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 /**
  * Registry of dataset assets that can be bundled inside a GCR package.
  *

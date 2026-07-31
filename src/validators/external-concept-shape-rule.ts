@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Validates ExternalConcept shape (status: external).
 //
 // Per TODO.partitive-relation-v2 item 06, an ExternalConcept is a

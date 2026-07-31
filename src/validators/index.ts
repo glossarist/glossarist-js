@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 export { ValidationError } from './validation-error.js';
 export { ValidationRule } from './validation-rule.js';
 export { ValidationResult } from './validation-result.js';

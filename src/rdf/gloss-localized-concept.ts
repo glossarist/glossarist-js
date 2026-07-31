@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // LocalizedConcept → RDF quads. Mirrors glossarist-ruby's
 // `Rdf::GlossLocalizedConcept` + the `EmitsExtraTriples` hook.
 //

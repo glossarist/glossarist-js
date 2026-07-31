@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 export { naturalSort } from './sort.js';
 export {
   diffConcepts,

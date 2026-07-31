@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Validates hyperedge coherence per ISO 704 / ISO 12620.
 //
 // Applies to every AbstractHyperedge subclass (PartitiveHyperedge,

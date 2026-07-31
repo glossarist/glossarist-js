@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Public RDF layer. Mirrors lib/glossarist/rdf/ in glossarist-ruby.
 export { PRED, PREFIXES, SKOSXL, WELL_KNOWN } from './prefixes.js';
 export {

@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Vocabulary graph emitter — emits SKOS ConceptSchemes for the
 // enumeration IRIs that glossarist emits in instance data
 // (gloss:status/*, gloss:entstatus/*, gloss:norm/*, gloss:srcstatus/*,

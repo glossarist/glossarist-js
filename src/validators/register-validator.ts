@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { ValidationResult } from './validation-result.js';
 
 export class RegisterValidator {

@@ -6,10 +6,27 @@
 
 import { categoryOf, categoryDefinition } from './relation-categories.js';
 
-// One { light, dark } pair per category. Keeping these in glossarist-js
-// lets the defaults ship with the library; consumers only need to
-// customize when they want to deviate.
-export const RELATION_COLOR_DEFAULTS = Object.freeze({
+export interface ColorPair {
+  light: string;
+  dark: string;
+}
+
+export interface RelationColorPalette {
+  byCategory: Readonly<Record<string, ColorPair>>;
+  byType: Readonly<Record<string, ColorPair>>;
+}
+
+export interface ResolveRelationColorOptions {
+  overrides?: Partial<RelationColorPalette>;
+  mode?: 'light' | 'dark';
+}
+
+/**
+ * One { light, dark } pair per category. Keeping these in glossarist-js
+ * lets the defaults ship with the library; consumers only need to
+ * customize when they want to deviate.
+ */
+export const RELATION_COLOR_DEFAULTS: RelationColorPalette = Object.freeze({
   byCategory: Object.freeze({
     lifecycle:      { light: '#B43A2E', dark: '#F87171' },
     hierarchical:   { light: '#1F6FEB', dark: '#6EA8FE' },
@@ -19,39 +36,32 @@ export const RELATION_COLOR_DEFAULTS = Object.freeze({
     lexical:        { light: '#D97706', dark: '#FBBF24' },
     mapping:        { light: '#2563EB', dark: '#93BBFD' },
     definitional:   { light: '#65A30D', dark: '#A3E635' },
-  }),
-
-  // Per-type overrides. Use the same { light, dark } shape. Keys are
-  // relationship-type local names. Empty by default — consumers may
-  // populate this through `overrides.byType` at call time.
-  byType: Object.freeze({}),
+  }) as Readonly<Record<string, ColorPair>>,
+  byType: Object.freeze({}) as Readonly<Record<string, ColorPair>>,
 });
 
 /**
- * Resolves the color for a relationship type.
- *
- * Resolution order:
+ * Resolves the color for a relationship type. Resolution order:
  *   1. overrides.byType[type]
  *   2. RELATION_COLOR_DEFAULTS.byType[type]
  *   3. overrides.byCategory[category]
  *   4. RELATION_COLOR_DEFAULTS.byCategory[category]
  *   5. null (uncategorized or unrecognized type)
- *
- * @param {string} type - relationship type local name
- * @param {{ overrides?: { byType?: object, byCategory?: object }, mode?: 'light'|'dark' }} [options]
- * @returns {string | null}
  */
-export function resolveRelationColor(type, options = {}) {
+export function resolveRelationColor(
+  type: string,
+  options: ResolveRelationColorOptions = {},
+): string | null {
   const mode = options.mode ?? 'light';
   const overrides = options.overrides ?? {};
-
   const typeOverride = overrides.byType?.[type] ?? RELATION_COLOR_DEFAULTS.byType[type];
   if (typeOverride) return pickMode(typeOverride, mode);
 
   const category = categoryOf(type);
   if (!category) return null;
 
-  const categoryOverride = overrides.byCategory?.[category] ?? RELATION_COLOR_DEFAULTS.byCategory[category];
+  const categoryOverride =
+    overrides.byCategory?.[category] ?? RELATION_COLOR_DEFAULTS.byCategory[category];
   if (!categoryOverride) return null;
 
   return pickMode(categoryOverride, mode);
@@ -61,16 +71,19 @@ export function resolveRelationColor(type, options = {}) {
  * Returns the { light, dark } pair for a category, merging overrides
  * over defaults. Useful for UIs that want to render a legend.
  */
-export function categoryColorPair(categoryKey, overrides = {}) {
+export function categoryColorPair(
+  categoryKey: string,
+  overrides: { byCategory?: Record<string, Partial<ColorPair>> } = {},
+): ColorPair | null {
   const def = categoryDefinition(categoryKey);
   if (!def) return null;
   const fromOverride = overrides.byCategory?.[categoryKey];
   const fromDefault = RELATION_COLOR_DEFAULTS.byCategory[categoryKey];
   if (!fromDefault && !fromOverride) return null;
-  return { ...(fromDefault ?? {}), ...(fromOverride ?? {}) };
+  return { ...(fromDefault ?? { light: '', dark: '' }), ...(fromOverride ?? {}) } as ColorPair;
 }
 
-function pickMode(pair, mode) {
+function pickMode(pair: ColorPair | string | null, mode: 'light' | 'dark'): string | null {
   if (pair == null) return null;
   if (typeof pair === 'string') return pair;
   return pair[mode] ?? pair.light ?? pair.dark ?? null;

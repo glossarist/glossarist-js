@@ -7,9 +7,26 @@
  * override for performance.
  */
 
+/**
+ * Any value that can be the output of `JSON.stringify`. Used as the
+ * return type of {@link GlossaristModel.toJSON} so subclasses with
+ * non-object JSON output (e.g. `NonVerbalReference.toJSON()` returns
+ * a bare string for the no-display case) can override without
+ * breaking variance. The object case accepts any object to avoid
+ * forcing `<Model>Json` interfaces to declare explicit string index
+ * signatures (TS interfaces don't have implicit index signatures).
+ */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | object;
+
 export abstract class GlossaristModel {
   /** Wire-shape serialization. Subclasses MUST override. */
-  toJSON(): object {
+  toJSON(): JsonValue {
     throw new Error(`${this.constructor.name} must implement toJSON()`);
   }
 

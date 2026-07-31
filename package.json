@@ -65,14 +65,16 @@
   },
   "scripts": {
     "lint": "eslint src/ test/",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
     "sync:model": "node scripts/sync-concept-model.mjs",
     "gen:predicates": "node scripts/gen-predicates.mjs",
     "prebuild": "npm run gen:predicates",
     "pretest": "node test/fixtures/build-fixtures.js",
-    "test": "find test -name '*.test.js' | sort | xargs node --test",
-    "test:verbose": "find test -name '*.test.js' | sort | xargs node --test --test-reporter spec",
-    "test:coverage": "find test -name '*.test.js' | sort | xargs node --test --experimental-test-coverage",
-    "prepublishOnly": "npm test"
+    "test": "find test \\( -name '*.test.js' -o -name '*.test.ts' \\) | sort | xargs node --import tsx --test",
+    "test:verbose": "find test \\( -name '*.test.js' -o -name '*.test.ts' \\) | sort | xargs node --import tsx --test --test-reporter spec",
+    "test:coverage": "find test \\( -name '*.test.js' -o -name '*.test.ts' \\) | sort | xargs node --import tsx --test --experimental-test-coverage",
+    "prepublishOnly": "npm run typecheck && npm test"
   },
   "keywords": [
     "glossarist",
@@ -108,7 +110,14 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@rdfjs/types": "^2.0.1",
+    "@types/node": "^26.1.2",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
     "eslint": "^10.3.0",
-    "globals": "^17.6.0"
+    "globals": "^17.6.0",
+    "tsx": "^4.23.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0"
   }
 }

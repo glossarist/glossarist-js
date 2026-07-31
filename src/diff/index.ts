@@ -1,3 +1,4 @@
+// @ts-nocheck — TEMPORARY bridge during TS migration. TODO(Phase 2e): remove this directive and type all parameters.
 export {
   TextHunk,
   TextDiff,

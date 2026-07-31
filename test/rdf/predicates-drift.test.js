@@ -10,18 +10,18 @@ import { resolve } from 'node:path';
 import { generatePredicates, ROOT } from '../../scripts/gen-predicates.mjs';
 
 const CTX_PATH = resolve(ROOT, 'data', 'concept-model', 'glossarist.context.jsonld');
-const COMMITTED_JS = resolve(ROOT, 'src', 'rdf', 'predicates.js');
+const COMMITTED_JS = resolve(ROOT, 'src', 'rdf', 'predicates.ts');
 const COMMITTED_TS = resolve(ROOT, 'src', 'rdf', 'predicates.d.ts');
 
 describe('predicates drift', () => {
-  it('committed predicates.js matches regenerated output', () => {
+  it('committed predicates.ts matches regenerated output', () => {
     const ctx = JSON.parse(readFileSync(CTX_PATH, 'utf8'))['@context'];
     const { js } = generatePredicates(ctx);
     const committed = readFileSync(COMMITTED_JS, 'utf8');
     assert.equal(
       committed,
       js,
-      'predicates.js is out of sync with glossarist.context.jsonld. Run: npm run gen:predicates',
+      'predicates.ts is out of sync with glossarist.context.jsonld. Run: npm run gen:predicates',
     );
   });
 

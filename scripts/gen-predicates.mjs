@@ -2,13 +2,13 @@
 // Generate predicate constants from the vendored JSON-LD context.
 //
 // Input:  data/concept-model/glossarist.context.jsonld
-// Output: src/rdf/predicates.js   (ESM, runtime constants)
+// Output: src/rdf/predicates.ts   (ESM, runtime constants)
 //         src/rdf/predicates.d.ts (TypeScript types)
 //
 // Run: `npm run gen:predicates` (also wired into `npm run build`).
 //
 // Both output files are committed. Downstream code imports from
-// `src/rdf/predicates.js` — there is no runtime dep on concept-model.
+// `src/rdf/predicates.ts` — there is no runtime dep on concept-model.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const CTX_PATH = resolve(ROOT, 'data', 'concept-model', 'glossarist.context.jsonld');
-export const OUT_JS = resolve(ROOT, 'src', 'rdf', 'predicates.js');
+export const OUT_JS = resolve(ROOT, 'src', 'rdf', 'predicates.ts');
 export const OUT_TS = resolve(ROOT, 'src', 'rdf', 'predicates.d.ts');
 
 // ── Parse JSON-LD context ───────────────────────────────────────────────

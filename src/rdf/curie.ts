@@ -1,4 +1,5 @@
 // @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
+// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // CURIE helpers — resolve/compact IRIs against the canonical PREFIXES.
 //
 // Single source of truth for CURIE ↔ IRI conversion. Previously

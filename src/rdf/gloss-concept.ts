@@ -19,7 +19,7 @@ import { namedNode, literal, quad } from './terms.js';
 // (2) add one entry here. Per TODO Phase 6e this should be a
 // self-registering registry; for the two current types, the dispatch
 // table is simpler and keeps the dependency graph acyclic.
-const HYPEREDGE_EMITTERS = new Map([
+const HYPEREDGE_EMITTERS: Map<unknown, Record<string, unknown>> = new Map([
   [PartitiveHyperedge, {
     linkPredicate: PRED.gloss.hasPartitiveRelation,
     subjectUri: partitiveRelationSubjectUri,
@@ -97,7 +97,7 @@ export function* conceptToQuads(concept, options) {
   // emitter table.
   let relIdx = 0;
   for (const relation of concept.relations ?? []) {
-    const emitter = HYPEREDGE_EMITTERS.get(relation.constructor);
+    const emitter = HYPEREDGE_EMITTERS.get(relation.constructor) as unknown as { linkPredicate: string; subjectUri: (a: string, b: unknown, c: number) => string; toQuads: (a: unknown, b: { parentUri: string; index: number }) => Iterable<unknown> } | undefined;
     if (!emitter) {
       // Unknown hyperedge type — skip rather than crash. The OCP
       // contract (Phase 11) tests that new types register an emitter;

@@ -1,53 +1,52 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { ValidationError } from './validation-error.js';
 
 export class ValidationResult {
-  constructor() {
-    this._issues = [];
-  }
+  private readonly _issues: ValidationError[] = [];
 
-  get valid() {
+  constructor() {}
+
+  get valid(): boolean {
     return this._issues.filter(e => e.severity === 'error').length === 0;
   }
 
-  get errors() {
+  get errors(): ReadonlyArray<ValidationError> {
     return this._issues.filter(e => e.severity === 'error');
   }
 
-  get warnings() {
+  get warnings(): ReadonlyArray<ValidationError> {
     return this._issues.filter(e => e.severity === 'warning');
   }
 
-  addError(pathOrMessage, message) {
+  addError(path: string, message?: string): this {
     if (message === undefined) {
-      this._issues.push(new ValidationError('', pathOrMessage, 'error'));
+      this._issues.push(new ValidationError('', path, 'error'));
     } else {
-      this._issues.push(new ValidationError(pathOrMessage, message, 'error'));
+      this._issues.push(new ValidationError(path, message, 'error'));
     }
     return this;
   }
 
-  addWarning(pathOrMessage, message) {
+  addWarning(path: string, message?: string): this {
     if (message === undefined) {
-      this._issues.push(new ValidationError('', pathOrMessage, 'warning'));
+      this._issues.push(new ValidationError('', path, 'warning'));
     } else {
-      this._issues.push(new ValidationError(pathOrMessage, message, 'warning'));
+      this._issues.push(new ValidationError(path, message, 'warning'));
     }
     return this;
   }
 
-  merge(other) {
+  merge(other: ValidationResult): this {
     if (other instanceof ValidationResult) {
       for (const issue of other._issues) this._issues.push(issue);
     }
     return this;
   }
 
-  toJSON() {
+  toJSON(): { valid: boolean; errors: unknown[]; warnings: unknown[] } {
     return {
       valid: this.valid,
-      errors: this.errors.map(e => e.toJSON ? e.toJSON() : e),
-      warnings: this.warnings.map(e => e.toJSON ? e.toJSON() : e),
+      errors: this.errors.map(e => typeof e.toJSON === 'function' ? e.toJSON() : e),
+      warnings: this.warnings.map(e => typeof e.toJSON === 'function' ? e.toJSON() : e),
     };
   }
 }

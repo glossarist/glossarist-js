@@ -1,14 +1,10 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 const NATURAL_SORT_RE = /(\d+|\D+)/g;
 const DIGIT_RE = /^\d+$/;
 
 /**
  * Natural sort comparator for concept IDs like "3.1.1.1", "551-12-39".
- * @param {string} a
- * @param {string} b
- * @returns {number}
  */
-export function naturalSort(a, b) {
+export function naturalSort(a: string, b: string): number {
   const pa = a.match(NATURAL_SORT_RE) || [];
   const pb = b.match(NATURAL_SORT_RE) || [];
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {

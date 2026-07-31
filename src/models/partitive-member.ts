@@ -13,36 +13,37 @@
 // HyperedgeMember, because it is partitive-specific. GenericMember
 // carries `delimitingCharacteristic` instead (the intension-difference
 // value per §5.5.4.2.1, which always applies to every generic member).
-//
-// Matches concept-model/models/concepts/PartitiveMember.lutaml exactly:
-//   +ref            — ConceptRef [1]
-//   +presence       — PartitivePresence [0..1] (default: required)
-//   +count          — PartitiveCount [0..1] (default: exactly_one)
-//   +is_delimiting  — Boolean [0..1] (default: false)
-//
-// The combination (optional, at_least_one) is invalid: if a part is
-// optional, the at-least-one constraint is vacuous and collapses to
-// (optional, multiple). Rejected at construction by HyperedgeMember's
-// delegate to multiplicityFromPair.
 
 import { HyperedgeMember } from './hyperedge-member.js';
+import type { HyperedgeMemberJson } from './hyperedge-member.js';
+
+export interface PartitiveMemberJson extends HyperedgeMemberJson {
+  is_delimiting?: boolean;
+}
 
 export class PartitiveMember extends HyperedgeMember {
-  constructor(data = {}) {
+  readonly is_delimiting: boolean;
+
+  constructor(data: PartitiveMemberJson = { ref: {} }) {
     super(data);
     this.is_delimiting = _resolveDelimiting(data.is_delimiting);
   }
 
-  get isDelimiting() { return this.is_delimiting === true; }
+  get isDelimiting(): boolean { return this.is_delimiting === true; }
 
-  toJSON() {
+  override toJSON(): PartitiveMemberJson {
     const base = super.toJSON();
-    if (this.is_delimiting) base.is_delimiting = true;
-    return base;
+    const out: PartitiveMemberJson = { ...base };
+    if (this.is_delimiting) out.is_delimiting = true;
+    return out;
+  }
+
+  static override fromJSON(data: PartitiveMemberJson): PartitiveMember {
+    return new PartitiveMember(data);
   }
 }
 
-function _resolveDelimiting(value) {
+function _resolveDelimiting(value: boolean | null | undefined): boolean {
   if (value == null) return false;
   if (typeof value !== 'boolean') {
     throw new Error(

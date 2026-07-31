@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Bibliography emitter — emits dcterms:BibliographicResource per
 // bibliography entry. Mirrors concept-browser's bibliography-emitter.ts.
 //
@@ -106,9 +105,9 @@ export function* bibliographyToQuads(input) {
 export function normalizeBibliographyData(raw) {
   if (!raw || typeof raw !== 'object') return [];
   if (Array.isArray(raw.bibliography)) {
-    return raw.bibliography.map(e => entryFromV3(e));
+    return raw.bibliography.map(e => entryFromV3(e, null));
   }
-  const entries = [];
+  const entries: unknown[] = [];
   for (const [id, value] of Object.entries(raw)) {
     if (!value || typeof value !== 'object') continue;
     entries.push(entryFromV3(value, id));

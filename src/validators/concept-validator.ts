@@ -1,4 +1,5 @@
 // @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
+// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { ValidationRule } from './validation-rule.js';
 import { ValidationResult } from './validation-result.js';
 

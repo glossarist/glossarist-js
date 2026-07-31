@@ -94,7 +94,7 @@ export function agentsFromContributors(contributors, agentBase) {
  * @param {string} [options.orgBase] — default https://glossarist.org/org
  * @returns {Generator<Quad, void, unknown>}
  */
-export function* agentsToQuads(agents, options = {}) {
+export function* agentsToQuads(agents: Record<string, unknown>[], options: Record<string, unknown> = {}) {
   const orgBase = options.orgBase;
   if (!orgBase) throw new Error('agentsToQuads requires options.orgBase — the deployment canonical URI root for organizations.');
   const emittedOrgs = new Set();
@@ -104,10 +104,10 @@ export function* agentsToQuads(agents, options = {}) {
     yield quad(person, namedNode(RDF_TYPE), namedNode(FOAF.Person));
     yield quad(person, namedNode(RDF_TYPE), namedNode(PROV.Person));
     yield quad(person, namedNode(RDF_TYPE), namedNode(PROV.Agent));
-    yield quad(person, namedNode(FOAF.name), literal(a.name));
+    yield quad(person, namedNode(FOAF.name), literal((a as Record<string, unknown>).name as string));
 
-    if (a.email) {
-      yield quad(person, namedNode(FOAF.mbox), namedNode(`mailto:${a.email}`));
+    if ((a as Record<string, unknown>).email as string) {
+      yield quad(person, namedNode(FOAF.mbox), namedNode(`mailto:${(a as Record<string, unknown>).email as string}`));
     }
     if (a.url) {
       yield quad(person, namedNode(RDFS.seeAlso), namedNode(a.url));

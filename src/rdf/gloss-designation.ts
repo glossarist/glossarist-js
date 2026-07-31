@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Designation → RDF quads. Mirrors glossarist-ruby's
 // `Rdf::GlossDesignation` + the per-subtype classes (GlossExpression,
 // GlossAbbreviation, etc.). The ontology class for each subtype is
@@ -66,8 +65,8 @@ export function* designationToQuads(designation, { subjectUri, language, index }
   // backward compatibility with simpler designations.
   const booleanType = namedNode(XSD_BOOLEAN);
   for (const [field, predicate] of BOOLEAN_FLAGS) {
-    if (designation[field]) {
-      yield quad(namedNode(desigSubject), namedNode(predicate), literal('true', booleanType));
+    if (designation[field as string]) {
+      yield quad(namedNode(desigSubject), namedNode(predicate as string), literal('true', booleanType));
     }
   }
 }

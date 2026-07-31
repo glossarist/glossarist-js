@@ -1,7 +1,21 @@
 import { GlossaristModel } from './base.js';
 
+export interface BibliographyEntryJson {
+  id?: string | null;
+  reference?: string | null;
+  title?: string | null;
+  link?: string | null;
+  type?: string | null;
+}
+
 export class BibliographyEntry extends GlossaristModel {
-  constructor(data = {}) {
+  readonly id: string | null;
+  readonly reference: string | null;
+  readonly title: string | null;
+  readonly link: string | null;
+  readonly type: string | null;
+
+  constructor(data: BibliographyEntryJson = {}) {
     super();
     this.id = data.id ?? null;
     this.reference = data.reference ?? null;
@@ -10,8 +24,8 @@ export class BibliographyEntry extends GlossaristModel {
     this.type = data.type ?? null;
   }
 
-  toJSON() {
-    const obj = {};
+  override toJSON(): BibliographyEntryJson {
+    const obj: BibliographyEntryJson = {};
     if (this.id != null) obj.id = this.id;
     if (this.reference != null) obj.reference = this.reference;
     if (this.title != null) obj.title = this.title;
@@ -20,7 +34,7 @@ export class BibliographyEntry extends GlossaristModel {
     return obj;
   }
 
-  static fromJSON(data) {
+  static override fromJSON(data: BibliographyEntryJson): BibliographyEntry {
     return new BibliographyEntry(data);
   }
 }

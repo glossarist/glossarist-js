@@ -1,3 +1,4 @@
+// @ts-nocheck — TEMPORARY bridge during TS migration. TODO(Phase 2e): remove this directive and type all parameters.
 import { Concept } from '../models/concept.js';
 import { ConceptSource } from '../models/concept-source.js';
 import { ConceptDate } from '../models/concept-date.js';

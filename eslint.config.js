@@ -19,6 +19,11 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-non-null-assertion': 'warn',
       '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/ban-ts-comment': ['error', {
+        'ts-nocheck': 'allow-with-description',
+        'ts-expect-error': 'allow-with-description',
+        minimumDescriptionLength: 10,
+      }],
     },
   },
   {

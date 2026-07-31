@@ -1,3 +1,4 @@
+// @ts-nocheck — TEMPORARY bridge during TS migration. TODO(Phase 2e): remove this directive and type all parameters.
 import { GlossaristModel } from '../models/base.js';
 import { PartitiveHyperedge } from '../models/partitive-hyperedge.js';
 import { GenericHyperedge } from '../models/generic-hyperedge.js';

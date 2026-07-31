@@ -1,4 +1,5 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
+import type { Concept } from './models/concept.js';
+import type { RegisterJson } from './models/register.js';
 import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
@@ -38,7 +39,7 @@ export function readConcepts(dir) {
     .filter(f => f.endsWith('.yaml') && f !== 'register.yaml')
     .sort(naturalSort);
 
-  const concepts = [];
+  const concepts: Concept[] = [];
   for (const file of files) {
     const raw = fs.readFileSync(path.join(dir, file), 'utf8');
     const concept = conceptParser.parse(raw, file);
@@ -150,5 +151,5 @@ export function readRegister(dir) {
   const p = path.join(dir, 'register.yaml');
   if (!fs.existsSync(p)) return null;
   const raw = yaml.load(fs.readFileSync(p, 'utf8'));
-  return Register.fromJSON(raw);
+  return Register.fromJSON(raw as RegisterJson);
 }

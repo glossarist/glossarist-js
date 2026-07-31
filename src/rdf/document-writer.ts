@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Quads → canonical Turtle / N-Triples / JSON-LD document.
 //
 // Turtle is produced via N3.Writer. JSON-LD via the `jsonld` package
@@ -11,7 +10,7 @@ import { PREFIXES } from './prefixes.js';
 // Collects all quads yielded by an emitter into an array. Useful for tests
 // and for callers that want to inspect the quad stream directly.
 export function collectQuads(quadsIterable) {
-  const out = [];
+  const out: unknown[] = [];
   for (const q of quadsIterable) out.push(q);
   return out;
 }

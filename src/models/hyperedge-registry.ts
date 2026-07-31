@@ -21,18 +21,34 @@
 // The abstract base (AbstractHyperedge) has no wireKey and is skipped
 // by register() — it cannot be instantiated through the registry.
 
-class HyperedgeRegistry {
-  static _byWireKey = new Map();
-  static _byTypeTag = new Map();
-  static _byRdfType = new Map();
+import type { AbstractHyperedge } from './abstract-hyperedge.js';
 
-  static register(cls) {
+/**
+ * Shape a registered hyperedge class must satisfy. Every leaf class
+ * in src/models/ matches this shape (declared as static fields).
+ */
+export interface HyperedgeClass {
+  readonly wireKey: string;
+  readonly typeTag: string;
+  readonly rdfType: string;
+  readonly memberClass: new (...args: never[]) => unknown;
+  readonly v1WireKeys?: ReadonlyArray<string>;
+  readonly kindLabel?: string;
+  readonly name: string;
+}
+
+class HyperedgeRegistry {
+  static _byWireKey: Map<string, HyperedgeClass> = new Map();
+  static _byTypeTag: Map<string, HyperedgeClass> = new Map();
+  static _byRdfType: Map<string, HyperedgeClass> = new Map();
+
+  static register(cls: HyperedgeClass | undefined): boolean {
     if (!cls || !cls.wireKey || !cls.typeTag || !cls.rdfType) return false;
     if (this._byWireKey.has(cls.wireKey)) {
       throw new Error(
         `HyperedgeRegistry: duplicate wireKey '${cls.wireKey}' ` +
         `(trying to register ${cls.name}; already registered to ` +
-        `${this._byWireKey.get(cls.wireKey).name})`,
+        `${this._byWireKey.get(cls.wireKey)?.name})`,
       );
     }
     if (this._byTypeTag.has(cls.typeTag)) {
@@ -53,9 +69,11 @@ class HyperedgeRegistry {
     return true;
   }
 
-  // Test-only. Removes a class from all three indexes. Used by the OCP
-  // spec to clean up mock types it adds during a test run.
-  static unregister(cls) {
+  /**
+   * Test-only. Removes a class from all three indexes. Used by the OCP
+   * spec to clean up mock types it adds during a test run.
+   */
+  static unregister(cls: HyperedgeClass | undefined): boolean {
     if (!cls) return false;
     const r1 = this._byWireKey.delete(cls.wireKey);
     const r2 = this._byTypeTag.delete(cls.typeTag);
@@ -63,14 +81,20 @@ class HyperedgeRegistry {
     return r1 || r2 || r3;
   }
 
-  static forWireKey(key) { return this._byWireKey.get(key) ?? null; }
-  static forTypeTag(tag) { return this._byTypeTag.get(tag) ?? null; }
-  static forRdfType(type) { return this._byRdfType.get(type) ?? null; }
+  static forWireKey(key: string): HyperedgeClass | null {
+    return this._byWireKey.get(key) ?? null;
+  }
+  static forTypeTag(tag: string): HyperedgeClass | null {
+    return this._byTypeTag.get(tag) ?? null;
+  }
+  static forRdfType(type: string): HyperedgeClass | null {
+    return this._byRdfType.get(type) ?? null;
+  }
 
-  static allClasses() {
+  static allClasses(): HyperedgeClass[] {
     // Dedup in case the same class is reachable via multiple indexes.
-    const seen = new Set();
-    const out = [];
+    const seen = new Set<HyperedgeClass>();
+    const out: HyperedgeClass[] = [];
     for (const cls of this._byTypeTag.values()) {
       if (!seen.has(cls)) {
         seen.add(cls);
@@ -80,14 +104,16 @@ class HyperedgeRegistry {
     return out;
   }
 
-  static allWireKeys()  { return [...this._byWireKey.keys()]; }
-  static allTypeTags()  { return [...this._byTypeTag.keys()]; }
+  static allWireKeys(): string[] { return [...this._byWireKey.keys()]; }
+  static allTypeTags(): string[] { return [...this._byTypeTag.keys()]; }
 
-  // Snapshot of every registered wire-shape identifier (v2 wireKey plus
-  // any v1 legacy keys). Used by the parser to reserve STRUCTURAL_KEYS
-  // and to know which top-level YAML keys to walk for hyperedge data.
-  static allWireAndLegacyKeys() {
-    const out = [];
+  /**
+   * Snapshot of every registered wire-shape identifier (v2 wireKey plus
+   * any v1 legacy keys). Used by the parser to reserve STRUCTURAL_KEYS
+   * and to know which top-level YAML keys to walk for hyperedge data.
+   */
+  static allWireAndLegacyKeys(): string[] {
+    const out: string[] = [];
     for (const cls of this.allClasses()) {
       out.push(cls.wireKey);
       for (const k of cls.v1WireKeys ?? []) out.push(k);
@@ -96,15 +122,19 @@ class HyperedgeRegistry {
   }
 }
 
-// Helper: partition a unified hyperedge array by wire key. Used by
-// Concept.toJSON, ConceptSerializer, and diff-patch to emit per-type
-// wire keys without per-type branching in those files. Adding a new
-// hyperedge type "just works" because the group is keyed by the
-// class's static wireKey.
-export function groupHyperedgesByWireKey(hyperedges) {
-  const out = {};
+/**
+ * Helper: partition a unified hyperedge array by wire key. Used by
+ * Concept.toJSON, ConceptSerializer, and diff-patch to emit per-type
+ * wire keys without per-type branching in those files. Adding a new
+ * hyperedge type "just works" because the group is keyed by the
+ * class's static wireKey.
+ */
+export function groupHyperedgesByWireKey(
+  hyperedges: ReadonlyArray<AbstractHyperedge> | null | undefined,
+): Record<string, AbstractHyperedge[]> {
+  const out: Record<string, AbstractHyperedge[]> = {};
   for (const h of hyperedges ?? []) {
-    const key = h?.constructor?.wireKey;
+    const key = (h?.constructor as unknown as HyperedgeClass | undefined)?.wireKey;
     if (!key) continue;
     if (!out[key]) out[key] = [];
     out[key].push(h);

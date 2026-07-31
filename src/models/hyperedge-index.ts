@@ -15,11 +15,19 @@
 //
 // Identity key matches HyperedgeRegistry / ConceptRef conventions:
 //   `${source}:${id}`   (empty source or id is rejected)
-//
-// See TODO Phase 9.
+
+import type { AbstractHyperedge } from './abstract-hyperedge.js';
+
+interface HyperedgeLike {
+  comprehensive?: { source?: string | null; id?: string | null } | null;
+  members?: ReadonlyArray<{ ref?: { source?: string | null; id?: string | null } | null }>;
+}
 
 export class HyperedgeIndex {
-  constructor(hyperedges = []) {
+  private readonly _byComprehensive: Map<string, HyperedgeLike[]>;
+  private readonly _byMember: Map<string, HyperedgeLike[]>;
+
+  constructor(hyperedges: ReadonlyArray<HyperedgeLike> = []) {
     this._byComprehensive = new Map();
     this._byMember = new Map();
 
@@ -35,45 +43,51 @@ export class HyperedgeIndex {
   }
 
   // Hyperedges where the given concept is the comprehensive (the "1" side).
-  forComprehensive(qualifiedId) {
+  forComprehensive(qualifiedId: string): HyperedgeLike[] {
     return this._byComprehensive.get(qualifiedId) ?? [];
   }
 
   // Hyperedges where the given concept appears as a member (the "many" side).
-  forMember(qualifiedId) {
+  forMember(qualifiedId: string): HyperedgeLike[] {
     return this._byMember.get(qualifiedId) ?? [];
   }
 
   // All concepts that appear as a comprehensive in any indexed hyperedge.
-  comprehensives() {
+  comprehensives(): string[] {
     return [...this._byComprehensive.keys()];
   }
 
   // All concepts that appear as a member in any indexed hyperedge.
-  members() {
+  members(): string[] {
     return [...this._byMember.keys()];
   }
 
-  get size() {
+  get size(): number {
     return this._byComprehensive.size;
   }
 }
 
-// Build a HyperedgeIndex across multiple Concepts' relations arrays
-// (a dataset-wide view). Each Concept contributes its own .relations.
-// Helper for the most common pattern: index once at collection load,
-// query many times.
-export function buildDatasetIndex(concepts = []) {
-  const all = [];
+/**
+ * Build a HyperedgeIndex across multiple Concepts' relations arrays
+ * (a dataset-wide view). Each Concept contributes its own .relations.
+ * Helper for the most common pattern: index once at collection load,
+ * query many times.
+ */
+export function buildDatasetIndex(
+  concepts: ReadonlyArray<{ relations?: ReadonlyArray<AbstractHyperedge | HyperedgeLike> }> = [],
+): HyperedgeIndex {
+  const all: HyperedgeLike[] = [];
   for (const concept of concepts) {
     for (const h of concept.relations ?? []) {
-      all.push(h);
+      all.push(h as HyperedgeLike);
     }
   }
   return new HyperedgeIndex(all);
 }
 
-function _qualifiedId(ref) {
+function _qualifiedId(
+  ref: { source?: string | null; id?: string | null } | null | undefined,
+): string | null {
   if (!ref) return null;
   const source = ref.source ?? '';
   const id = ref.id ?? '';
@@ -81,7 +95,7 @@ function _qualifiedId(ref) {
   return `${source}:${id}`;
 }
 
-function _addToMapList(map, key, value) {
+function _addToMapList<T>(map: Map<string, T[]>, key: string, value: T): void {
   if (!map.has(key)) map.set(key, []);
-  map.get(key).push(value);
+  map.get(key)?.push(value);
 }

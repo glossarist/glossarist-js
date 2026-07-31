@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Image variant emitter — emits foaf:Image per format/language variant
 // of a dataset figure. Mirrors concept-browser's image-variant-emitter.ts.
 //
@@ -9,7 +8,7 @@
 // - dcat:downloadURL (canonical download)
 
 import { namedNode, literal, quad } from './terms.js';
-import { PREFIXES } from './predicates.js';
+import { PREFIXES } from './prefixes.js';
 import { RDF_TYPE } from './curie.js';
 
 const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';

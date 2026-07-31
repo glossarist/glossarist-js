@@ -6,9 +6,13 @@
 // constants (`rdf:type`, `skos:Concept`) because JSON-LD handles them via
 // the `@type` keyword. We construct those from the namespace URIs here so
 // downstream emitters don't have to repeat the construction.
-import { PRED, PREFIXES } from './predicates.js';
+import { PRED, PREFIXES as _PREFIXES } from './predicates.js';
 
-export { PRED, PREFIXES };
+// Widen the type so emitters can access keys not in the JSON-LD context
+// (foaf, dcat) via `PREFIXES.foaf ?? 'fallback'`. The runtime values
+// are the same; the type just permits unknown-key access.
+export const PREFIXES: Record<string, string> = _PREFIXES as Record<string, string>;
+export { PRED };
 
 // SKOS-XL label predicates — same local name as SKOS, so we construct them
 // from the SKOS-XL namespace URI.

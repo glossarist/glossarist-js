@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Provenance emitter — emits prov:wasGeneratedBy + prov:Activity quads
 // for any resource that needs build/view-time provenance.
 //
@@ -7,7 +6,7 @@
 // on standard RDF/JS Quad[] (no RdfGraph abstraction).
 
 import { namedNode, blankNode, literal, quad } from './terms.js';
-import { PREFIXES } from './predicates.js';
+import { PREFIXES } from './prefixes.js';
 import { RDF_TYPE, RDFS_LABEL } from './curie.js';
 import { deterministicBnodeId } from './bnode-id.js';
 

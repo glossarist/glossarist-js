@@ -20,7 +20,7 @@
 // use it.
 
 import { RDF_TYPE, RDFS_LABEL, compactIri } from './curie.js';
-import { PREFIXES } from './predicates.js';
+import { PREFIXES } from './prefixes.js';
 
 const SKOS_PREF_LABEL = `${PREFIXES.skos}prefLabel`;
 

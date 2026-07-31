@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Dataset emitter — emits dcat:Dataset + skos:ConceptScheme per
 // register. Mirrors concept-browser's dataset-emitter.ts.
 //
@@ -12,7 +11,7 @@
 // for cascading section membership).
 
 import { namedNode, blankNode, literal, quad } from './terms.js';
-import { PREFIXES } from './predicates.js';
+import { PREFIXES } from './prefixes.js';
 import { RDF_TYPE } from './curie.js';
 import { deterministicBnodeId } from './bnode-id.js';
 

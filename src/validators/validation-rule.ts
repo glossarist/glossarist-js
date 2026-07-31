@@ -1,15 +1,17 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
-export class ValidationRule {
-  constructor(name, severity = 'error') {
+import type { ValidationResult } from './validation-result.js';
+
+export abstract class ValidationRule {
+  readonly name: string;
+  readonly severity: 'error' | 'warning';
+
+  constructor(name: string, severity: 'error' | 'warning' = 'error') {
     this.name = name;
     this.severity = severity;
   }
 
-  validate(_value, _path, _result) {
-    throw new Error(`${this.constructor.name} must implement validate()`);
-  }
+  abstract validate(concept: unknown, path: string, result: ValidationResult): void;
 
-  addIssue(result, path, message) {
+  addIssue(result: ValidationResult, path: string, message: string): void {
     if (this.severity === 'warning') {
       result.addWarning(path, message);
     } else {

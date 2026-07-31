@@ -1,16 +1,19 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 export class ValidationError {
-  constructor(path, message, severity = 'error') {
+  readonly path: string;
+  readonly message: string;
+  readonly severity: 'error' | 'warning';
+
+  constructor(path: string, message: string, severity: 'error' | 'warning' = 'error') {
     this.path = path;
     this.message = message;
     this.severity = severity;
   }
 
-  toString() {
+  toString(): string {
     return `[${this.severity.toUpperCase()}] ${this.path}: ${this.message}`;
   }
 
-  toJSON() {
+  toJSON(): { path: string; message: string; severity: string } {
     return { path: this.path, message: this.message, severity: this.severity };
   }
 }

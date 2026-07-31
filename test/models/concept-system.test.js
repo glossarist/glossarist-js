@@ -4,7 +4,6 @@ import { ConceptSystem } from '../../src/models/concept-system.js';
 import { CONCEPT_SYSTEM_TYPE } from '../../src/models/concept-system-type.js';
 import { EQUIVALENCE_DEGREE } from '../../src/models/equivalence-degree.js';
 import { CONCEPT_TYPE } from '../../src/models/concept-type.js';
-import { ConceptRef } from '../../src/models/concept-ref.js';
 
 const validAttrs = () => ({
   id: 'viml-measurement-standard-system',

@@ -467,7 +467,7 @@ function _migrateV1Hash(
   hash: Record<string, unknown>,
 ): Record<string, unknown> | null {
   if (cls === PartitiveHyperedge && v1Key === 'partitive_hyperedges') {
-    return migrateHyperedgeToRelation(hash) as Record<string, unknown>;
+    return migrateHyperedgeToRelation(hash) as unknown as Record<string, unknown>;
   }
   return null;
 }

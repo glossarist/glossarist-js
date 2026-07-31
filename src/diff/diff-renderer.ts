@@ -1,3 +1,4 @@
+// @ts-nocheck — TEMPORARY bridge during TS migration. TODO(Phase 2e): remove this directive and type all parameters.
 import { TextDiff } from './text-diff.js';
 import { resolveMultiplicity } from '../models/multiplicity.js';
 

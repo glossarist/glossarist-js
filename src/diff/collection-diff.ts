@@ -1,3 +1,4 @@
+// @ts-nocheck — TEMPORARY bridge during TS migration. TODO(Phase 2e): remove this directive and type all parameters.
 import { GlossaristModel } from '../models/base.js';
 import { Added, Removed, Matched, deserializeChange } from './change.js';
 import { ConceptDiff, DiffStats, diffConcepts } from './concept-diff.js';

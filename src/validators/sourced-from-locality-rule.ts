@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Validates that every ConceptSource#sourced_from Citation includes a
 // locality. Per concept-model commit 9c065df ("sourced_from citations
 // must include locality"), a sourced_from entry without a locality is

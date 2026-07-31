@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 const ENTITY_DIRECTORIES = Object.freeze(new Map([
   ['figure', 'figures'],
   ['table', 'tables'],

@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Version emitter — emits prov:Entity version chain per dataset.
 // Mirrors concept-browser's version-emitter.ts.
 //

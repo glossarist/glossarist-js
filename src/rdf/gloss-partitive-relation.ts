@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // PartitiveHyperedge → RDF quads.
 //
 // Shape (per concept-model ontology, v3.2.0):

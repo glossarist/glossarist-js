@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Validates delimiting coherence across a concept's PartitiveRelations
 // per ISO 704:2022.
 //

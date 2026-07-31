@@ -1,11 +1,11 @@
-// @ts-nocheck — TEMPORARY bridge during TS migration. TODO(Phase 2e): remove this directive and type all parameters.
+// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { GlossaristModel } from '../models/base.js';
 import { Added, Removed, Matched, deserializeChange } from './change.js';
 import { ConceptDiff, DiffStats, diffConcepts } from './concept-diff.js';
 import { averageSimilarity } from './similarity.js';
 
 export class ConceptCollectionDiff extends GlossaristModel {
-  constructor(data = {}) {
+  constructor(data: Record<string, unknown> = {}) {
     super();
     this.oldCount = data.oldCount ?? data.old_count ?? 0;
     this.newCount = data.newCount ?? data.new_count ?? 0;

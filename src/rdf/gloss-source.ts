@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // ConceptSource → RDF quads. Mirrors glossarist-ruby's
 // `Rdf::GlossConceptSource` + `Rdf::GlossCitation`. Sources are reified
 // resources linked from their parent (concept or localized concept or

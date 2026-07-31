@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // PartitiveMember → RDF quads.
 //
 // Emits per-member predicates (presence, count, is_delimiting,

@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Shared identity-key helpers for cross-relation validators.
 //
 // Extracted from HyperedgeCoherenceRule and

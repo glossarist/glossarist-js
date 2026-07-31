@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Warns when binary `has_part` / `is_part_of` edges duplicate
 // PartitiveHyperedge members, or when a concept has many binary
 // has_part edges that should be consolidated into a PartitiveHyperedge.

@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // GenericHyperedge → RDF quads.
 //
 // Shape (mirrors gloss-partitive-relation.js, swapping partitive

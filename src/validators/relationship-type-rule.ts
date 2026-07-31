@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { ValidationRule } from './validation-rule.js';
 import { RELATIONSHIP_TYPES } from '../models/related-concept.js';
 import { DESIGNATION_RELATIONSHIP_TYPES } from '../models/designation-relationship.js';

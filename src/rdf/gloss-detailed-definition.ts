@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // DetailedDefinition → RDF quads. Mirrors glossarist-ruby's
 // `Rdf::GlossDetailedDefinition`. Used for definitions, notes, examples,
 // and annotations — they all share the same shape (content + optional

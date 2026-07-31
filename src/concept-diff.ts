@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 /**
  * @deprecated Import from `glossarist/diff` (i.e. `src/diff/index.js`)
  * instead. This file is a backwards-compatibility shim left over from

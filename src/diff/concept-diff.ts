@@ -1,4 +1,4 @@
-// @ts-nocheck — TEMPORARY bridge during TS migration. TODO(Phase 2e): remove this directive and type all parameters.
+// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { GlossaristModel } from '../models/base.js';
 import { PartitiveHyperedge } from '../models/partitive-hyperedge.js';
 import { GenericHyperedge } from '../models/generic-hyperedge.js';
@@ -33,7 +33,7 @@ const LOCALIZATION_METADATA_FIELDS = Object.freeze([
 // (See file-top comment about why they're duplicated rather than imported.)
 
 export class DiffStats extends GlossaristModel {
-  constructor(data = {}) {
+  constructor(data: Record<string, unknown> = {}) {
     super();
     this._added = data.added ?? 0;
     this._removed = data.removed ?? 0;
@@ -55,7 +55,7 @@ export class DiffStats extends GlossaristModel {
 }
 
 export class MetadataDiff extends GlossaristModel {
-  constructor(data = {}) {
+  constructor(data: Record<string, unknown> = {}) {
     super();
     this._changes = {};
     const raw = data.changes ?? data ?? {};
@@ -97,7 +97,7 @@ export class MetadataDiff extends GlossaristModel {
 }
 
 export class ConceptLevelDiff extends GlossaristModel {
-  constructor(data = {}) {
+  constructor(data: Record<string, unknown> = {}) {
     super();
     this._sources = wrapListDiff(data.sources);
     this._dates = wrapListDiff(data.dates);
@@ -193,7 +193,7 @@ export class ConceptLevelDiff extends GlossaristModel {
 }
 
 export class LocalizedConceptDiff extends GlossaristModel {
-  constructor(data = {}) {
+  constructor(data: Record<string, unknown> = {}) {
     super();
     this.languageCode = data.languageCode ?? data.language_code ?? null;
     this._designations = wrapListDiff(data.designations);
@@ -279,7 +279,7 @@ export class LocalizedConceptDiff extends GlossaristModel {
 }
 
 export class ConceptDiff extends GlossaristModel {
-  constructor(data = {}) {
+  constructor(data: Record<string, unknown> = {}) {
     super();
     this._oldId = data.oldId ?? data.old_id ?? null;
     this._newId = data.newId ?? data.new_id ?? null;

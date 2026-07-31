@@ -1,7 +1,21 @@
 import { GlossaristModel } from './base.js';
 
+export interface PronunciationJson {
+  content?: string | null;
+  language?: string | null;
+  script?: string | null;
+  system?: string | null;
+  country?: string | null;
+}
+
 export class Pronunciation extends GlossaristModel {
-  constructor(data = {}) {
+  readonly content: string | null;
+  readonly language: string | null;
+  readonly script: string | null;
+  readonly system: string | null;
+  readonly country: string | null;
+
+  constructor(data: PronunciationJson = {}) {
     super();
     this.content = data.content ?? null;
     this.language = data.language ?? null;
@@ -10,8 +24,8 @@ export class Pronunciation extends GlossaristModel {
     this.country = data.country ?? null;
   }
 
-  toJSON() {
-    const obj = {};
+  override toJSON(): PronunciationJson {
+    const obj: PronunciationJson = {};
     if (this.content != null) obj.content = this.content;
     if (this.language != null) obj.language = this.language;
     if (this.script != null) obj.script = this.script;
@@ -20,7 +34,7 @@ export class Pronunciation extends GlossaristModel {
     return obj;
   }
 
-  static fromJSON(data) {
+  static override fromJSON(data: PronunciationJson): Pronunciation {
     return new Pronunciation(data);
   }
 }

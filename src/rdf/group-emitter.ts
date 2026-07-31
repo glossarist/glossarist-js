@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Group emitter — emits dcat:DatasetSeries (lineage) or dcat:Catalog
 // (topic/family/collection) for dataset groups. Mirrors concept-browser's
 // group-emitter.ts.
@@ -13,7 +12,7 @@
 // Both kinds are also typed as skos:ConceptScheme for SKOS interop.
 
 import { namedNode, literal, quad } from './terms.js';
-import { PREFIXES } from './predicates.js';
+import { PREFIXES } from './prefixes.js';
 import { RDF_TYPE } from './curie.js';
 
 // Namespace IRIs from canonical PREFIXES.

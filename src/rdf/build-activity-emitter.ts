@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Build activity emitter — emits prov:Activity per build run.
 // Mirrors concept-browser's build-activity-emitter.ts.
 //
@@ -10,7 +9,7 @@
 // - prov:wasAssociatedWith for the CI bot agent
 
 import { namedNode, literal, quad } from './terms.js';
-import { PREFIXES } from './predicates.js';
+import { PREFIXES } from './prefixes.js';
 import { RDF_TYPE } from './curie.js';
 
 const PROV_NS    = PREFIXES.prov;

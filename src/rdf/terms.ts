@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Shared RDF/JS term constructors. Replaces the per-emitter
 // `const { namedNode, literal, quad } = DataFactory;` pattern that was
 // repeated across the RDF layer.

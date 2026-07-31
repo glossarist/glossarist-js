@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // CURIE helpers — resolve/compact IRIs against the canonical PREFIXES.
 //
 // Single source of truth for CURIE ↔ IRI conversion. Previously
@@ -9,7 +8,7 @@ import { PREFIXES } from './prefixes.js';
 
 const ABSOLUTE_SCHEMES = new Set(['http', 'https', 'urn', 'file', 'mailto', 'ftp']);
 
-export function isAbsoluteIri(s) {
+export function isAbsoluteIri(s: string): boolean {
   if (typeof s !== 'string' || s.length === 0) return false;
   if (s.startsWith('urn:')) return true;
   const colon = s.indexOf(':');
@@ -17,17 +16,17 @@ export function isAbsoluteIri(s) {
   return ABSOLUTE_SCHEMES.has(s.slice(0, colon));
 }
 
-export function resolveIri(iri, prefixes = PREFIXES) {
+export function resolveIri(iri: string, prefixes: Record<string, string> = PREFIXES): string {
   if (isAbsoluteIri(iri)) return iri;
   const colon = iri.indexOf(':');
   if (colon < 1) return iri;
   const prefix = iri.slice(0, colon);
   const local = iri.slice(colon + 1);
-  const base = prefixes[prefix];
+  const base = prefixes[prefix as keyof typeof PREFIXES];
   return base ? `${base}${local}` : iri;
 }
 
-export function compactIri(iri, prefixes = PREFIXES) {
+export function compactIri(iri: string, prefixes: Record<string, string> = PREFIXES): string {
   let best = null;
   let bestLen = 0;
   for (const [prefix, base] of Object.entries(prefixes)) {

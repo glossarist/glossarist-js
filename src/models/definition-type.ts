@@ -7,6 +7,12 @@
 
 import { makeEnum } from './enum.js';
 
+export type DefinitionType =
+  | 'intensional'
+  | 'extensional'
+  | 'partitive'
+  | 'translated';
+
 export const DEFINITION_TYPE = makeEnum('DEFINITION_TYPE', {
   INTENSIONAL: 'intensional',
   EXTENSIONAL: 'extensional',
@@ -14,4 +20,5 @@ export const DEFINITION_TYPE = makeEnum('DEFINITION_TYPE', {
   TRANSLATED: 'translated',
 });
 
-export const DEFAULT_DEFINITION_TYPE = DEFINITION_TYPE.INTENSIONAL;
+export const DEFAULT_DEFINITION_TYPE: DefinitionType =
+  DEFINITION_TYPE.INTENSIONAL;

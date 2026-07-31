@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Deterministic blank node ID strategy.
 //
 // Single source of truth for bnode IDs across all emitters. Previously
@@ -10,7 +9,7 @@
 // Browser safety: node:crypto is loaded lazily via runtime check so
 // bundlers don't tree-shake the import into the browser bundle.
 
-let nodeCreateHash = null;
+let nodeCreateHash: ((alg: string) => { update(data: string): { digest(enc: string): string } }) | null = null;
 let nodeCryptoChecked = false;
 
 function getNodeCreateHash() {
@@ -22,7 +21,7 @@ function getNodeCreateHash() {
       const mod = (Function('m', 'return require(m)'))('node:module');
       requireFn = mod.createRequire(import.meta.url);
     } catch {
-      requireFn = (m) => (Function('m', 'return require(m)'))(m);
+      requireFn = (m: string) => (Function('m', 'return require(m)'))(m);
     }
     const crypto = requireFn('node:crypto');
     nodeCreateHash = crypto.createHash.bind(crypto);
@@ -32,7 +31,7 @@ function getNodeCreateHash() {
   return nodeCreateHash;
 }
 
-function fnv1a(seed) {
+function fnv1a(seed: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < seed.length; i++) {
     h ^= seed.charCodeAt(i);
@@ -41,7 +40,7 @@ function fnv1a(seed) {
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
-export function deterministicBnodeId(...parts) {
+export function deterministicBnodeId(...parts: ReadonlyArray<unknown>): string {
   const seed = parts.filter(p => p != null && p !== '').join('|');
   if (!seed) return `b${fnv1a('empty')}`;
   const createHash = getNodeCreateHash();

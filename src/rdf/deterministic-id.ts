@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Stable ID helpers for RDF emission. Mirrors glossarist-ruby's
 // Digest::MD5.hexdigest(content)[0..11] for cross-runtime stability.
 //
@@ -7,7 +6,7 @@
 // `createRequire` from `node:module` (also lazy) which is the
 // documented way to use CommonJS `require` from ESM.
 
-let nodeCreateHash = null;
+let nodeCreateHash: ((alg: string) => { update(data: string): { digest(enc: string): string } }) | null = null;
 let nodeCryptoChecked = false;
 
 function getNodeCreateHash() {
@@ -23,7 +22,7 @@ function getNodeCreateHash() {
       requireFn = mod.createRequire(import.meta.url);
     } catch {
       // CJS or already-require-available environment
-      requireFn = (m) => (Function('m', 'return require(m)'))(m);
+      requireFn = (m: string) => (Function('m', 'return require(m)'))(m);
     }
     const crypto = requireFn('node:crypto');
     nodeCreateHash = crypto.createHash.bind(crypto);
@@ -37,7 +36,7 @@ function getNodeCreateHash() {
 // `Digest::MD5.hexdigest(content)[0..11]`. Same content → same ID across
 // processes, machines, and language runtimes (Ruby vs JS) when MD5 is
 // available. Falls back to a 12-char FNV-1a hash in the browser.
-export function deterministicId(...parts) {
+export function deterministicId(...parts: ReadonlyArray<unknown>): string {
   const seed = parts.filter(p => p !== null && p !== undefined).join('|');
   const createHash = getNodeCreateHash();
   if (createHash) {
@@ -48,14 +47,12 @@ export function deterministicId(...parts) {
 
 // Stable blank-node label for an RDF fragment identified by its parent
 // subject + role + index.
-export function deterministicBnode(subject, role, index) {
+export function deterministicBnode(subject: string, role: string, index: number): string {
   return `_:b${deterministicId(subject, role, index)}`;
 }
 
-// 12-char FNV-1a hash. Two 32-bit passes concatenated and truncated.
-// Not as collision-resistant as MD5 but adequate for bnode IDs in a
-// single document. Used only when node:crypto is unavailable.
-function fnv1a12(seed) {
+// 12-char FNV-1a hash.
+function fnv1a12(seed: string): string {
   let h1 = 0x811c9dc5;
   for (let i = 0; i < seed.length; i++) {
     h1 ^= seed.charCodeAt(i);

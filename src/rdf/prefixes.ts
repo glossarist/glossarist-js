@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Re-export prefix map and predicate constants generated from the vendored
 // concept-model JSON-LD context. Downstream code should never duplicate
 // prefix bindings — always import from here.

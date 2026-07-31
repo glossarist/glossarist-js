@@ -111,6 +111,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@rdfjs/types": "^2.0.1",
+    "@types/n3": "^1.26.1",
     "@types/node": "^26.1.2",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.65.0",

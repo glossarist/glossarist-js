@@ -8,7 +8,7 @@
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": false,
-    "allowJs": true,
+    "allowJs": false,
     "checkJs": false,
     "declaration": true,
     "declarationMap": true,

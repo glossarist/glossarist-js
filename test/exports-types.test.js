@@ -1,6 +1,9 @@
 // Verifies that every entry in package.json `exports` declares a `types`
 // path that actually exists on disk. Catches the TODO 20 / PR #31 defect
 // class: runtime exports with missing TypeScript declarations.
+//
+// The ./package.json self-reference is excluded — it is a JSON file,
+// not a TypeScript module.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,6 +17,7 @@ const exports = pkg.exports ?? {};
 
 describe('package.json exports *.d.ts presence', () => {
   for (const [entry, spec] of Object.entries(exports)) {
+    if (entry === './package.json') continue;
     const typesPath = spec?.types;
     it(`${entry} → ${typesPath ?? '(no types)'}`, () => {
       assert.ok(typesPath, `exports entry ${entry} is missing the "types" field`);

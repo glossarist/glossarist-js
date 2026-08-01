@@ -27,7 +27,7 @@ import type { PartitiveCount } from './partitive-count.js';
 import { multiplicityFromPair } from './multiplicity.js';
 
 export interface HyperedgeMemberJson {
-  ref: ConceptRefJson | ConceptRef;
+  ref?: ConceptRefJson | ConceptRef;
   presence?: PartitivePresence;
   count?: PartitiveCount;
 }
@@ -37,7 +37,7 @@ export abstract class HyperedgeMember extends GlossaristModel {
   readonly presence: PartitivePresence;
   readonly count: PartitiveCount;
 
-  constructor(data: HyperedgeMemberJson = { ref: {} }) {
+  constructor(data: HyperedgeMemberJson = {}) {
     super();
     this.ref = _ensureRef(data.ref);
     this.presence = _resolvePresence(data.presence);

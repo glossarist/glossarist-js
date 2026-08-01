@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import * as yaml from 'js-yaml';
 import { PartitiveHyperedge } from './models/partitive-hyperedge.js';
 import { GenericHyperedge } from './models/generic-hyperedge.js';
@@ -21,10 +20,13 @@ function _emitTypedRelations(concept) {
 export class ConceptSerializer {
   toCanonicalYaml(concept) {
     const doc = { termid: concept.id };
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (concept.term) doc.term = concept.term;
 
     const { partitive, generic } = _emitTypedRelations(concept);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (partitive.length > 0) doc.partitive_relations = partitive;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (generic.length > 0) doc.generic_relations = generic;
 
     for (const lang of concept.languages) {
@@ -51,6 +53,7 @@ export class ConceptSerializer {
       localizedConcepts[lang] = lcId;
 
       const lcObj = lc.toJSON();
+      // @ts-expect-error TODO(Phase 2e): type this fully
       langDocs.push({ data: lcObj, id: lcId });
     }
 
@@ -60,22 +63,30 @@ export class ConceptSerializer {
     };
 
     if (concept.domains.length > 0) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       mainDoc.data.domains = concept.domains.map(d => d.toJSON());
     }
 
     if (concept.relatedConcepts.length > 0) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       mainDoc.related = concept.relatedConcepts.map(rc => rc.toJSON());
     }
     const { partitive, generic } = _emitTypedRelations(concept);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (partitive.length > 0) mainDoc.partitive_relations = partitive;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (generic.length > 0) mainDoc.generic_relations = generic;
     if (concept.sources.length > 0) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       mainDoc.sources = concept.sources.map(s => s.toJSON());
     }
     if (concept.dates.length > 0) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       mainDoc.dates = concept.dates.map(d => d.toJSON());
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (concept.status) mainDoc.status = concept.status;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (concept.schemaVersion) mainDoc.schema_version = concept.schemaVersion;
 
     const parts = [

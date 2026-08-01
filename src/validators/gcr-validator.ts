@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import * as yaml from 'js-yaml';
 import { DATASET_ASSETS } from '../dataset-asset.js';
 import { ValidationResult } from './validation-result.js';
@@ -23,6 +22,7 @@ export class GcrValidator {
     try {
       meta = yaml.load(raw);
     } catch (e) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       result.addError(`metadata.yaml: invalid YAML: ${e.message}`);
       return;
     }
@@ -55,6 +55,7 @@ export class GcrValidator {
     try {
       yaml.load(raw);
     } catch (e) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       result.addError(`${path}: invalid YAML at line ${e.mark?.line ?? '?'}: ${e.message}`);
     }
   }

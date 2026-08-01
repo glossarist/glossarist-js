@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import * as yaml from 'js-yaml';
 import { Concept } from './models/concept.js';
 import { RelatedConcept } from './models/related-concept.js';
@@ -22,10 +21,14 @@ const STRUCTURAL_KEYS = new Set([
 function _registryStructuralKeys() {
   const out = [];
   for (const cls of HyperedgeRegistry.allClasses()) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     out.push(cls.wireKey);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     out.push(_camelCase(cls.wireKey));
     for (const k of cls.v1WireKeys ?? []) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       out.push(k);
+      // @ts-expect-error TODO(Phase 2e): type this fully
       out.push(_camelCase(k));
     }
   }
@@ -62,6 +65,7 @@ export class ConceptParser {
       // behavior (yaml.org core schema).
       docs = yaml.loadAll(raw, { schema: yaml.CORE_SCHEMA ?? yaml.JSON_SCHEMA });
     } catch (err) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       throw new YamlParseError(label, err);
     }
 
@@ -179,6 +183,7 @@ function _resolveHyperedgeData(container) {
     if (Array.isArray(arr)) {
       for (const r of arr) {
         const tagged = _addTypeIfMissing(r, cls.typeTag);
+        // @ts-expect-error TODO(Phase 2e): type this fully
         if (tagged != null) out.push(tagged);
       }
     }
@@ -192,6 +197,7 @@ function _resolveHyperedgeData(container) {
       for (const h of v1Arr) {
         const hash = h?.toJSON && typeof h.toJSON === 'function' ? h.toJSON() : h;
         const migrated = migrateHyperedgeToRelation(hash);
+        // @ts-expect-error TODO(Phase 2e): type this fully
         if (migrated) out.push({ ...migrated, type: cls.typeTag });
       }
     }

@@ -1,10 +1,12 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { resolveBibliographyRecord, findNonVerbalEntity } from './reference-resolver.js';
 
 export class ReferenceClassifier {
   constructor(registry = {}, sourceDatasetId = null, options = {}) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.registry = registry;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.sourceDatasetId = sourceDatasetId;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.options = options;
   }
 
@@ -28,7 +30,9 @@ export class ReferenceClassifier {
     if (ref.uri) {
       const dsId = ref.resolution?.datasetId;
       if (!dsId) return 'unresolved';
+      // @ts-expect-error TODO(Phase 2e): type this fully
       if (!this.registry[dsId]) return 'external-citation';
+      // @ts-expect-error TODO(Phase 2e): type this fully
       if (dsId === this.sourceDatasetId) return 'same-dataset';
       return 'cross-dataset';
     }
@@ -37,7 +41,9 @@ export class ReferenceClassifier {
     }
     if (ref.lookupKey?.id) {
       const dsId = ref.lookupKey.dataset;
+      // @ts-expect-error TODO(Phase 2e): type this fully
       if (!this.registry[dsId]) return 'unresolved';
+      // @ts-expect-error TODO(Phase 2e): type this fully
       if (dsId === this.sourceDatasetId) return 'same-dataset';
       return 'cross-dataset';
     }
@@ -52,11 +58,13 @@ export class ReferenceClassifier {
 
   _classifyBibliography(ref) {
     if (ref.citation) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       return resolveBibliographyRecord(ref.citation.ref, this.registry)
         ? 'internal-citation'
         : 'self-contained-citation';
     }
     if (ref.uri) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       return resolveBibliographyRecord(ref.resolution, this.registry)
         ? 'internal-citation'
         : 'external-citation';
@@ -69,6 +77,7 @@ export class ReferenceClassifier {
   }
 
   _classifyNonVerbal(ref) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return findNonVerbalEntity(ref, this.registry)
       ? 'internal-citation'
       : 'external-citation';

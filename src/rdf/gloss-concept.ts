@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Concept → RDF quads. Mirrors glossarist-ruby's `Rdf::GlossConcept`.
 //
 // URI shape: `<uriBase>/<registerId>/concept/<conceptId>`.
@@ -19,6 +18,7 @@ import { namedNode, literal, quad } from './terms.js';
 // (2) add one entry here. Per TODO Phase 6e this should be a
 // self-registering registry; for the two current types, the dispatch
 // table is simpler and keeps the dependency graph acyclic.
+// @ts-expect-error TODO(Phase 2e): type this fully
 const HYPEREDGE_EMITTERS: Map<unknown, Record<string, unknown>> = new Map([
   [PartitiveHyperedge, {
     linkPredicate: PRED.gloss.hasPartitiveRelation,

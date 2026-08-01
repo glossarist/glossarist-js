@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { ValidationRule } from './validation-rule.js';
 import { parseMention } from '../reference-mention.js';
 import { GraphicalSymbol } from '../models/designation.js';
@@ -168,6 +167,7 @@ function _findCiteMentions(concept) {
     CITE_MENTION_RE.lastIndex = 0;
     let m;
     while ((m = CITE_MENTION_RE.exec(text)) !== null) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       mentions.push({ key: m[1].trim(), source });
     }
   }
@@ -271,6 +271,7 @@ function _findNvrMentions(concept) {
       if (parsed.kind === 'fig-ref' ||
           parsed.kind === 'table-ref' ||
           parsed.kind === 'formula-ref') {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         mentions.push({ key: parsed.key, source });
       }
     }
@@ -327,7 +328,9 @@ export class NonVerbalRefIntegrityRule extends ValidationRule {
 
 export class OrphanedImagesRule {
   constructor() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.name = 'orphaned-images';
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.severity = 'warning';
   }
 
@@ -366,6 +369,7 @@ export class OrphanedImagesRule {
     const issues = [];
     for (const imgPath of assetIndex.paths) {
       if (!referenced.has(imgPath)) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         issues.push({
           path: imgPath,
           severity: 'warning',

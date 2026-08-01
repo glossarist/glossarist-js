@@ -19,7 +19,7 @@ const DCTERMS_NS = PREFIXES.dcterms;
 const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
 const GLOSS_NS   = PREFIXES.gloss;
 
-const DCTERMS = {
+const DCTERMS: any = {
   BibliographicResource: `${DCTERMS_NS}BibliographicResource`,
   identifier: `${DCTERMS_NS}identifier`,
   bibliographicCitation: `${DCTERMS_NS}bibliographicCitation`,
@@ -27,48 +27,32 @@ const DCTERMS = {
   type: `${DCTERMS_NS}type`,
   isPartOf: `${DCTERMS_NS}isPartOf`,
 };
-const FOAF = {
+const FOAF: any = {
   page: `${FOAF_NS}page`,
 };
 
 // No hardcoded default base URI. Callers MUST pass baseUri explicitly
 // so instance IRIs reflect the consumer's domain, not the library's.
 
-/**
- * @typedef {Object} BibliographyEntry
- * @property {string} id
- * @property {string} reference
- * @property {string} [title]
- * @property {string} [link]
- * @property {string} [type]
- */
-/**
- * @typedef {Object} BibliographyInput
- * @property {string} registerId
- * @property {readonly BibliographyEntry[]} entries
- * @property {string} [baseUri]
- */
+export interface BibliographyEntry {
+  id: string;
+  reference: string;
+  title?: string;
+  link?: string;
+  type?: string;
+}
+export interface BibliographyInput {
+  registerId: string;
+  entries?: readonly BibliographyEntry[];
+  baseUri?: string;
+}
 
-/**
- * Returns the canonical IRI for a bibliography entry.
- *
- * @param {string} registerId
- * @param {string} entryId
- * @param {string} [baseUri]
- */
-export function bibliographyEntryIri(registerId, entryId, baseUri) {
+export function bibliographyEntryIri(registerId: string, entryId: string, baseUri?: string): string {
   if (!baseUri) throw new Error('bibliographyEntryIri requires baseUri — the deployment canonical URI root. glossarist-js does NOT default to glossarist.org because instance data identity must reflect the consumer domain.');
   return `${baseUri}/${registerId}/bib/${entryId}`;
 }
 
-/**
- * Emits dcterms:BibliographicResource quads for each entry. Entries
- * without an id or reference are skipped (matches concept-browser).
- *
- * @param {BibliographyInput} input
- * @returns {Generator<Quad, void, unknown>}
- */
-export function* bibliographyToQuads(input) {
+export function* bibliographyToQuads(input: BibliographyInput) {
   const baseUri = input.baseUri;
   if (!baseUri) throw new Error('bibliographyToQuads requires input.baseUri — the deployment canonical URI root.');
   const parentIri = `${baseUri}/${input.registerId}/`;
@@ -94,28 +78,21 @@ export function* bibliographyToQuads(input) {
   }
 }
 
-/**
- * Normalizes raw bibliography data from a v3 YAML bibliography file.
- * Accepts both shapes:
- *   - { bibliography: [...] }
- *   - { <id>: { ... }, <id>: { ... } }
- *
- * Returns a flat list of BibliographyEntry objects with explicit ids.
- */
-export function normalizeBibliographyData(raw) {
+export function normalizeBibliographyData(raw: unknown): BibliographyEntry[] {
   if (!raw || typeof raw !== 'object') return [];
-  if (Array.isArray(raw.bibliography)) {
-    return raw.bibliography.map(e => entryFromV3(e, null));
+  const r = raw as Record<string, any>;
+  if (Array.isArray(r.bibliography)) {
+    return r.bibliography.map((e: any) => entryFromV3(e, null));
   }
-  const entries: unknown[] = [];
-  for (const [id, value] of Object.entries(raw)) {
+  const entries: BibliographyEntry[] = [];
+  for (const [id, value] of Object.entries(r)) {
     if (!value || typeof value !== 'object') continue;
-    entries.push(entryFromV3(value, id));
+    entries.push(entryFromV3(value as any, id));
   }
   return entries;
 }
 
-function entryFromV3(e, fallbackId) {
+function entryFromV3(e: any, fallbackId: string | null): BibliographyEntry {
   return {
     id: e.id ?? fallbackId ?? '',
     reference: e.reference ?? '',

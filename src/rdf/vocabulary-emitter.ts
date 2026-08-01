@@ -30,13 +30,20 @@ const SKOS_NS = PREFIXES.skos;
  * @property {readonly VocabTerm[]} terms
  */
 
+export interface VocabTerm {
+  iri: string;
+  label: string;
+}
+export interface VocabScheme {
+  schemeIri: string;
+  label: string;
+  terms?: readonly VocabTerm[];
+}
+
 /**
  * Emits SKOS ConceptScheme + Concept quads for one scheme.
- *
- * @param {VocabScheme} scheme
- * @returns {Generator<Quad, void, unknown>}
  */
-export function* vocabularySchemeToQuads(scheme) {
+export function* vocabularySchemeToQuads(scheme: VocabScheme) {
   const schemeIri = resolveIri(scheme.schemeIri);
   const schemeSubject = namedNode(schemeIri);
 
@@ -60,7 +67,7 @@ export function* vocabularySchemeToQuads(scheme) {
  * @param {readonly VocabScheme[]} schemes
  * @returns {Generator<Quad, void, unknown>}
  */
-export function* vocabularyToQuads(schemes) {
+export function* vocabularyToQuads(schemes: readonly VocabScheme[]) {
   for (const scheme of schemes ?? []) {
     yield* vocabularySchemeToQuads(scheme);
   }

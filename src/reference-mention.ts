@@ -42,16 +42,30 @@ const NVR_PREFIXES = Object.freeze([
  * @param {string} raw — the trimmed text inside {{...}}
  * @returns {MentionParseResult}
  */
-export function parseMention(raw) {
+export type MentionKind = 'cite-ref' | 'urn-ref' | 'numeric' | 'designation' | 'unresolved' | 'fig-ref' | 'table-ref' | 'formula-ref';
+
+export interface MentionParseResult {
+  kind: MentionKind;
+  key?: string;
+  uri?: string;
+  label?: string | null;
+  id?: string;
+  raw: string;
+}
+
+/**
+ * Parse the body of a {{...}} mention (without the braces).
+ */
+export function parseMention(raw: string): MentionParseResult {
   const body = raw.trim();
 
   // 1. cite:<key>[,render] — explicit citation reference.
   const citeMatch = body.match(/^cite:([^,}]+)(?:,(.*))?$/);
   if (citeMatch) {
-    const label = citeMatch[2] !== undefined ? unquoteLabel(citeMatch[2].trim()) : null;
+    const label = citeMatch[2] !== undefined ? unquoteLabel(citeMatch[2]!.trim()) : null;
     return {
       kind: 'cite-ref',
-      key: citeMatch[1].trim(),
+      key: citeMatch[1]!.trim(),
       label,
       raw: body,
     };
@@ -60,10 +74,10 @@ export function parseMention(raw) {
   // 2. urn:...[,render] — URN reference.
   const urnMatch = body.match(/^(urn:[^,}]+)(?:,(.*))?$/);
   if (urnMatch) {
-    const label = urnMatch[2] !== undefined ? unquoteLabel(urnMatch[2].trim()) : null;
+    const label = urnMatch[2] !== undefined ? unquoteLabel(urnMatch[2]!.trim()) : null;
     return {
       kind: 'urn-ref',
-      uri: urnMatch[1].trim(),
+      uri: urnMatch[1]!.trim(),
       label,
       raw: body,
     };
@@ -74,8 +88,8 @@ export function parseMention(raw) {
     const escPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const match = body.match(new RegExp(`^${escPrefix}([^,}]+)(?:,(.*))?$`));
     if (match) {
-      const label = match[2] !== undefined ? unquoteLabel(match[2].trim()) : null;
-      return { kind, key: match[1].trim(), label, raw: body };
+      const label = match[2] !== undefined ? unquoteLabel(match[2]!.trim()) : null;
+      return { kind: kind as MentionKind, key: match[1]!.trim(), label, raw: body };
     }
   }
 
@@ -106,7 +120,7 @@ export function parseMention(raw) {
  * CSV-style "" to a single ". If the input is not quoted,
  * return it unchanged.
  */
-function unquoteLabel(label) {
+function unquoteLabel(label: string): string {
   if (label.length >= 2 && label.startsWith('"') && label.endsWith('"')) {
     return label.slice(1, -1).replace(/""/g, '"');
   }

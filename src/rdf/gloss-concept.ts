@@ -7,6 +7,7 @@ import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { localizedConceptToQuads } from './gloss-localized-concept.js';
 import { conceptSourceToQuads } from './gloss-source.js';
+import type { ConceptSourceLike } from './gloss-source.js';
 import { partitiveRelationToQuads, partitiveRelationSubjectUri } from './gloss-partitive-relation.js';
 import { genericHyperedgeToQuads, genericHyperedgeSubjectUri, GENERIC_HYPEREDGE_LINK_PREDICATE } from './gloss-generic-hyperedge.js';
 import { PartitiveHyperedge } from '../models/partitive-hyperedge.js';
@@ -18,24 +19,22 @@ import { namedNode, literal, quad } from './terms.js';
 // (2) add one entry here. Per TODO Phase 6e this should be a
 // self-registering registry; for the two current types, the dispatch
 // table is simpler and keeps the dependency graph acyclic.
-// @ts-expect-error TODO(Phase 2e): type this fully
-const HYPEREDGE_EMITTERS: Map<unknown, Record<string, unknown>> = new Map([
+type HyperedgeEmitter = { linkPredicate: string; subjectUri: (a: string, b: unknown, c: number) => string; toQuads: (a: unknown, b: { parentUri: string; index: number }) => Iterable<unknown> };
+
+const HYPEREDGE_EMITTERS: Map<unknown, HyperedgeEmitter> = new Map<unknown, HyperedgeEmitter>([
   [PartitiveHyperedge, {
     linkPredicate: PRED.gloss.hasPartitiveRelation,
     subjectUri: partitiveRelationSubjectUri,
     toQuads: partitiveRelationToQuads,
-  }],
+  } as HyperedgeEmitter],
   [GenericHyperedge, {
     linkPredicate: GENERIC_HYPEREDGE_LINK_PREDICATE,
     subjectUri: genericHyperedgeSubjectUri,
     toQuads: genericHyperedgeToQuads,
-  }],
+  } as HyperedgeEmitter],
 ]);
 
-// Kind tag → URI segment. Each NonVerbalReference subtype has a
-// predictable URL path so the same entity is reachable from any
-// concept that references it.
-const NVR_KIND_SEGMENT = {
+const NVR_KIND_SEGMENT: Record<string, string> = {
   FigureReference: 'figure',
   TableReference: 'table',
   FormulaReference: 'formula',
@@ -43,20 +42,42 @@ const NVR_KIND_SEGMENT = {
 
 // Builds the URI for a NonVerbalReference target entity. Returns null
 // when the reference has no entityId (e.g., inline display-only refs).
-function nonVerbalReferenceUri(ref, options) {
+interface NonVerbalRefLike {
+  entityId?: string | null;
+  constructor: { name: string };
+}
+interface ConceptLike {
+  id?: string | null;
+  termid?: string | null;
+  status?: string | null;
+  languages: readonly string[];
+  localization(lang: string): unknown;
+  relations?: ReadonlyArray<unknown>;
+  relatedConcepts?: ReadonlyArray<unknown>;
+  sources?: ReadonlyArray<unknown>;
+  figures?: ReadonlyArray<NonVerbalRefLike>;
+  tables?: ReadonlyArray<NonVerbalRefLike>;
+  formulas?: ReadonlyArray<NonVerbalRefLike>;
+}
+interface ConceptOptions {
+  registerId: string;
+  uriBase?: string;
+}
+
+function nonVerbalReferenceUri(ref: NonVerbalRefLike, options: ConceptOptions): string | null {
   const kind = NVR_KIND_SEGMENT[ref.constructor.name];
   if (!kind || !ref.entityId) return null;
   const base = String(options.uriBase ?? '').replace(/\/+$/, '');
   return `${base}/${options.registerId}/${kind}/${ref.entityId}`;
 }
 
-export function conceptUri(concept, { registerId, uriBase }) {
+export function conceptUri(concept: ConceptLike, { registerId, uriBase }: ConceptOptions): string {
   const id = String(concept.id ?? concept.termid ?? '');
   const base = String(uriBase ?? '').replace(/\/+$/, '');
   return `${base}/${registerId}/concept/${id}`;
 }
 
-export function* conceptToQuads(concept, options) {
+export function* conceptToQuads(concept: ConceptLike, options: ConceptOptions) {
   const subjectUri = conceptUri(concept, options);
   const s = namedNode(subjectUri);
 
@@ -89,7 +110,7 @@ export function* conceptToQuads(concept, options) {
 
   let srcIndex = 0;
   for (const source of concept.sources ?? []) {
-    yield* conceptSourceToQuads(source, { subjectUri, index: srcIndex });
+    yield* conceptSourceToQuads(source as ConceptSourceLike, { subjectUri, index: srcIndex });
     srcIndex += 1;
   }
 
@@ -97,7 +118,7 @@ export function* conceptToQuads(concept, options) {
   // emitter table.
   let relIdx = 0;
   for (const relation of concept.relations ?? []) {
-    const emitter = HYPEREDGE_EMITTERS.get(relation.constructor) as unknown as { linkPredicate: string; subjectUri: (a: string, b: unknown, c: number) => string; toQuads: (a: unknown, b: { parentUri: string; index: number }) => Iterable<unknown> } | undefined;
+    const emitter = HYPEREDGE_EMITTERS.get((relation as object).constructor);
     if (!emitter) {
       // Unknown hyperedge type — skip rather than crash. The OCP
       // contract (Phase 11) tests that new types register an emitter;

@@ -11,18 +11,18 @@ import {
   writeNTriples,
   writeJsonld,
 } from '../rdf/document-writer.js';
+import type { Quad } from '@rdfjs/types';
 
-type QuadLike = unknown;
 type ConceptLike = { registerId?: string; id?: string | number } & Record<string, unknown>;
 
 interface WriterEntry {
-  write: (quads: QuadLike[] | QuadLike, transform: ConceptToGlossTransform) => Promise<unknown>;
+  write: (quads: Quad[], transform: ConceptToGlossTransform) => Promise<unknown>;
 }
 
 const WRITERS: Readonly<Record<string, WriterEntry>> = Object.freeze({
-  turtle:   { write: (quads) => writeTurtle(quads as QuadLike[]) },
-  ntriples: { write: (quads) => writeNTriples(quads as QuadLike[]) },
-  jsonld:   { write: (quads, t) => writeJsonld(quads as QuadLike[], t._jsonldOpts() as never) },
+  turtle:   { write: (quads) => writeTurtle(quads) },
+  ntriples: { write: (quads) => writeNTriples(quads) },
+  jsonld:   { write: (quads, t) => writeJsonld(quads, t._jsonldOpts() as never) },
 });
 
 export class ConceptToGlossTransform {
@@ -55,17 +55,17 @@ export class ConceptToGlossTransform {
     return writer.write(quads, this);
   }
 
-  _collect(target: ConceptLike | Iterable<ConceptLike>): QuadLike[] {
+  _collect(target: ConceptLike | Iterable<ConceptLike>): Quad[] {
     if (target && typeof (target as Iterable<ConceptLike>)[Symbol.iterator] === 'function') {
-      const quads: QuadLike[] = [];
+      const quads: Quad[] = [];
       for (const concept of target as Iterable<ConceptLike>) {
         for (const q of conceptToQuads(concept as never, this._optsFor(concept))) {
-          quads.push(q);
+          quads.push(q as Quad);
         }
       }
       return quads;
     }
-    return collectQuads(conceptToQuads(target as never, this._optsFor(target as ConceptLike)));
+    return collectQuads(conceptToQuads(target as never, this._optsFor(target as ConceptLike)) as Iterable<Quad>);
   }
 
   _optsFor(concept: ConceptLike): { registerId: string; uriBase: string } {

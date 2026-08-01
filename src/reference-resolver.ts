@@ -1,52 +1,61 @@
 import { ConceptRef } from './models/concept-ref.js';
 import { parseMention } from './reference-mention.js';
+import type { MentionParseResult } from './reference-mention.js';
+import type { Concept } from './models/concept.js';
+
+type RefType = 'concept' | 'bibliography' | 'figure' | 'table' | 'formula' | 'dataset' | 'typed-ref' | 'standard';
+type Registry = Record<string, any>;
+
+interface ReferenceExtras {
+  uri?: string | null;
+  citation?: unknown;
+  sourceId?: string | null;
+  resolution?: Record<string, unknown> | null;
+  lookupKey?: Record<string, unknown> | null;
+}
 
 export class Reference {
-  constructor(type, target, relationship, source, extras = {}) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  type: RefType;
+  target: string;
+  relationship: string | null;
+  source: string | null;
+  uri: string | null;
+  citation: unknown;
+  sourceId: string | null;
+  resolution: Record<string, unknown> | null;
+  lookupKey: Record<string, unknown> | null;
+
+  constructor(type: RefType, target: string, relationship?: string | null, source?: string | null, extras: ReferenceExtras = {}) {
     this.type = type;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.target = target;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.relationship = relationship ?? null;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.source = source ?? null;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.uri = extras.uri ?? null;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.citation = extras.citation ?? null;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.sourceId = extras.sourceId ?? null;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.resolution = extras.resolution ?? null;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.lookupKey = extras.lookupKey ?? null;
   }
 
-  get dedupKey() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get dedupKey(): [RefType, unknown] {
     if (this.type === 'bibliography') {
       return ['bibliography',
-        // @ts-expect-error TODO(Phase 2e): type this fully
-        this.sourceId ?? this.citation?.ref?.id ?? this.target];
+        this.sourceId ?? (this.citation as { ref?: { id?: string } } | null)?.ref?.id ?? this.target];
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this.type === 'figure' || this.type === 'table' || this.type === 'formula') {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      return [this.type, this.lookupKey?.entityId ?? this.target];
+      return [this.type, (this.lookupKey as { entityId?: string } | null)?.entityId ?? this.target];
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this.type === 'concept') {
       return ['concept',
-        // @ts-expect-error TODO(Phase 2e): type this fully
-        this.lookupKey?.id ?? this.lookupKey?.designation ?? this.target];
+        (this.lookupKey as { id?: string; designation?: string } | null)?.id
+        ?? (this.lookupKey as { designation?: string } | null)?.designation
+        ?? this.target];
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     return [this.type, this.target];
   }
 }
 
-function refTarget(rc) {
+function refTarget(rc: any): string {
   if (rc.content) return rc.content;
   if (rc.ref instanceof ConceptRef) {
     return rc.ref.id ?? rc.ref.source ?? '';
@@ -54,18 +63,14 @@ function refTarget(rc) {
   return '';
 }
 
-// Extract a concept-ref target from a hyperedge comprehensive/part
-// ConceptRef. Returns the id (preferred) or source. Returns '' if
-// the ref is empty (the constructor already rejects empty refs; this
-// is a defensive guard for data that bypassed the constructor).
-function hyperedgeRefTarget(ref) {
+function hyperedgeRefTarget(ref: any): string {
   if (!ref) return '';
   if (ref.id) return ref.id;
   if (ref.source) return ref.source;
   return '';
 }
 
-export function resolveBibliographyRecord(citationRef, registry) {
+export function resolveBibliographyRecord(citationRef: { source?: string; id?: string; version?: string } | null | undefined, registry: Registry): unknown {
   if (!citationRef?.source || !citationRef?.id) return null;
   const bioColl = registry[`bibliography:${citationRef.source}`]?.concepts;
   if (!bioColl) return null;
@@ -75,7 +80,7 @@ export function resolveBibliographyRecord(citationRef, registry) {
   return bioColl.byId(citationRef.id);
 }
 
-export function findNonVerbalEntity(ref, registry) {
+export function findNonVerbalEntity(ref: { lookupKey?: { entityType?: string; entityId?: string } | null }, registry: Registry): unknown {
   const { entityType, entityId } = ref.lookupKey ?? {};
   if (!entityType || !entityId) return null;
   const collection = registry[`nvr:${entityType}`];
@@ -88,32 +93,26 @@ export function findNonVerbalEntity(ref, registry) {
 }
 
 export class ReferenceResolver {
-  extractReferences(concept) {
-    const refs = [];
+  extractReferences(concept: Concept): Reference[] {
+    const refs: Reference[] = [];
 
     for (const rc of concept.relatedConcepts) {
-      const target = refTarget(rc);
+      const target = refTarget(rc as any);
       if (target) {
-        // @ts-expect-error TODO(Phase 2e): type this fully
         refs.push(new Reference('concept', target, rc.type, 'relatedConcepts', {
           lookupKey: { id: target },
         }));
       }
     }
 
-    // All hyperedges (Partitive + Generic + future types) live in
-    // concept.relations. Each has a comprehensive ConceptRef and 2+
-    // members each carrying a ConceptRef. The reference type is the
-    // relation's typeTag (partitive_relation, generic_relation, …).
     const relations = concept.relations ?? [];
     for (let i = 0; i < relations.length; i++) {
-      const rel = relations[i];
-      const relType = rel?.constructor?.typeTag ?? 'hyperedge';
+      const rel = relations[i] as any;
+      const relType: string = rel?.constructor?.typeTag ?? 'hyperedge';
       const relPath = `relations[${i}]`;
 
       const compTarget = hyperedgeRefTarget(rel.comprehensive);
       if (compTarget) {
-        // @ts-expect-error TODO(Phase 2e): type this fully
         refs.push(new Reference(
           'concept',
           compTarget,
@@ -123,16 +122,12 @@ export class ReferenceResolver {
         ));
       }
 
-      // Member shape: members is [{ ref, presence, count, is_delimiting }, ...]
-      // (HyperedgeMember / PartitiveMember / GenericMember). The wire
-      // alias .partitives is also handled for backward compat with v2 wire consumers.
       const members = rel.members ?? rel.partitives ?? rel.parts ?? [];
       for (let j = 0; j < members.length; j++) {
         const m = members[j];
         const memberRef = m?.ref ?? m;
         const pTarget = hyperedgeRefTarget(memberRef);
         if (!pTarget) continue;
-        // @ts-expect-error TODO(Phase 2e): type this fully
         refs.push(new Reference(
           'concept',
           pTarget,
@@ -143,22 +138,22 @@ export class ReferenceResolver {
       }
     }
 
-    for (const ref of concept.figures) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      refs.push(new Reference('figure', ref.display ?? ref.entityId, 'structural', 'figures', {
-        lookupKey: { entityType: 'figure', entityId: ref.entityId },
+    for (const ref of concept.figures ?? []) {
+      const r = ref as any;
+      refs.push(new Reference('figure', r.display ?? r.entityId, 'structural', 'figures', {
+        lookupKey: { entityType: 'figure', entityId: r.entityId },
       }));
     }
-    for (const ref of concept.tables) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      refs.push(new Reference('table', ref.display ?? ref.entityId, 'structural', 'tables', {
-        lookupKey: { entityType: 'table', entityId: ref.entityId },
+    for (const ref of concept.tables ?? []) {
+      const r = ref as any;
+      refs.push(new Reference('table', r.display ?? r.entityId, 'structural', 'tables', {
+        lookupKey: { entityType: 'table', entityId: r.entityId },
       }));
     }
-    for (const ref of concept.formulas) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      refs.push(new Reference('formula', ref.display ?? ref.entityId, 'structural', 'formulas', {
-        lookupKey: { entityType: 'formula', entityId: ref.entityId },
+    for (const ref of concept.formulas ?? []) {
+      const r = ref as any;
+      refs.push(new Reference('formula', r.display ?? r.entityId, 'structural', 'formulas', {
+        lookupKey: { entityType: 'formula', entityId: r.entityId },
       }));
     }
 
@@ -167,10 +162,9 @@ export class ReferenceResolver {
       if (!lc) continue;
 
       for (let i = 0; i < lc.sources.length; i++) {
-        const src = lc.sources[i];
+        const src = lc.sources[i]!;
         const ref = src.origin?.toString() ?? '';
         if (ref) {
-          // @ts-expect-error TODO(Phase 2e): type this fully
           refs.push(new Reference('standard', ref, src.type, `localizations.${lang}.sources[${i}]`));
         }
       }
@@ -185,8 +179,8 @@ export class ReferenceResolver {
     return this._dedup(refs);
   }
 
-  _dedup(refs) {
-    const seen = new Set();
+  _dedup(refs: Reference[]): Reference[] {
+    const seen = new Set<string>();
     return refs.filter(ref => {
       const key = JSON.stringify(ref.dedupKey);
       if (seen.has(key)) return false;
@@ -195,51 +189,44 @@ export class ReferenceResolver {
     });
   }
 
-  _extractFromText(text, source, concept) {
-    const refs = [];
+  _extractFromText(text: string, source: string, concept: Concept): Reference[] {
+    const refs: Reference[] = [];
     const re = /\{\{([^{}]*?)\}\}/g;
-    let m;
+    let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
-      const parsed = parseMention(m[1]);
+      const parsed = parseMention(m[1]!);
       switch (parsed.kind) {
         case 'cite-ref':
-          // @ts-expect-error TODO(Phase 2e): type this fully
           refs.push(this._resolveCiteRef(parsed, source, concept));
           break;
         case 'urn-ref':
-          // @ts-expect-error TODO(Phase 2e): type this fully
-          refs.push(new Reference('concept', parsed.label ?? parsed.uri, 'embedded', source, {
+          refs.push(new Reference('concept', parsed.label ?? parsed.uri ?? '', 'embedded', source, {
             uri: parsed.uri,
             resolution: null,
           }));
           break;
         case 'fig-ref':
-          // @ts-expect-error TODO(Phase 2e): type this fully
-          refs.push(new Reference('figure', parsed.label ?? parsed.key, 'embedded', source, {
+          refs.push(new Reference('figure', parsed.label ?? parsed.key ?? '', 'embedded', source, {
             lookupKey: { entityType: 'figure', entityId: parsed.key },
           }));
           break;
         case 'table-ref':
-          // @ts-expect-error TODO(Phase 2e): type this fully
-          refs.push(new Reference('table', parsed.label ?? parsed.key, 'embedded', source, {
+          refs.push(new Reference('table', parsed.label ?? parsed.key ?? '', 'embedded', source, {
             lookupKey: { entityType: 'table', entityId: parsed.key },
           }));
           break;
         case 'formula-ref':
-          // @ts-expect-error TODO(Phase 2e): type this fully
-          refs.push(new Reference('formula', parsed.label ?? parsed.key, 'embedded', source, {
+          refs.push(new Reference('formula', parsed.label ?? parsed.key ?? '', 'embedded', source, {
             lookupKey: { entityType: 'formula', entityId: parsed.key },
           }));
           break;
         case 'numeric':
-          // @ts-expect-error TODO(Phase 2e): type this fully
-          refs.push(new Reference('concept', parsed.label ?? parsed.id, 'embedded', source, {
+          refs.push(new Reference('concept', parsed.label ?? parsed.id ?? '', 'embedded', source, {
             lookupKey: { id: parsed.id },
           }));
           break;
         case 'designation':
-          // @ts-expect-error TODO(Phase 2e): type this fully
-          refs.push(new Reference('concept', parsed.label ?? parsed.id, 'embedded', source, {
+          refs.push(new Reference('concept', parsed.label ?? parsed.id ?? '', 'embedded', source, {
             lookupKey: { designation: parsed.id },
           }));
           break;
@@ -250,12 +237,12 @@ export class ReferenceResolver {
     return refs;
   }
 
-  _resolveCiteRef(parsed, source, concept) {
-    const sourceEntry = concept?.findSourceById(parsed.key) ?? null;
+  _resolveCiteRef(parsed: MentionParseResult, source: string, concept: Concept): Reference {
+    const sourceEntry = (concept as any)?.findSourceById?.(parsed.key) ?? null;
     if (!sourceEntry) {
       return new Reference(
         'bibliography',
-        parsed.label ?? parsed.key,
+        parsed.label ?? parsed.key ?? '',
         null,
         source,
         {
@@ -281,7 +268,7 @@ export class ReferenceResolver {
     );
   }
 
-  resolveReference(ref, registry) {
+  resolveReference(ref: Reference | null, registry: Registry | null): unknown {
     if (ref == null || registry == null) return null;
 
     switch (ref.type) {
@@ -297,53 +284,56 @@ export class ReferenceResolver {
     }
   }
 
-  _resolveNonVerbal(ref, registry) {
-    return findNonVerbalEntity(ref, registry);
+  _resolveNonVerbal(ref: Reference, registry: Registry): unknown {
+    return findNonVerbalEntity(ref as any, registry);
   }
 
-  _resolveConcept(ref, registry) {
-    if (ref.lookupKey?.id) {
-      const dataset = ref.lookupKey.dataset;
+  _resolveConcept(ref: Reference, registry: Registry): unknown {
+    const lookupKey = ref.lookupKey as { id?: string; dataset?: string } | null | undefined;
+    if (lookupKey?.id) {
+      const dataset = lookupKey.dataset;
       if (dataset) {
-        return registry[dataset]?.concepts?.byId(ref.lookupKey.id) ?? null;
+        return registry[dataset]?.concepts?.byId(lookupKey.id) ?? null;
       }
       for (const entry of Object.values(registry)) {
-        // @ts-expect-error TODO(Phase 2e): type this fully
-        const found = entry?.concepts?.byId(ref.lookupKey.id);
+        const found = entry?.concepts?.byId(lookupKey.id);
         if (found) return found;
       }
       return null;
     }
-    if (ref.uri && ref.resolution?.datasetId) {
-      return registry[ref.resolution.datasetId]?.concepts?.byId(ref.resolution.conceptId) ?? null;
+    const resolution = ref.resolution as { datasetId?: string; conceptId?: string } | null | undefined;
+    if (ref.uri && resolution?.datasetId) {
+      return registry[resolution.datasetId]?.concepts?.byId(resolution.conceptId) ?? null;
     }
     return null;
   }
 
-  _resolveBibliography(ref, registry) {
-    if (ref.citation) {
-      return resolveBibliographyRecord(ref.citation.ref, registry) ?? ref.citation;
+  _resolveBibliography(ref: Reference, registry: Registry): unknown {
+    const citation = ref.citation as { ref?: { source?: string; id?: string } } | null;
+    if (citation) {
+      return resolveBibliographyRecord(citation.ref as any, registry) ?? citation;
     }
-    if (ref.uri && ref.resolution?.source) {
-      return resolveBibliographyRecord(ref.resolution, registry) ?? null;
+    const resolution = ref.resolution as { source?: string } | null | undefined;
+    if (ref.uri && resolution?.source) {
+      return resolveBibliographyRecord(resolution as any, registry) ?? null;
     }
     return null;
   }
 
-  _resolveDataset(_ref, _registry) {
+  _resolveDataset(_ref: Reference, _registry: Registry): null {
     return null;
   }
 
-  _resolveTypedRef(_ref, _registry) {
+  _resolveTypedRef(_ref: Reference, _registry: Registry): null {
     return null;
   }
 
-  _resolveStandard(_ref, _registry) {
+  _resolveStandard(_ref: Reference, _registry: Registry): null {
     return null;
   }
 
-  resolveAll(concept, registry) {
-    const resolved = new Map();
+  resolveAll(concept: Concept, registry: Registry): Map<string, unknown> {
+    const resolved = new Map<string, unknown>();
     for (const ref of this.extractReferences(concept)) {
       if (ref.type === 'concept' || ref.type === 'bibliography'
           || ref.type === 'figure' || ref.type === 'table' || ref.type === 'formula') {

@@ -49,8 +49,8 @@ const LOC_METADATA_JSON_KEYS = Object.freeze({
   reviewDecisionNotes: 'review_decision_notes',
 });
 
-export function applyDiff(oldConcept, diff) {
-  const json = oldConcept.toJSON();
+export function applyDiff(oldConcept: Concept, diff: ConceptDiff): Concept {
+  const json = oldConcept.toJSON() as Record<string, any>;
 
   applyConceptLevelPatch(json, diff.concept);
   applyLanguagePatch(json, diff);
@@ -62,7 +62,7 @@ export function applyDiff(oldConcept, diff) {
   return Concept.fromJSON(json);
 }
 
-export function reverseDiff(diff) {
+export function reverseDiff(diff: ConceptDiff): ConceptDiff {
   const concept = new ConceptLevelDiff({
     sources: reverseListDiff(diff.concept.sources),
     dates: reverseListDiff(diff.concept.dates),
@@ -76,29 +76,19 @@ export function reverseDiff(diff) {
 
   const languages = reverseListDiff(diff.languages);
 
-  const localizations = {};
+  const localizations: Record<string, LocalizedConceptDiff> = {};
   for (const [lang, lcDiff] of Object.entries(diff.localizations)) {
     localizations[lang] = new LocalizedConceptDiff({
-      // @ts-expect-error TODO(Phase 2e): type this fully
       languageCode: lcDiff.languageCode,
-      // @ts-expect-error TODO(Phase 2e): type this fully
       designations: reverseListDiff(lcDiff.designations),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       definitions: reverseListDiff(lcDiff.definitions),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       notes: reverseListDiff(lcDiff.notes),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       examples: reverseListDiff(lcDiff.examples),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       sources: reverseListDiff(lcDiff.sources),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       dates: reverseListDiff(lcDiff.dates),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       related: reverseListDiff(lcDiff.related),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       metadata: reverseMetadataDiff(lcDiff.metadata),
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      totalItems: lcDiff._totalItems,
+      totalItems: lcDiff.totalItems,
     });
   }
 
@@ -108,73 +98,67 @@ export function reverseDiff(diff) {
     concept,
     languages,
     localizations,
-    totalItems: diff._totalItems,
+    totalItems: diff.totalItems,
   });
 }
 
-function applyConceptLevelPatch(json, conceptDiff) {
-  json.sources = applyListPatch(json.sources ?? [], conceptDiff.sources, ConceptSource.identityOf);
-  json.dates = applyListPatch(json.dates ?? [], conceptDiff.dates, ConceptDate.identityOf);
-  json.related = applyListPatch(json.related ?? [], conceptDiff.relatedConcepts, RelatedConcept.identityOf);
+function applyConceptLevelPatch(json: Record<string, any>, conceptDiff: ConceptLevelDiff): void {
+  json.sources = applyListPatch(json.sources ?? [], conceptDiff.sources, (v: unknown) => ConceptSource.identityOf(v as ConceptSource));
+  json.dates = applyListPatch(json.dates ?? [], conceptDiff.dates, (v: unknown) => ConceptDate.identityOf(v as ConceptDate));
+  json.related = applyListPatch(json.related ?? [], conceptDiff.relatedConcepts, (v: unknown) => RelatedConcept.identityOf(v as RelatedConcept));
 
-  // Unified hyperedge diff → typed wire keys. Iterate the registry;
-  // for each registered class, partition the unified diff by that
-  // class and apply to the class's wireKey. Adding a new hyperedge
-  // type means this loop picks it up automatically — no edits here.
   for (const cls of HyperedgeRegistry.allClasses()) {
-    const partition = partitionListDiff(conceptDiff.relations, cls);
+    const partition = partitionListDiff(conceptDiff.relations, cls as unknown as new (...args: any[]) => unknown);
     if (!partition.hasChanges) continue;
     const wireKey = cls.wireKey;
-    // v1 wire keys (partitive_hyperedges) on the input are migrated
-    // to v2 wire key here: read from either, write to v2 only.
     const v1ReadKeys = cls.v1WireKeys ?? [];
     const existing = v1ReadKeys
       .map(k => json[k])
       .find(arr => Array.isArray(arr)) ?? json[wireKey] ?? [];
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    json[wireKey] = applyListPatch(existing, partition, cls.identityOf);
+    const classIdentityOf = (cls as unknown as { identityOf?: (v: unknown) => string }).identityOf;
+    json[wireKey] = applyListPatch(existing, partition, classIdentityOf ?? identityOf);
     for (const k of v1ReadKeys) {
       if (json[k] != null && json[wireKey] != null) delete json[k];
     }
   }
 
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  json.tags = applyListPatch(json.tags ?? [], conceptDiff.tags);
+  json.tags = applyListPatch(json.tags ?? [], conceptDiff.tags, identityOf);
 
   applyMetadataPatch(json, conceptDiff.metadata, CONCEPT_METADATA_JSON_KEYS);
 }
 
-function applyLanguagePatch(json, conceptDiff) {
+function applyLanguagePatch(json: Record<string, any>, conceptDiff: ConceptDiff): void {
   if (!json.localizations) json.localizations = {};
   for (const entry of conceptDiff.languages.added) {
-    if (!(entry.value in json.localizations)) {
-      json.localizations[entry.value] = {};
+    const val = String(entry.value);
+    if (!(val in json.localizations)) {
+      json.localizations[val] = {};
     }
   }
   for (const entry of conceptDiff.languages.removed) {
-    delete json.localizations[entry.value];
+    delete json.localizations[String(entry.value)];
   }
 }
 
-function applyLocalizedPatch(json, lang, lcDiff) {
+function applyLocalizedPatch(json: Record<string, any>, lang: string, lcDiff: LocalizedConceptDiff): void {
   if (!json.localizations) json.localizations = {};
   if (!(lang in json.localizations)) {
     json.localizations[lang] = {};
   }
   const loc = json.localizations[lang];
 
-  loc.terms = applyListPatch(loc.terms ?? [], lcDiff.designations, Designation.identityOf);
-  loc.definition = applyListPatch(loc.definition ?? [], lcDiff.definitions, DetailedDefinition.identityOf);
-  loc.notes = applyListPatch(loc.notes ?? [], lcDiff.notes, DetailedDefinition.identityOf);
-  loc.examples = applyListPatch(loc.examples ?? [], lcDiff.examples, DetailedDefinition.identityOf);
-  loc.sources = applyListPatch(loc.sources ?? [], lcDiff.sources, ConceptSource.identityOf);
-  loc.dates = applyListPatch(loc.dates ?? [], lcDiff.dates, ConceptDate.identityOf);
-  loc.related = applyListPatch(loc.related ?? [], lcDiff.related, RelatedConcept.identityOf);
+  loc.terms = applyListPatch(loc.terms ?? [], lcDiff.designations, (v: unknown) => Designation.identityOf(v as Designation));
+  loc.definition = applyListPatch(loc.definition ?? [], lcDiff.definitions, (v: unknown) => DetailedDefinition.identityOf(v as DetailedDefinition));
+  loc.notes = applyListPatch(loc.notes ?? [], lcDiff.notes, (v: unknown) => DetailedDefinition.identityOf(v as DetailedDefinition));
+  loc.examples = applyListPatch(loc.examples ?? [], lcDiff.examples, (v: unknown) => DetailedDefinition.identityOf(v as DetailedDefinition));
+  loc.sources = applyListPatch(loc.sources ?? [], lcDiff.sources, (v: unknown) => ConceptSource.identityOf(v as ConceptSource));
+  loc.dates = applyListPatch(loc.dates ?? [], lcDiff.dates, (v: unknown) => ConceptDate.identityOf(v as ConceptDate));
+  loc.related = applyListPatch(loc.related ?? [], lcDiff.related, (v: unknown) => RelatedConcept.identityOf(v as RelatedConcept));
 
   applyMetadataPatch(loc, lcDiff.metadata, LOC_METADATA_JSON_KEYS);
 }
 
-function applyListPatch(existingItems, listDiff, identityFn) {
+function applyListPatch(existingItems: readonly unknown[], listDiff: ListDiff, identityFn?: (v: unknown) => string): unknown[] {
   const fn = identityFn ?? identityOf;
   let result = [...existingItems];
 
@@ -197,47 +181,42 @@ function applyListPatch(existingItems, listDiff, identityFn) {
   return result;
 }
 
-function applyMetadataPatch(target, metadataDiff, keyMap) {
+function applyMetadataPatch(target: Record<string, any>, metadataDiff: MetadataDiff, keyMap: Record<string, string>): void {
   for (const [field, change] of Object.entries(metadataDiff.changes)) {
     const jsonKey = keyMap[field];
     if (!jsonKey) continue;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (change.newValue == null) {
       delete target[jsonKey];
     } else {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       target[jsonKey] = change.newValue;
     }
   }
 }
 
-function reverseListDiff(listDiff) {
+function reverseListDiff(listDiff: ListDiff): ListDiff {
   const added = listDiff.removed.map(r => new Added({ value: r.value, path: r.path }));
   const removed = listDiff.added.map(a => new Removed({ value: a.value, path: a.path }));
   const changed = listDiff.changed.map(c => new Changed({
     oldValue: c.newValue,
     newValue: c.oldValue,
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    textDiff: c.textDiff ? reverseTextDiff(c.textDiff) : null,
+    textDiff: c.textDiff ? reverseTextDiff(c.textDiff) : undefined,
     path: c.path,
   }));
   return new ListDiff({ added, removed, changed });
 }
 
-function reverseMetadataDiff(metadataDiff) {
-  const changes = {};
+function reverseMetadataDiff(metadataDiff: MetadataDiff): MetadataDiff {
+  const changes: Record<string, Changed> = {};
   for (const [field, change] of Object.entries(metadataDiff.changes)) {
     changes[field] = new Changed({
-      // @ts-expect-error TODO(Phase 2e): type this fully
       oldValue: change.newValue,
-      // @ts-expect-error TODO(Phase 2e): type this fully
       newValue: change.oldValue,
     });
   }
   return new MetadataDiff({ changes });
 }
 
-function reverseTextDiff(textDiff) {
+function reverseTextDiff(textDiff: TextDiff): TextDiff {
   const hunks = textDiff.hunks.map(h => {
     if (h.type === 'added') return new TextHunk({ type: 'removed', text: h.text });
     if (h.type === 'removed') return new TextHunk({ type: 'added', text: h.text });
@@ -250,21 +229,16 @@ function reverseTextDiff(textDiff) {
   });
 }
 
-function toJsonValue(value) {
+function toJsonValue(value: unknown): unknown {
   if (value == null) return null;
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return value;
   }
-  if (typeof value.toJSON === 'function') return value.toJSON();
+  if (typeof (value as any).toJSON === 'function') return (value as any).toJSON();
   return value;
 }
 
-// Project a unified relations ListDiff onto a single concrete class.
-// Entries whose value (old or new) is an instance of `Cls` survive;
-// everything else is filtered out. Cross-type changed entries (e.g.
-// old was PartitiveHyperedge, new is GenericHyperedge) are not yet
-// supported — those would need to surface as a remove + add pair.
-function partitionListDiff(listDiff, Cls) {
+export function partitionListDiff(listDiff: ListDiff | null | undefined, Cls: new (...args: any[]) => unknown): ListDiff {
   if (!listDiff) return new ListDiff({ added: [], removed: [], changed: [] });
   return new ListDiff({
     added: listDiff.added.filter(e => e.value instanceof Cls),

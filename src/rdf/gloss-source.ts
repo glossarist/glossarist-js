@@ -8,7 +8,22 @@ import { deterministicBnode } from './deterministic-id.js';
 import { normalizeEnum } from './normalize-enum.js';
 import { namedNode, literal, quad } from './terms.js';
 
-export function* conceptSourceToQuads(source, { subjectUri, index }) {
+interface ConceptSourceLike {
+  status?: string | null;
+  type?: string | null;
+  modification?: string | null;
+  origin?: CitationLike | null;
+  sourcedFrom?: ReadonlyArray<CitationLike>;
+  sourced_from?: ReadonlyArray<CitationLike>;
+}
+export type { ConceptSourceLike };
+interface CitationLike {
+  original?: string | null;
+  link?: string | null;
+  ref?: { source?: string; id?: string; version?: string } | null;
+}
+
+export function* conceptSourceToQuads(source: ConceptSourceLike, { subjectUri, index }: { subjectUri: string; index: number }) {
   const srcSubject = deterministicBnode(subjectUri, 'source', index);
 
   yield quad(namedNode(subjectUri), namedNode(PRED.gloss.hasSource), namedNode(srcSubject));
@@ -32,11 +47,11 @@ export function* conceptSourceToQuads(source, { subjectUri, index }) {
 
   const sourcedFrom = source.sourcedFrom ?? source.sourced_from ?? [];
   for (let i = 0; i < sourcedFrom.length; i++) {
-    yield* citationToQuads(sourcedFrom[i], { subjectUri: srcSubject, predicate: PRED.gloss.sourcedFrom, bnodeKey: 'sourced_from', index: i });
+    yield* citationToQuads(sourcedFrom[i]!, { subjectUri: srcSubject, predicate: PRED.gloss.sourcedFrom, bnodeKey: 'sourced_from', index: i });
   }
 }
 
-function* citationToQuads(citation, { subjectUri, predicate, bnodeKey, index = 0 }) {
+function* citationToQuads(citation: CitationLike, { subjectUri, predicate, bnodeKey, index = 0 }: { subjectUri: string; predicate: string; bnodeKey: string; index?: number }) {
   const citSubject = deterministicBnode(subjectUri, bnodeKey, index);
   yield quad(namedNode(subjectUri), namedNode(predicate), namedNode(citSubject));
   yield quad(namedNode(citSubject), namedNode(WELL_KNOWN.rdfType), namedNode(PRED.gloss.Citation));

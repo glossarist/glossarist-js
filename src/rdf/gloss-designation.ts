@@ -11,39 +11,33 @@ import { namedNode, literal, quad } from './terms.js';
 
 const XSD_BOOLEAN = 'http://www.w3.org/2001/XMLSchema#boolean';
 
-// Boolean flag fields on designation subtypes. Each entry maps a model
-// field name to its ontology predicate. Only emitted when the value is
-// truthy, so legacy data without the fields round-trips unchanged.
 const BOOLEAN_FLAGS = [
   ['acronym', PRED.gloss.isAcronym],
   ['initialism', PRED.gloss.isInitialism],
   ['truncation', PRED.gloss.isTruncation],
   ['international', PRED.gloss.isInternational],
   ['absent', PRED.gloss.isAbsent],
-];
+] as const;
 
-// Returns the SKOS-XL predicate (as a string URI) appropriate for this
-// designation's normative status. Mirrors `skosxl_label_for` in Ruby.
-// The dispatch lives on the Designation model so a new status requires
-// a single edit there, not here.
-export function skosxlLabelPredicate(designation) {
+interface DesignationLike {
+  skosxlLabelPredicate(ns: string): string;
+  skosLabelPredicate(ns: string): string;
+  rdfClass(): string;
+  designation?: string | null;
+  normativeStatus?: string | null;
+  [key: string]: unknown;
+}
+export type { DesignationLike };
+
+export function skosxlLabelPredicate(designation: DesignationLike): string {
   return designation.skosxlLabelPredicate(PREFIXES.skosxl);
 }
 
-// Returns the matching plain-SKOS predicate URI (skos:prefLabel etc.).
-// Used when emitting direct SKOS alongside reified SKOS-XL.
-export function skosLabelPredicate(designation) {
+export function skosLabelPredicate(designation: DesignationLike): string {
   return designation.skosLabelPredicate(PREFIXES.skos);
 }
 
-// Emits quads for one designation. Yields them lazily so callers can
-// compose many designations into a single stream without intermediate
-// arrays.
-//
-// `subjectUri` is the URI of the LocalizedConcept that owns this designation.
-// `index` is the position of the designation within its parent's terms list
-// — used to make the bnode ID deterministic.
-export function* designationToQuads(designation, { subjectUri, language, index }) {
+export function* designationToQuads(designation: DesignationLike, { subjectUri, language, index }: { subjectUri: string; language?: string | null; index: number }) {
   const desigSubject = deterministicBnode(subjectUri, 'desig', index);
 
   const labelPredicate = namedNode(skosxlLabelPredicate(designation));
@@ -51,7 +45,7 @@ export function* designationToQuads(designation, { subjectUri, language, index }
 
   yield quad(namedNode(desigSubject), namedNode(WELL_KNOWN.rdfType), namedNode(`${PRED.gloss.$ns}${designation.rdfClass()}`));
   yield quad(namedNode(desigSubject), namedNode(WELL_KNOWN.rdfType), namedNode(WELL_KNOWN.skosxlLabel));
-  yield quad(namedNode(desigSubject), namedNode(SKOSXL.literalForm), literal(designation.designation ?? '', language));
+  yield quad(namedNode(desigSubject), namedNode(SKOSXL.literalForm), literal(designation.designation ?? '', language ?? undefined));
 
   if (designation.normativeStatus) {
     const statusToken = normalizeEnum(designation.normativeStatus);
@@ -61,12 +55,10 @@ export function* designationToQuads(designation, { subjectUri, language, index }
     }
   }
 
-  // Subtype-specific boolean flags. Skipping when falsy preserves
-  // backward compatibility with simpler designations.
   const booleanType = namedNode(XSD_BOOLEAN);
   for (const [field, predicate] of BOOLEAN_FLAGS) {
-    if (designation[field as string]) {
-      yield quad(namedNode(desigSubject), namedNode(predicate as string), literal('true', booleanType));
+    if (designation[field]) {
+      yield quad(namedNode(desigSubject), namedNode(predicate), literal('true', booleanType));
     }
   }
 }

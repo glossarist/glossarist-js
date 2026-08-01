@@ -15,44 +15,49 @@ const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
 const DCTERMS_NS = PREFIXES.dcterms;
 const RDFS_NS    = PREFIXES.rdfs;
 
-const PROV = {
+const PROV: any = {
   Person: `${PROV_NS}Person`,
   Organization: `${PROV_NS}Organization`,
   Agent: `${PROV_NS}Agent`,
   actedOnBehalfOf: `${PROV_NS}actedOnBehalfOf`,
 };
-const FOAF = {
+const FOAF: any = {
   Person: `${FOAF_NS}Person`,
   Organization: `${FOAF_NS}Organization`,
   name: `${FOAF_NS}name`,
   mbox: `${FOAF_NS}mbox`,
 };
-const DCTERMS = {
+const DCTERMS: any = {
   description: `${DCTERMS_NS}description`,
 };
-const RDFS = {
+const RDFS: any = {
   seeAlso: `${RDFS_NS}seeAlso`,
 };
 
 // No hardcoded default agent/org base URIs. Callers MUST pass agentBase
 // explicitly so agent IRIs reflect the consumer's domain.
 
-/**
- * @typedef {Object} Contributor
- * @property {string} name
- * @property {string} [role]
- * @property {string} [organization]
- * @property {string} [url]
- * @property {string} [email]
- */
-/**
- * @typedef {Contributor & { slug: string, agentIri: string }} AgentInput
- */
+export interface Contributor {
+  name: string;
+  role?: string;
+  organization?: string;
+  url?: string;
+  email?: string;
+}
+export interface AgentInput {
+  slug: string;
+  name: string;
+  role?: string;
+  organization?: string;
+  url?: string;
+  email?: string;
+  agentIri: string;
+}
 
 /**
  * Slugify a name for IRIs. Lowercase, ASCII, hyphenated.
  */
-export function slugify(input) {
+export function slugify(input: unknown): string {
   return String(input)
     .toLowerCase()
     .normalize('NFKD')
@@ -61,11 +66,7 @@ export function slugify(input) {
     .replace(/^-+|-+$/g, '');
 }
 
-/**
- * Builds AgentInput records from raw contributor declarations.
- * Useful for callers that want to inspect the IRIs before emission.
- */
-export function agentsFromContributors(contributors, agentBase) {
+export function agentsFromContributors(contributors: ReadonlyArray<Contributor> | null | undefined, agentBase: string): AgentInput[] {
   if (!agentBase) throw new Error('agentsFromContributors requires agentBase — the deployment canonical URI root for agents (e.g. https://www.example.org/agent). glossarist-js does NOT default to glossarist.org.');
   return (contributors ?? []).map(c => {
     const slug = slugify(c.name);
@@ -93,28 +94,25 @@ export function agentsFromContributors(contributors, agentBase) {
  * @param {string} [options.orgBase] — default https://glossarist.org/org
  * @returns {Generator<Quad, void, unknown>}
  */
-export function* agentsToQuads(agents: Record<string, unknown>[], options: Record<string, unknown> = {}) {
+export function* agentsToQuads(agents: readonly AgentInput[], options: { orgBase: string }) {
   const orgBase = options.orgBase;
   if (!orgBase) throw new Error('agentsToQuads requires options.orgBase — the deployment canonical URI root for organizations.');
-  const emittedOrgs = new Set();
+  const emittedOrgs = new Set<string>();
 
   for (const a of agents ?? []) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
     const person = namedNode(a.agentIri);
     yield quad(person, namedNode(RDF_TYPE), namedNode(FOAF.Person));
     yield quad(person, namedNode(RDF_TYPE), namedNode(PROV.Person));
     yield quad(person, namedNode(RDF_TYPE), namedNode(PROV.Agent));
-    yield quad(person, namedNode(FOAF.name), literal((a as Record<string, unknown>).name as string));
+    yield quad(person, namedNode(FOAF.name), literal(a.name));
 
-    if ((a as Record<string, unknown>).email as string) {
-      yield quad(person, namedNode(FOAF.mbox), namedNode(`mailto:${(a as Record<string, unknown>).email as string}`));
+    if (a.email) {
+      yield quad(person, namedNode(FOAF.mbox), namedNode(`mailto:${a.email}`));
     }
     if (a.url) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       yield quad(person, namedNode(RDFS.seeAlso), namedNode(a.url));
     }
     if (a.role) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       yield quad(person, namedNode(DCTERMS.description), literal(a.role));
     }
 
@@ -129,7 +127,6 @@ export function* agentsToQuads(agents: Record<string, unknown>[], options: Recor
         yield quad(org, namedNode(RDF_TYPE), namedNode(FOAF.Organization));
         yield quad(org, namedNode(RDF_TYPE), namedNode(PROV.Organization));
         yield quad(org, namedNode(RDF_TYPE), namedNode(PROV.Agent));
-        // @ts-expect-error TODO(Phase 2e): type this fully
         yield quad(org, namedNode(FOAF.name), literal(a.organization));
       }
     }

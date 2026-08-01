@@ -36,7 +36,14 @@ const HAS_GENERIC_RELATION = 'https://www.glossarist.org/ontologies/hasGenericRe
 const HAS_GENERIC = 'https://www.glossarist.org/ontologies/hasGeneric';
 const GENERIC_RELATION_TYPE = 'https://www.glossarist.org/ontologies/GenericRelation';
 
-export function* genericHyperedgeToQuads(relation, { parentUri, index }) {
+interface GenericRelationLike {
+  comprehensive?: { source?: string; id?: string } | null;
+  members?: ReadonlyArray<any>;
+  completeness?: string | null;
+  criterion?: Record<string, unknown> | null;
+}
+
+export function* genericHyperedgeToQuads(relation: GenericRelationLike, { parentUri, index }: { parentUri: string; index: number }) {
   const subjectUri = genericHyperedgeSubjectUri(parentUri, relation, index);
   const s = namedNode(subjectUri);
 
@@ -70,19 +77,16 @@ export function* genericHyperedgeToQuads(relation, { parentUri, index }) {
   }
 }
 
-// Subject URI scheme: `<base>/generic-relation/<carrying-id>/<comprehensive-id>`.
-// Mirrors the partitive scheme so consumers can predict either path.
-export function genericHyperedgeSubjectUri(parentUri, relation, index) {
+export function genericHyperedgeSubjectUri(parentUri: string, relation: GenericRelationLike, index: number): string {
   const base = parentUri.replace(/\/concept\/[^/]+$/, '');
   const carrierId = parentUri.split('/concept/')[1] ?? `carrier-${index}`;
   const compId = relation?.comprehensive?.id ?? `comp-${index}`;
   return `${base}/generic-relation/${carrierId}/${compId}`;
 }
 
-// Exported for gloss-concept.js to use when linking the carrying concept.
 export const GENERIC_HYPEREDGE_LINK_PREDICATE = HAS_GENERIC_RELATION;
 
-function conceptRefUri(ref, parentUri) {
+function conceptRefUri(ref: { id?: string; source?: string } | null | undefined, parentUri: string): string {
   const id = ref?.id;
   if (id) {
     const base = parentUri.split('/concept/')[0];

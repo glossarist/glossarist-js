@@ -1,26 +1,28 @@
-const ENTITY_DIRECTORIES = Object.freeze(new Map([
+type EntityType = 'figure' | 'table' | 'formula';
+
+const ENTITY_DIRECTORIES: ReadonlyMap<EntityType, string> = Object.freeze(new Map<EntityType, string>([
   ['figure', 'figures'],
   ['table', 'tables'],
   ['formula', 'formulas'],
 ]));
 
-const ENTITY_TYPES = Object.freeze([...ENTITY_DIRECTORIES.keys()]);
+const ENTITY_TYPES: readonly EntityType[] = Object.freeze([...ENTITY_DIRECTORIES.keys()]);
 
-function entityDir(type) {
+function entityDir(type: EntityType): string {
   const dir = ENTITY_DIRECTORIES.get(type);
   if (!dir) throw new RangeError(`Unknown entity type: ${type}`);
   return dir;
 }
 
-function entityPath(type, id) {
+function entityPath(type: EntityType, id: string): string {
   return `${entityDir(type)}/${id}.yaml`;
 }
 
-function isKnownEntityType(type) {
-  return ENTITY_DIRECTORIES.has(type);
+function isKnownEntityType(type: string): type is EntityType {
+  return ENTITY_DIRECTORIES.has(type as EntityType);
 }
 
-function parseEntityPath(zipPath) {
+function parseEntityPath(zipPath: string): { type: EntityType; id: string } | null {
   for (const [type, dir] of ENTITY_DIRECTORIES) {
     const prefix = `${dir}/`;
     if (!zipPath.startsWith(prefix)) continue;
@@ -41,3 +43,4 @@ export {
   isKnownEntityType,
   parseEntityPath,
 };
+export type { EntityType };

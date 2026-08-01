@@ -1,5 +1,6 @@
 import * as yaml from 'js-yaml';
 import { Concept } from './models/concept.js';
+import type { LocalizedConceptJson } from './models/localized-concept.js';
 import { RelatedConcept } from './models/related-concept.js';
 import { HyperedgeRegistry } from './models/hyperedge-registry.js';
 import { migrateHyperedgeToRelation } from './migration/hyperedge-migrator.js';
@@ -21,27 +22,23 @@ const STRUCTURAL_KEYS = new Set([
 function _registryStructuralKeys() {
   const out = [];
   for (const cls of HyperedgeRegistry.allClasses()) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
     out.push(cls.wireKey);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     out.push(_camelCase(cls.wireKey));
     for (const k of cls.v1WireKeys ?? []) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       out.push(k);
-      // @ts-expect-error TODO(Phase 2e): type this fully
       out.push(_camelCase(k));
     }
   }
   return out;
 }
 
-function _camelCase(s) {
-  if (typeof s !== 'string' || !s.includes('_')) return s;
-  return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+function _camelCase(s: unknown): string {
+  if (typeof s !== 'string' || !s.includes('_')) return s as string;
+  return s.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 }
 
 export class ConceptParser {
-  parse(raw, context) {
+  parse(raw: unknown, context?: string) {
     const label = context ?? 'concept';
 
     if (raw == null) {
@@ -57,31 +54,27 @@ export class ConceptParser {
       );
     }
 
-    let docs;
+    let docs: unknown[];
     try {
-      // js-yaml 5.x dropped the explicit DEFAULT_SCHEMA export; the
-      // default schema is applied automatically when no `schema`
-      // option is passed. Passing CORE_SCHEMA reproduces the historical
-      // behavior (yaml.org core schema).
       docs = yaml.loadAll(raw, { schema: yaml.CORE_SCHEMA ?? yaml.JSON_SCHEMA });
     } catch (err) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      throw new YamlParseError(label, err);
+      throw new YamlParseError(label, err as Error);
     }
 
     return this._detectFormat(docs, label) === 'managed'
       ? this._parseManaged(docs)
-      : this._parseCanonical(docs[0]);
+      : this._parseCanonical(docs[0] as Record<string, unknown>);
   }
 
-  _detectFormat(docs, label) {
-    if (docs.length >= 1 && docs[0]?.data?.identifier !== undefined) return 'managed';
-    if (docs[0] == null) throw new YamlParseError(label, new Error('YAML document is empty'));
+  _detectFormat(docs: unknown[], label: string): 'managed' | 'canonical' {
+    const first = docs[0] as Record<string, unknown> | undefined;
+    if (docs.length >= 1 && (first as any)?.data?.identifier !== undefined) return 'managed';
+    if (first == null) throw new YamlParseError(label, new Error('YAML document is empty'));
     return 'canonical';
   }
 
-  _parseCanonical(doc) {
-    const localizations = {};
+  _parseCanonical(doc: Record<string, any>) {
+    const localizations: Record<string, LocalizedConceptJson> = {};
     for (const key of Object.keys(doc)) {
       if (!STRUCTURAL_KEYS.has(key) && typeof doc[key] === 'object' && doc[key] !== null) {
         localizations[key] = doc[key];
@@ -94,26 +87,24 @@ export class ConceptParser {
       figures: doc.figures,
       tables: doc.tables,
       formulas: doc.formulas,
-      relations: _resolveHyperedgeData(doc),
+      relations: _resolveHyperedgeData(doc) ?? undefined,
       raw: doc,
     });
   }
 
-  _parseManaged(docs) {
-    const mc = docs[0];
-    const localizations = {};
+  _parseManaged(docs: unknown[]) {
+    const mc = docs[0] as Record<string, any>;
+    const localizations: Record<string, LocalizedConceptJson> = {};
 
     for (const doc of docs.slice(1)) {
-      if (!doc?.data?.language_code) continue;
-      const lang = doc.data.language_code;
-      const lcData = { ...doc.data };
+      const d = doc as Record<string, any>;
+      if (!d?.data?.language_code) continue;
+      const lang: string = d.data.language_code;
+      const lcData = { ...d.data };
       delete lcData.language_code;
       localizations[lang] = lcData;
     }
 
-    // The hyperedge wire keys are reserved at concept level (top-level
-    // of the managed concept YAML), not under data:. Derive the list
-    // from the registry so adding a type doesn't require an edit here.
     const conceptLevelOnlyKeys = [
       'related',
       'relations',
@@ -127,7 +118,7 @@ export class ConceptParser {
       term: null,
       localizations,
       related: _normalizeRelated(mc.related),
-      relations: _resolveHyperedgeData(mc),
+      relations: _resolveHyperedgeData(mc) ?? undefined,
       domains: mc.data.domains,
       groups: mc.data.groups,
       dates: mc.dates ?? mc.data?.dates,
@@ -142,8 +133,8 @@ export class ConceptParser {
   }
 }
 
-function assertConceptLevelOnly(mc, keys) {
-  const conceptId = mc?.data?.identifier ?? '<unknown>';
+function assertConceptLevelOnly(mc: Record<string, any>, keys: string[]) {
+  const conceptId: string = mc?.data?.identifier ?? '<unknown>';
   for (const key of keys) {
     const camelKey = _camelCase(key);
     if (mc?.data?.[key] != null && mc[key] == null && mc[camelKey] == null) {
@@ -168,36 +159,30 @@ function assertConceptLevelOnly(mc, keys) {
 //
 // Adding a new hyperedge type means: declare it on a class, register.
 // The parser picks it up automatically — no edits here.
-function _resolveHyperedgeData(container) {
+function _resolveHyperedgeData(container: Record<string, any> | null): ReadonlyArray<unknown> | null {
   if (!container) return null;
 
   if (Array.isArray(container.relations)) {
     return container.relations;
   }
 
-  const out = [];
+  const out: unknown[] = [];
 
   for (const cls of HyperedgeRegistry.allClasses()) {
-    // v2 wire key (e.g. partitive_relations)
-    const arr = container[cls.wireKey] ?? container[_camelCase(cls.wireKey)];
+    const arr = container[cls.wireKey] ?? container[_camelCase(cls.wireKey) as string];
     if (Array.isArray(arr)) {
       for (const r of arr) {
         const tagged = _addTypeIfMissing(r, cls.typeTag);
-        // @ts-expect-error TODO(Phase 2e): type this fully
         if (tagged != null) out.push(tagged);
       }
     }
 
-    // v1 legacy wire keys (e.g. partitive_hyperedges) — migrated.
-    // The migration helper produces a v2 hash; we tag it with the
-    // typeTag so Concept's registry dispatch finds the right class.
     for (const v1Key of cls.v1WireKeys ?? []) {
-      const v1Arr = container[v1Key] ?? container[_camelCase(v1Key)];
+      const v1Arr = container[v1Key] ?? container[_camelCase(v1Key) as string];
       if (!Array.isArray(v1Arr)) continue;
       for (const h of v1Arr) {
         const hash = h?.toJSON && typeof h.toJSON === 'function' ? h.toJSON() : h;
         const migrated = migrateHyperedgeToRelation(hash);
-        // @ts-expect-error TODO(Phase 2e): type this fully
         if (migrated) out.push({ ...migrated, type: cls.typeTag });
       }
     }
@@ -206,25 +191,26 @@ function _resolveHyperedgeData(container) {
   return out.length > 0 ? out : null;
 }
 
-function _addTypeIfMissing(value, type) {
+function _addTypeIfMissing(value: unknown, type: string) {
   if (value == null) return null;
-  if (typeof value.toJSON === 'function') {
-    const hash = value.toJSON();
+  if (typeof (value as any).toJSON === 'function') {
+    const hash = (value as { toJSON: () => Record<string, unknown> }).toJSON();
     return hash.type ? hash : { ...hash, type };
   }
   if (typeof value === 'object') {
-    return value.type ? value : { ...value, type };
+    const v = value as Record<string, unknown>;
+    return v.type ? value : { ...value, type };
   }
   return value;
 }
 
-function _normalizeRelated(arr) {
+function _normalizeRelated(arr: unknown) {
   if (!arr || !Array.isArray(arr)) return [];
   return arr.map(r => {
     if (r instanceof RelatedConcept) return r;
-    if (r.ref != null && typeof r.ref !== 'object') {
+    if ((r as any)?.ref != null && typeof (r as any).ref !== 'object') {
       throw new InvalidInputError(
-        `RelatedConcept.ref must be an object { source, id }, got: ${typeof r.ref}`,
+        `RelatedConcept.ref must be an object { source, id }, got: ${typeof (r as any).ref}`,
         'object',
       );
     }
@@ -233,3 +219,4 @@ function _normalizeRelated(arr) {
 }
 
 export const conceptParser = new ConceptParser();
+

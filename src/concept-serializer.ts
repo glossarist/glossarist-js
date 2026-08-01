@@ -1,14 +1,11 @@
 import * as yaml from 'js-yaml';
 import { PartitiveHyperedge } from './models/partitive-hyperedge.js';
 import { GenericHyperedge } from './models/generic-hyperedge.js';
+import type { Concept } from './models/concept.js';
 
 const DUMP_OPTS = { lineWidth: -1, noRefs: true, sortKeys: false, skipInvalid: true };
 
-// Partition the unified relations array by concrete type and emit
-// each type under its own wire key. Concept.relations holds mixed
-// types; the wire format stays split for backward compat with
-// existing consumers and the JSON Schema in concept-model.
-function _emitTypedRelations(concept) {
+function _emitTypedRelations(concept: Concept) {
   const partitiveRels = concept.relations.filter(r => r instanceof PartitiveHyperedge);
   const genericRels = concept.relations.filter(r => r instanceof GenericHyperedge);
   return {
@@ -18,21 +15,18 @@ function _emitTypedRelations(concept) {
 }
 
 export class ConceptSerializer {
-  toCanonicalYaml(concept) {
-    const doc = { termid: concept.id };
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  toCanonicalYaml(concept: Concept) {
+    const doc: Record<string, unknown> = { termid: concept.id };
     if (concept.term) doc.term = concept.term;
 
     const { partitive, generic } = _emitTypedRelations(concept);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (partitive.length > 0) doc.partitive_relations = partitive;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (generic.length > 0) doc.generic_relations = generic;
 
     for (const lang of concept.languages) {
       const lc = concept.localization(lang);
       if (lc) {
-        const lcObj = lc.toJSON();
+        const lcObj = lc.toJSON() as Record<string, unknown>;
         delete lcObj.language_code;
         doc[lang] = lcObj;
       }
@@ -41,10 +35,10 @@ export class ConceptSerializer {
     return yaml.dump(doc, DUMP_OPTS);
   }
 
-  toManagedYaml(concept, uuidFn) {
+  toManagedYaml(concept: Concept, uuidFn?: () => string) {
     const genId = uuidFn ?? (() => crypto.randomUUID());
-    const localizedConcepts = {};
-    const langDocs = [];
+    const localizedConcepts: Record<string, string> = {};
+    const langDocs: Array<{ data: unknown; id: string }> = [];
 
     for (const lang of concept.languages) {
       const lc = concept.localization(lang);
@@ -53,40 +47,31 @@ export class ConceptSerializer {
       localizedConcepts[lang] = lcId;
 
       const lcObj = lc.toJSON();
-      // @ts-expect-error TODO(Phase 2e): type this fully
       langDocs.push({ data: lcObj, id: lcId });
     }
 
-    const mainDoc = {
+    const mainDoc: Record<string, unknown> = {
       data: { identifier: concept.id, localized_concepts: localizedConcepts },
       id: genId(),
     };
 
     if (concept.domains.length > 0) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      mainDoc.data.domains = concept.domains.map(d => d.toJSON());
+      (mainDoc.data as Record<string, unknown>).domains = concept.domains.map(d => d.toJSON());
     }
 
     if (concept.relatedConcepts.length > 0) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       mainDoc.related = concept.relatedConcepts.map(rc => rc.toJSON());
     }
     const { partitive, generic } = _emitTypedRelations(concept);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (partitive.length > 0) mainDoc.partitive_relations = partitive;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (generic.length > 0) mainDoc.generic_relations = generic;
     if (concept.sources.length > 0) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       mainDoc.sources = concept.sources.map(s => s.toJSON());
     }
     if (concept.dates.length > 0) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       mainDoc.dates = concept.dates.map(d => d.toJSON());
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (concept.status) mainDoc.status = concept.status;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (concept.schemaVersion) mainDoc.schema_version = concept.schemaVersion;
 
     const parts = [
@@ -96,15 +81,17 @@ export class ConceptSerializer {
     return parts.join('');
   }
 
-  toYaml(concept, uuidFn) {
+  toYaml(concept: Concept, uuidFn?: () => string) {
     return concept.term
       ? this.toCanonicalYaml(concept)
       : this.toManagedYaml(concept, uuidFn);
   }
 
-  toRegisterYaml(data) {
+  toRegisterYaml(data: unknown) {
     return yaml.dump(data, DUMP_OPTS);
   }
 }
 
 export const conceptSerializer = new ConceptSerializer();
+
+

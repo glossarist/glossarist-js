@@ -1,9 +1,12 @@
 import * as yaml from 'js-yaml';
 import { DATASET_ASSETS } from '../dataset-asset.js';
 import { ValidationResult } from './validation-result.js';
+import type { GcrPackage } from '../gcr-reader.js';
+
+interface DatasetAsset { path: string; type: string; }
 
 export class GcrValidator {
-  async validate(pkg) {
+  async validate(pkg: GcrPackage): Promise<ValidationResult> {
     const result = new ValidationResult();
     await this._validateMetadata(pkg, result);
     await this._validateConcepts(pkg, result);
@@ -11,19 +14,18 @@ export class GcrValidator {
     return result;
   }
 
-  async _validateMetadata(pkg, result) {
+  async _validateMetadata(pkg: GcrPackage, result: ValidationResult): Promise<void> {
     const raw = await pkg.readText('metadata.yaml');
     if (!raw) {
       result.addError('metadata.yaml is missing');
       return;
     }
 
-    let meta;
+    let meta: any;
     try {
       meta = yaml.load(raw);
     } catch (e) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      result.addError(`metadata.yaml: invalid YAML: ${e.message}`);
+      result.addError(`metadata.yaml: invalid YAML: ${(e as Error).message}`);
       return;
     }
 
@@ -32,35 +34,35 @@ export class GcrValidator {
     if (meta.concept_count == null) result.addError('metadata.yaml missing concept_count');
   }
 
-  async _validateConcepts(pkg, result) {
+  async _validateConcepts(pkg: GcrPackage, result: ValidationResult): Promise<void> {
     const ids = await pkg.conceptIds();
     if (ids.length === 0) {
       result.addError('No concept files found in concepts/');
     }
   }
 
-  async _validateAssets(pkg, result) {
-    for (const asset of DATASET_ASSETS) {
+  async _validateAssets(pkg: GcrPackage, result: ValidationResult): Promise<void> {
+    for (const asset of DATASET_ASSETS as readonly DatasetAsset[]) {
       if (asset.type === 'file') {
         await this._validateFileAsset(pkg, asset.path, result);
       } else if (asset.type === 'directory') {
-        await this._validateDirectoryAsset(pkg, asset.path, result);
+        this._validateDirectoryAsset(pkg, asset.path, result);
       }
     }
   }
 
-  async _validateFileAsset(pkg, path, result) {
+  async _validateFileAsset(pkg: GcrPackage, path: string, result: ValidationResult): Promise<void> {
     const raw = await pkg.readText(path);
     if (!raw) return;
     try {
       yaml.load(raw);
     } catch (e) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      result.addError(`${path}: invalid YAML at line ${e.mark?.line ?? '?'}: ${e.message}`);
+      const err = e as Error & { mark?: { line?: number } };
+      result.addError(`${path}: invalid YAML at line ${err.mark?.line ?? '?'}: ${err.message}`);
     }
   }
 
-  _validateDirectoryAsset(pkg, dirPath, result) {
+  _validateDirectoryAsset(pkg: GcrPackage, dirPath: string, result: ValidationResult): void {
     let hasFiles = false;
     let hasEntries = false;
     for (const entry of pkg.entryPaths()) {

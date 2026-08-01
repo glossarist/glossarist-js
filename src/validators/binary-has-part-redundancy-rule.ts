@@ -12,6 +12,8 @@
 // Severity: warning. Never blocks save.
 
 import { ValidationRule } from './validation-rule.js';
+import type { Concept } from '../models/concept.js';
+import type { ValidationResult } from './validation-result.js';
 import { refKey } from './ref-keys.js';
 
 const BINARY_HAS_PART_TYPES = new Set(['has_part', 'is_part_of']);
@@ -19,27 +21,27 @@ const BINARY_HAS_PART_TYPES = new Set(['has_part', 'is_part_of']);
 export class BinaryHasPartRedundancyRule extends ValidationRule {
   constructor() { super('binary-has-part-redundancy', 'warning'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     const relations = concept.relations ?? [];
 
     // Collect partitive refs from PartitiveRelations.
-    const relationTargets = new Set();
-    for (const rel of relations) {
-      const compKey = refKey(rel?.comprehensive);
+    const relationTargets = new Set<string>();
+    for (const rel of relations as any[]) {
+      const compKey = refKey(rel?.comprehensive ?? null);
       const members = rel?.partitives ?? rel?.parts ?? [];
       for (const member of members) {
         const ref = member?.ref ?? member;
-        const key = refKey(ref);
+        const key = refKey(ref ?? null);
         if (key && key !== compKey) relationTargets.add(key);
       }
     }
 
     // Collect binary has_part refs.
-    const binaryTargets = new Set();
+    const binaryTargets = new Set<string>();
     const related = concept.relatedConcepts ?? [];
-    for (const rc of related) {
+    for (const rc of related as any[]) {
       if (!BINARY_HAS_PART_TYPES.has(rc.type)) continue;
-      const key = refKey(rc?.ref);
+      const key = refKey(rc?.ref ?? null);
       if (key) binaryTargets.add(key);
     }
 

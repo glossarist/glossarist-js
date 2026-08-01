@@ -32,6 +32,25 @@ export { ReferenceClassifier } from './render-classification.js';
 export { V1Reader, migrateV1ToV2 } from './v1-reader.js';
 export { GlossaristError, InvalidInputError, YamlParseError } from './errors.js';
 
+// External concept detection + extensional completeness check.
+// Utilities for concept-browser and other consumers that need to render
+// ISO 704:2022 external-concept and ellipsis notation.
+// Per TODO 14 (external-concepts-ellipsis-rendering).
+export {
+  isExternalConcept,
+  isExternalMember,
+  isExternalComprehensive,
+  getExternalMembers,
+  hasProvidedBy,
+  hasDanglingExternal,
+} from './utils/external-detection.js';
+export type { ConceptStore, ExternalConceptLike } from './utils/external-detection.js';
+export {
+  checkExtensionalCompleteness,
+  OPEN_ENDED_PATTERNS,
+} from './validators/extensional-completeness.js';
+export type { ExtensionalDefinitionLike, ExtensionalCompletenessIssue } from './validators/extensional-completeness.js';
+
 export {
   COMPILED_EXTENSIONS,
   COMPILED_FORMATS,

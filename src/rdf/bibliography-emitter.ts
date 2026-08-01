@@ -19,17 +19,17 @@ const DCTERMS_NS = PREFIXES.dcterms;
 const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
 const GLOSS_NS   = PREFIXES.gloss;
 
-const DCTERMS: any = {
+const DCTERMS = {
   BibliographicResource: `${DCTERMS_NS}BibliographicResource`,
   identifier: `${DCTERMS_NS}identifier`,
   bibliographicCitation: `${DCTERMS_NS}bibliographicCitation`,
   title: `${DCTERMS_NS}title`,
   type: `${DCTERMS_NS}type`,
   isPartOf: `${DCTERMS_NS}isPartOf`,
-};
-const FOAF: any = {
+} as const;
+const FOAF = {
   page: `${FOAF_NS}page`,
-};
+} as const;
 
 // No hardcoded default base URI. Callers MUST pass baseUri explicitly
 // so instance IRIs reflect the consumer's domain, not the library's.
@@ -78,21 +78,29 @@ export function* bibliographyToQuads(input: BibliographyInput) {
   }
 }
 
+interface V3BibliographyEntry {
+  id?: string;
+  reference?: string;
+  title?: string;
+  link?: string;
+  type?: string;
+}
+
 export function normalizeBibliographyData(raw: unknown): BibliographyEntry[] {
   if (!raw || typeof raw !== 'object') return [];
-  const r = raw as Record<string, any>;
+  const r = raw as Record<string, unknown>;
   if (Array.isArray(r.bibliography)) {
-    return r.bibliography.map((e: any) => entryFromV3(e, null));
+    return (r.bibliography as V3BibliographyEntry[]).map((e) => entryFromV3(e, null));
   }
   const entries: BibliographyEntry[] = [];
   for (const [id, value] of Object.entries(r)) {
     if (!value || typeof value !== 'object') continue;
-    entries.push(entryFromV3(value as any, id));
+    entries.push(entryFromV3(value as V3BibliographyEntry, id));
   }
   return entries;
 }
 
-function entryFromV3(e: any, fallbackId: string | null): BibliographyEntry {
+function entryFromV3(e: V3BibliographyEntry, fallbackId: string | null): BibliographyEntry {
   return {
     id: e.id ?? fallbackId ?? '',
     reference: e.reference ?? '',

@@ -1,17 +1,13 @@
-// Validates that every ConceptSource#sourced_from Citation includes a
-// locality. Per concept-model commit 9c065df ("sourced_from citations
-// must include locality"), a sourced_from entry without a locality is
-// incomplete — the reader cannot locate the definition in the upstream
-// document. The schema (schemas/v3/concept.yaml) enforces this at
-// YAML-load time; this rule surfaces violations in already-parsed
-// Concepts for defense-in-depth.
-//
-// Severity: error. A sourced_from without locality is data loss for
-// the reader.
-
 import { ValidationRule } from './validation-rule.js';
 import type { Concept } from '../models/concept.js';
 import type { ValidationResult } from './validation-result.js';
+
+interface SourceLocality { type?: string; referenceFrom?: string; reference_from?: string }
+interface SourceCitation { locality?: SourceLocality | null }
+interface SourceLike {
+  sourcedFrom?: ReadonlyArray<SourceCitation>;
+  sourced_from?: ReadonlyArray<SourceCitation>;
+}
 
 export class SourcedFromLocalityRule extends ValidationRule {
   constructor() { super('sourced-from-locality', 'error'); }
@@ -19,10 +15,10 @@ export class SourcedFromLocalityRule extends ValidationRule {
   override validate(concept: Concept, path: string, result: ValidationResult) {
     const sources = concept.sources ?? [];
     for (let i = 0; i < sources.length; i++) {
-      const source = sources[i] as any;
+      const source = sources[i] as unknown as SourceLike;
       const sourcedFrom = source.sourcedFrom ?? source.sourced_from ?? [];
       for (let j = 0; j < sourcedFrom.length; j++) {
-        const citation = sourcedFrom[j] as any;
+        const citation = sourcedFrom[j];
         const locality = citation?.locality;
         if (!locality || (!locality.type && !locality.referenceFrom && !locality.reference_from)) {
           this.addIssue(result,
@@ -38,10 +34,10 @@ export class SourcedFromLocalityRule extends ValidationRule {
       if (!lc) continue;
       const lcSources = lc.sources ?? [];
       for (let i = 0; i < lcSources.length; i++) {
-        const source = lcSources[i] as any;
+        const source = lcSources[i] as unknown as SourceLike;
         const sourcedFrom = source.sourcedFrom ?? source.sourced_from ?? [];
         for (let j = 0; j < sourcedFrom.length; j++) {
-          const citation = sourcedFrom[j] as any;
+          const citation = sourcedFrom[j];
           const locality = citation?.locality;
           if (!locality || (!locality.type && !locality.referenceFrom && !locality.reference_from)) {
             this.addIssue(result,

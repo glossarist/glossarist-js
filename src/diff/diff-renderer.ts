@@ -3,6 +3,8 @@ import { resolveMultiplicity } from '../models/multiplicity.js';
 import type { ConceptDiff, ConceptLevelDiff, LocalizedConceptDiff, MetadataDiff } from './concept-diff.js';
 import type { ConceptCollectionDiff } from './collection-diff.js';
 import type { ListDiff } from './list-diff.js';
+import type { PartitivePresence } from '../models/partitive-presence.js';
+import type { PartitiveCount } from '../models/partitive-count.js';
 
 const COLORS = {
   red: (s: string) => `\x1b[31m${s}\x1b[0m`,
@@ -193,26 +195,53 @@ function renderMetadataDiff(metadataDiff: MetadataDiff): string {
   return lines.join('\n');
 }
 
-function designationLabel(d: any): string {
+interface DesignationLabel { designation?: string | null; normativeStatus?: string | null }
+interface DefinitionLabel { content?: string | null }
+interface MemberRef { id?: string; source?: string; text?: string }
+interface MemberForMultiplicity {
+  presence?: PartitivePresence;
+  count?: PartitiveCount;
+  multiplicity?: string;
+}
+interface MemberLike {
+  ref?: MemberRef | null;
+  presence?: PartitivePresence;
+  count?: PartitiveCount;
+  is_delimiting?: boolean;
+  delimitingCharacteristic?: Record<string, unknown> | null;
+  multiplicity?: string;
+}
+interface RelationLike {
+  comprehensive?: MemberRef | null;
+  partitives?: ReadonlyArray<MemberLike>;
+  members?: ReadonlyArray<MemberLike>;
+  completeness?: string | null;
+  criterion?: Record<string, unknown> | null;
+  constructor?: { kindLabel?: string };
+}
+
+function designationLabel(d: unknown): string {
   if (!d) return '?';
-  const text = d.designation ?? '?';
-  const status = d.normativeStatus ? ` (${d.normativeStatus})` : '';
+  const dx = d as DesignationLabel;
+  const text = dx.designation ?? '?';
+  const status = dx.normativeStatus ? ` (${dx.normativeStatus})` : '';
   return `${text}${status}`;
 }
 
-function definitionLabel(d: any): string {
+function definitionLabel(d: unknown): string {
   if (!d) return '?';
-  return d.content ?? '?';
+  return (d as DefinitionLabel).content ?? '?';
 }
 
-function relationLabel(r: any): string {
+function relationLabel(r: unknown): string {
   if (!r) return '?';
-  const c = r.comprehensive;
+  const rx = r as RelationLike;
+  const c = rx.comprehensive;
   const head = c?.id ?? c?.source ?? c?.text ?? '?';
-  const members = Array.isArray(r.partitives) ? r.partitives : r.members;
+  const members = Array.isArray(rx.partitives) ? rx.partitives : rx.members;
   const memberText = Array.isArray(members)
-    ? members.map((m: any) => {
-        const ref = m?.ref ?? m ?? {};
+    ? members.map(m => {
+        const ref = (m?.ref ?? m ?? {}) as MemberRef;
         let tail = '';
         const mult = resolveMultiplicity(m);
         if (mult && mult !== 'compulsory') tail += ` (${mult})`;
@@ -224,16 +253,16 @@ function relationLabel(r: any): string {
         return `${ref.id ?? ref.source ?? ref.text ?? '?'}${tail}`;
       }).join(', ')
     : '';
-  const completeness = r.completeness ? ` (${r.completeness})` : '';
-  const criterion = r.criterion
-    ? ` / ${Object.values(r.criterion)[0] ?? ''}`
+  const completeness = rx.completeness ? ` (${rx.completeness})` : '';
+  const criterion = rx.criterion
+    ? ` / ${Object.values(rx.criterion)[0] ?? ''}`
     : '';
-  const kindLabel = r?.constructor?.kindLabel ?? '';
+  const kindLabel = rx?.constructor?.kindLabel ?? '';
   const typeTag = kindLabel ? `${kindLabel} ` : '';
   return `${typeTag}${head} → {${memberText}}${completeness}${criterion}`;
 }
 
-export function multiplicityStats(relations: ReadonlyArray<any>): {
+export function multiplicityStats(relations: ReadonlyArray<RelationLike> | null | undefined): {
   total: number;
   byMultiplicity: Record<string, number>;
   byPresence: Record<string, number>;
@@ -248,10 +277,10 @@ export function multiplicityStats(relations: ReadonlyArray<any>): {
   for (const rel of relations ?? []) {
     for (const m of rel?.partitives ?? []) {
       total += 1;
-      const mult = resolveMultiplicity(m);
+      const mult = resolveMultiplicity(m as MemberForMultiplicity);
       byMultiplicity[mult] = (byMultiplicity[mult] ?? 0) + 1;
-      const p = m?.presence ?? 'required';
-      const c = m?.count ?? 'exactly_one';
+      const p = (m?.presence ?? 'required') as string;
+      const c = (m?.count ?? 'exactly_one') as string;
       byPresence[p] = (byPresence[p] ?? 0) + 1;
       byCount[c] = (byCount[c] ?? 0) + 1;
       if (m?.is_delimiting === true) delimitingCount += 1;
@@ -264,8 +293,9 @@ function itemLabel(item: unknown): string {
   if (item == null) return '?';
   if (typeof item === 'string') return item;
   if (typeof item === 'number') return String(item);
-  if (typeof (item as any).toJSON === 'function') {
-    return JSON.stringify((item as any).toJSON());
+  const ix = item as { toJSON?: () => unknown };
+  if (typeof ix.toJSON === 'function') {
+    return JSON.stringify(ix.toJSON());
   }
   return String(item);
 }

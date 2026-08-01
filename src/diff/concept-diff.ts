@@ -420,7 +420,7 @@ export class ConceptDiff extends GlossaristModel {
   }
 }
 
-type ConceptLike = Concept | { id?: string; languages?: readonly string[]; localization(lang: string): unknown } & Record<string, any> | null;
+type ConceptLike = Concept | { id?: string; languages?: readonly string[]; localization(lang: string): unknown } & Record<string, unknown> | null;
 
 export function diffConcepts(oldConcept: ConceptLike, newConcept: ConceptLike, language?: string | null): ConceptDiff {
   if (!oldConcept && !newConcept) {
@@ -451,8 +451,8 @@ export function diffConcepts(oldConcept: ConceptLike, newConcept: ConceptLike, l
   const languageDiff = diffLanguageSets(oldLangs, newLangs);
   const localizations: Record<string, LocalizedConceptDiff> = {};
   for (const lang of langs) {
-    const oldLoc = (oldConcept?.localization?.(lang) as LocalizedConcept | null) ?? null;
-    const newLoc = (newConcept?.localization?.(lang) as LocalizedConcept | null) ?? null;
+    const oldLoc = (oldConcept?.localization?.(lang) ?? null) as LocalizedConceptLike | null;
+    const newLoc = (newConcept?.localization?.(lang) ?? null) as LocalizedConceptLike | null;
     const lcDiff = diffLocalizedConcepts(oldLoc, newLoc);
     localizations[lang] = lcDiff;
   }
@@ -469,9 +469,19 @@ export function diffConcepts(oldConcept: ConceptLike, newConcept: ConceptLike, l
   });
 }
 
-type LocalizedConceptLike = { languageCode?: string | null; [k: string]: any } | null;
+interface LocalizedConceptLike {
+  languageCode?: string | null;
+  terms?: readonly unknown[];
+  definitions?: readonly unknown[];
+  notes?: readonly unknown[];
+  examples?: readonly unknown[];
+  sources?: readonly unknown[];
+  dates?: readonly unknown[];
+  related?: readonly unknown[];
+  [k: string]: unknown;
+}
 
-export function diffLocalizedConcepts(oldLoc: LocalizedConceptLike, newLoc: LocalizedConceptLike): LocalizedConceptDiff {
+export function diffLocalizedConcepts(oldLoc: LocalizedConceptLike | null, newLoc: LocalizedConceptLike | null): LocalizedConceptDiff {
   if (!oldLoc && !newLoc) {
     return new LocalizedConceptDiff({ languageCode: null });
   }
@@ -507,31 +517,33 @@ function diffConceptLevel(oldConcept: ConceptLike, newConcept: ConceptLike): Con
   const Direction = !oldConcept ? 'added' : !newConcept ? 'removed' : null;
 
   if (Direction) {
-    const c = (oldConcept ?? newConcept) as any;
+    const c = (oldConcept ?? newConcept) as ConceptLike & Record<string, unknown>;
     return new ConceptLevelDiff({
-      sources: fullListDiff(c.sources ?? [], Direction),
-      dates: fullListDiff(c.dates ?? [], Direction),
-      relatedConcepts: fullListDiff(c.relatedConcepts ?? [], Direction),
-      relations: fullListDiff(c.relations ?? [], Direction),
-      groups: fullListDiff(c.groups ?? [], Direction),
-      sections: fullListDiff(c.sections ?? [], Direction),
-      tags: fullListDiff(c.tags ?? [], Direction),
-      metadata: fullMetadataDiff(c, CONCEPT_METADATA_FIELDS, Direction),
+      sources: fullListDiff((c.sources as readonly unknown[]) ?? [], Direction),
+      dates: fullListDiff((c.dates as readonly unknown[]) ?? [], Direction),
+      relatedConcepts: fullListDiff((c.relatedConcepts as readonly unknown[]) ?? [], Direction),
+      relations: fullListDiff((c.relations as readonly unknown[]) ?? [], Direction),
+      groups: fullListDiff((c.groups as readonly unknown[]) ?? [], Direction),
+      sections: fullListDiff((c.sections as readonly unknown[]) ?? [], Direction),
+      tags: fullListDiff((c.tags as readonly unknown[]) ?? [], Direction),
+      metadata: fullMetadataDiff(c as Record<string, unknown>, CONCEPT_METADATA_FIELDS, Direction),
     });
   }
 
+  const oldC = oldConcept as ConceptLike & Record<string, unknown>;
+  const newC = newConcept as ConceptLike & Record<string, unknown>;
   return new ConceptLevelDiff({
-    sources: diffSources(oldConcept!.sources ?? [], newConcept!.sources ?? []),
-    dates: diffDates(oldConcept!.dates ?? [], newConcept!.dates ?? []),
-    relatedConcepts: diffRelatedConcepts(oldConcept!.relatedConcepts ?? [], newConcept!.relatedConcepts ?? []),
+    sources: diffSources((oldC.sources as readonly unknown[]) ?? [], (newC.sources as readonly unknown[]) ?? []),
+    dates: diffDates((oldC.dates as readonly unknown[]) ?? [], (newC.dates as readonly unknown[]) ?? []),
+    relatedConcepts: diffRelatedConcepts((oldC.relatedConcepts as readonly unknown[]) ?? [], (newC.relatedConcepts as readonly unknown[]) ?? []),
     relations: diffHyperedges(
-      oldConcept!.relations ?? [],
-      newConcept!.relations ?? [],
+      (oldC.relations as readonly unknown[]) ?? [],
+      (newC.relations as readonly unknown[]) ?? [],
     ),
-    groups: diffStringSet(oldConcept!.groups ?? [], newConcept!.groups ?? []),
-    sections: diffStringSet(oldConcept!.sections ?? [], newConcept!.sections ?? []),
-    tags: diffStringSet(oldConcept!.tags ?? [], newConcept!.tags ?? []),
-    metadata: diffMetadata(oldConcept!, newConcept!, CONCEPT_METADATA_FIELDS),
+    groups: diffStringSet((oldC.groups as readonly unknown[]) ?? [], (newC.groups as readonly unknown[]) ?? []),
+    sections: diffStringSet((oldC.sections as readonly unknown[]) ?? [], (newC.sections as readonly unknown[]) ?? []),
+    tags: diffStringSet((oldC.tags as readonly unknown[]) ?? [], (newC.tags as readonly unknown[]) ?? []),
+    metadata: diffMetadata(oldC, newC, CONCEPT_METADATA_FIELDS),
   });
 }
 
@@ -549,7 +561,7 @@ function diffLanguageSets(oldLangs: readonly string[], newLangs: readonly string
   return new ListDiff({ added, removed, changed: [] });
 }
 
-function fullyDiff(loc: any, lang: string | null, direction: 'added' | 'removed'): LocalizedConceptDiff {
+function fullyDiff(loc: LocalizedConceptLike, lang: string | null, direction: 'added' | 'removed'): LocalizedConceptDiff {
   const ChangeClass = direction === 'added' ? Added : Removed;
   const key = direction;
   const lc = new LocalizedConceptDiff({
@@ -699,17 +711,17 @@ function maxOf(a: number | undefined, b: number | undefined): number {
 
 function countConceptItems(oldConcept: ConceptLike, newConcept: ConceptLike, langs: readonly string[]): number {
   let count = 0;
+  const oldC = oldConcept as Record<string, unknown> | null;
+  const newC = newConcept as Record<string, unknown> | null;
+  const len = (v: unknown): number | undefined => Array.isArray(v) ? v.length : undefined;
 
-  count += maxOf(oldConcept?.sources?.length, newConcept?.sources?.length);
-  count += maxOf(oldConcept?.dates?.length, newConcept?.dates?.length);
-  count += maxOf(oldConcept?.relatedConcepts?.length, newConcept?.relatedConcepts?.length);
-  count += maxOf(
-    oldConcept?.relations?.length,
-    newConcept?.relations?.length,
-  );
-  count += maxOf(oldConcept?.groups?.length, newConcept?.groups?.length);
-  count += maxOf(oldConcept?.sections?.length, newConcept?.sections?.length);
-  count += maxOf(oldConcept?.tags?.length, newConcept?.tags?.length);
+  count += maxOf(len(oldC?.sources), len(newC?.sources));
+  count += maxOf(len(oldC?.dates), len(newC?.dates));
+  count += maxOf(len(oldC?.relatedConcepts), len(newC?.relatedConcepts));
+  count += maxOf(len(oldC?.relations), len(newC?.relations));
+  count += maxOf(len(oldC?.groups), len(newC?.groups));
+  count += maxOf(len(oldC?.sections), len(newC?.sections));
+  count += maxOf(len(oldC?.tags), len(newC?.tags));
   count += CONCEPT_METADATA_FIELDS.length;
 
   const oldLangs = oldConcept?.languages ?? [];
@@ -717,23 +729,24 @@ function countConceptItems(oldConcept: ConceptLike, newConcept: ConceptLike, lan
   count += maxOf(oldLangs.length, newLangs.length);
 
   for (const lang of langs) {
-    const oldLoc = (oldConcept?.localization?.(lang) as any) ?? null;
-    const newLoc = (newConcept?.localization?.(lang) as any) ?? null;
+    const oldLoc = (oldConcept?.localization?.(lang) as LocalizedConceptLike | null) ?? null;
+    const newLoc = (newConcept?.localization?.(lang) as LocalizedConceptLike | null) ?? null;
     count += countLocalizedItems(oldLoc, newLoc);
   }
 
   return count;
 }
 
-function countLocalizedItems(oldLoc: any, newLoc: any): number {
+function countLocalizedItems(oldLoc: LocalizedConceptLike | null, newLoc: LocalizedConceptLike | null): number {
   let count = 0;
-  count += maxOf(oldLoc?.terms?.length, newLoc?.terms?.length);
-  count += maxOf(oldLoc?.definitions?.length, newLoc?.definitions?.length);
-  count += maxOf(oldLoc?.notes?.length, newLoc?.notes?.length);
-  count += maxOf(oldLoc?.examples?.length, newLoc?.examples?.length);
-  count += maxOf(oldLoc?.sources?.length, newLoc?.sources?.length);
-  count += maxOf(oldLoc?.dates?.length, newLoc?.dates?.length);
-  count += maxOf(oldLoc?.related?.length, newLoc?.related?.length);
+  const len = (v: readonly unknown[] | undefined): number | undefined => v?.length;
+  count += maxOf(len(oldLoc?.terms), len(newLoc?.terms));
+  count += maxOf(len(oldLoc?.definitions), len(newLoc?.definitions));
+  count += maxOf(len(oldLoc?.notes), len(newLoc?.notes));
+  count += maxOf(len(oldLoc?.examples), len(newLoc?.examples));
+  count += maxOf(len(oldLoc?.sources), len(newLoc?.sources));
+  count += maxOf(len(oldLoc?.dates), len(newLoc?.dates));
+  count += maxOf(len(oldLoc?.related), len(newLoc?.related));
   count += LOCALIZATION_METADATA_FIELDS.length;
   return count;
 }

@@ -24,6 +24,19 @@ export default tseslint.config(
         'ts-expect-error': 'allow-with-description',
         minimumDescriptionLength: 10,
       }],
+      'no-restricted-syntax': ['error', {
+        selector: "ImportDeclaration[source.value='.js']",
+        message: "Do not add .js extension to relative imports — TypeScript handles extension resolution.",
+      }],
+    },
+  },
+  {
+    files: ['src/**/*.js'],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: 'Program',
+        message: "New source files in src/ must be .ts, not .js. Phase 4 of TS migration enforces TS-only.",
+      }],
     },
   },
   {
@@ -33,9 +46,6 @@ export default tseslint.config(
       'dist/',
       'TODO.*/',
       'TODO.*.md',
-      // Hand-maintained declaration files. These retire in Phase 3
-      // (TODO 50) once the corresponding .ts sources land. Linting
-      // them now produces noise without value.
       '**/*.d.ts',
     ],
   },

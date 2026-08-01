@@ -2,13 +2,13 @@
 // Generate predicate constants from the vendored JSON-LD context.
 //
 // Input:  data/concept-model/glossarist.context.jsonld
-// Output: src/rdf/predicates.ts   (ESM, runtime constants)
-//         src/rdf/predicates.d.ts (TypeScript types)
+// Output: src/rdf/predicates.ts   (ESM, runtime constants + inline types)
 //
 // Run: `npm run gen:predicates` (also wired into `npm run build`).
 //
-// Both output files are committed. Downstream code imports from
+// Output is committed. Downstream code imports from
 // `src/rdf/predicates.ts` — there is no runtime dep on concept-model.
+// `tsc` emits the declaration file (`predicates.d.ts`) into `dist/`.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -17,7 +17,6 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const CTX_PATH = resolve(ROOT, 'data', 'concept-model', 'glossarist.context.jsonld');
 export const OUT_JS = resolve(ROOT, 'src', 'rdf', 'predicates.ts');
-export const OUT_TS = resolve(ROOT, 'src', 'rdf', 'predicates.d.ts');
 
 // ── Parse JSON-LD context ───────────────────────────────────────────────
 
@@ -121,18 +120,16 @@ const HEADER = [
 // would write. Exposed for the drift test.
 export function generatePredicates(context) {
   const parsed = parseContext(context);
-  const jsBody = `${predObject(parsed)}\n\n${prefixObject(parsed)}\n`;
-  const tsBody = [
-    predObject(parsed, { asConst: true, declare: true }),
+  const body = [
+    predObject(parsed, { asConst: true }),
     '',
-    prefixObject(parsed, { declare: true }),
+    prefixObject(parsed),
     '',
     predicateUnion(parsed),
     '',
   ].join('\n');
   return {
-    js: `${HEADER}${jsBody}`,
-    ts: `${HEADER}${tsBody}\n`,
+    js: `${HEADER}${body}\n`,
     stats: {
       namespaces: Object.keys(parsed.namespaces).length,
       terms: parsed.allUris.length,
@@ -141,11 +138,10 @@ export function generatePredicates(context) {
 }
 
 // Side-effecting entry point used by `npm run gen:predicates`.
-export function writePredicates({ ctxPath = CTX_PATH, outJs = OUT_JS, outTs = OUT_TS } = {}) {
+export function writePredicates({ ctxPath = CTX_PATH, outJs = OUT_JS } = {}) {
   const ctx = JSON.parse(readFileSync(ctxPath, 'utf8'))['@context'];
-  const { js, ts, stats } = generatePredicates(ctx);
+  const { js, stats } = generatePredicates(ctx);
   writeFileSync(outJs, js);
-  writeFileSync(outTs, ts);
   return stats;
 }
 
@@ -154,6 +150,5 @@ const invokedDirectly = process.argv[1] === fileURLToPath(import.meta.url);
 if (invokedDirectly) {
   const stats = writePredicates();
   console.log(`Generated ${OUT_JS.replace(ROOT + '/', '')}`);
-  console.log(`Generated ${OUT_TS.replace(ROOT + '/', '')}`);
   console.log(`  ${stats.namespaces} namespaces, ${stats.terms} terms.`);
 }

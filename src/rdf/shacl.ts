@@ -4,9 +4,7 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-// @ts-expect-error missing declarations on @rdfjs/data-model
 import dataModel from '@rdfjs/data-model';
-// @ts-expect-error missing declarations on @rdfjs/dataset
 import rdfDatasetFactory from '@rdfjs/dataset';
 import { Parser as N3Parser } from 'n3';
 import ShaclValidator from 'rdf-validate-shacl';

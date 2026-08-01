@@ -1,5 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { ValidationRule } from './validation-rule.js';
 import { ValidationResult } from './validation-result.js';
 
@@ -61,6 +59,7 @@ export class ConceptValidator {
   _rules = [];
 
   addRule(rule) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._rules.push(rule);
     return this;
   }
@@ -85,6 +84,7 @@ export class ConceptValidator {
     }
 
     for (const rule of this._rules) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       rule.validate(concept, '', result);
     }
 

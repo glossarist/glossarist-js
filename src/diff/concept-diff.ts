@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { GlossaristModel } from '../models/base.js';
 import { PartitiveHyperedge } from '../models/partitive-hyperedge.js';
 import { GenericHyperedge } from '../models/generic-hyperedge.js';
@@ -35,17 +34,25 @@ const LOCALIZATION_METADATA_FIELDS = Object.freeze([
 export class DiffStats extends GlossaristModel {
   constructor(data: Record<string, unknown> = {}) {
     super();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._added = data.added ?? 0;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._removed = data.removed ?? 0;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._changed = data.changed ?? 0;
   }
 
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get added() { return this._added; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get removed() { return this._removed; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get changed() { return this._changed; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get total() { return this._added + this._removed + this._changed; }
 
   toJSON() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return { added: this._added, removed: this._removed, changed: this._changed };
   }
 
@@ -57,26 +64,32 @@ export class DiffStats extends GlossaristModel {
 export class MetadataDiff extends GlossaristModel {
   constructor(data: Record<string, unknown> = {}) {
     super();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._changes = {};
     const raw = data.changes ?? data ?? {};
     for (const [field, change] of Object.entries(raw)) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       this._changes[field] = change instanceof Changed ? change : Changed.fromJSON(change);
     }
   }
 
   get changes() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._changes;
   }
 
   get hasChanges() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return Object.keys(this._changes).length > 0;
   }
 
   get count() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return Object.keys(this._changes).length;
   }
 
   *walk(section) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     for (const [field, change] of Object.entries(this._changes)) {
       const path = section ? `${section}.${field}` : field;
       yield { path, change };
@@ -85,7 +98,9 @@ export class MetadataDiff extends GlossaristModel {
 
   toJSON() {
     const obj = {};
+    // @ts-expect-error TODO(Phase 2e): type this fully
     for (const [field, change] of Object.entries(this._changes)) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       obj[field] = change.toJSON();
     }
     return obj;
@@ -99,8 +114,11 @@ export class MetadataDiff extends GlossaristModel {
 export class ConceptLevelDiff extends GlossaristModel {
   constructor(data: Record<string, unknown> = {}) {
     super();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._sources = wrapListDiff(data.sources);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._dates = wrapListDiff(data.dates);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._relatedConcepts = wrapListDiff(data.relatedConcepts ?? data.related_concepts);
     // Unified hyperedge diff. Accepts:
     //   - data.relations                   (new unified shape)
@@ -110,6 +128,7 @@ export class ConceptLevelDiff extends GlossaristModel {
     //     data.partitive_hyperedges        (legacy partitive-only shape)
     // Old diffs only had partitive, so the legacy fallback treats them
     // as a unified list with one type present.
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._relations = wrapListDiff(
       data.relations
         ?? data.partitiveRelations
@@ -117,18 +136,26 @@ export class ConceptLevelDiff extends GlossaristModel {
         ?? data.partitiveHyperedges
         ?? data.partitive_hyperedges,
     );
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._groups = wrapListDiff(data.groups);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._sections = wrapListDiff(data.sections);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._tags = wrapListDiff(data.tags);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._metadata = data.metadata instanceof MetadataDiff
       ? data.metadata
       : MetadataDiff.fromJSON(data.metadata ?? {});
   }
 
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get sources() { return this._sources; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get dates() { return this._dates; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get relatedConcepts() { return this._relatedConcepts; }
   /** Unified hyperedge diff (PartitiveHyperedge + GenericHyperedge). */
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get relations() { return this._relations; }
   /**
    * Filtered view of `relations` containing only PartitiveHyperedge
@@ -136,6 +163,7 @@ export class ConceptLevelDiff extends GlossaristModel {
    * directly on a ConceptLevelDiff.
    */
   get partitiveRelations() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return filterListDiffByType(this._relations, PartitiveHyperedge);
   }
   /** @deprecated use .relations */ get partitiveHyperedges() { return this.partitiveRelations; }
@@ -145,44 +173,73 @@ export class ConceptLevelDiff extends GlossaristModel {
    * directly on a ConceptLevelDiff.
    */
   get genericRelations() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return filterListDiffByType(this._relations, GenericHyperedge);
   }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get groups() { return this._groups; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get sections() { return this._sections; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get tags() { return this._tags; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get metadata() { return this._metadata; }
 
   get hasChanges() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._sources.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._dates.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._relatedConcepts.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._relations.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._groups.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._sections.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._tags.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._metadata.hasChanges;
   }
 
   *walk() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.sources', this._sources);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.dates', this._dates);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.relatedConcepts', this._relatedConcepts);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.relations', this._relations);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.groups', this._groups);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.sections', this._sections);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.tags', this._tags);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* this._metadata.walk('concept.metadata');
   }
 
   toJSON() {
     return {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       sources: this._sources.toJSON(),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       dates: this._dates.toJSON(),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       related_concepts: this._relatedConcepts.toJSON(),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       relations: this._relations.toJSON(),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       groups: this._groups.toJSON(),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       sections: this._sections.toJSON(),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       tags: this._tags.toJSON(),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       metadata: this._metadata.toJSON(),
     };
   }
@@ -195,80 +252,133 @@ export class ConceptLevelDiff extends GlossaristModel {
 export class LocalizedConceptDiff extends GlossaristModel {
   constructor(data: Record<string, unknown> = {}) {
     super();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.languageCode = data.languageCode ?? data.language_code ?? null;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._designations = wrapListDiff(data.designations);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._definitions = wrapListDiff(data.definitions);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._notes = wrapListDiff(data.notes);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._examples = wrapListDiff(data.examples);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._sources = wrapListDiff(data.sources);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._dates = wrapListDiff(data.dates);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._related = wrapListDiff(data.related);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._metadata = data.metadata instanceof MetadataDiff
       ? data.metadata
       : MetadataDiff.fromJSON(data.metadata ?? {});
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._totalItems = data.totalItems ?? data.total_items ?? 0;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._statsCache = undefined;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._similarityCache = undefined;
   }
 
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get designations() { return this._designations; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get definitions() { return this._definitions; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get notes() { return this._notes; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get examples() { return this._examples; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get sources() { return this._sources; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get dates() { return this._dates; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get related() { return this._related; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get metadata() { return this._metadata; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get totalItems() { return this._totalItems; }
 
   get hasChanges() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._designations.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._definitions.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._notes.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._examples.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._sources.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._dates.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._related.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._metadata.hasChanges;
   }
 
   get stats() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this._statsCache === undefined) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       this._statsCache = collectStats(this.walk());
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._statsCache;
   }
 
   get similarity() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this._similarityCache === undefined) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       this._similarityCache = computeSimilarity(this.stats.total, this._totalItems);
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._similarityCache;
   }
 
   *walk(prefix) {
     const base = prefix ?? '';
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.designations`, this._designations);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.definitions`, this._definitions);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.notes`, this._notes);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.examples`, this._examples);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.sources`, this._sources);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.dates`, this._dates);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.related`, this._related);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* this._metadata.walk(`${base}.metadata`);
   }
 
   toJSON() {
     const obj = {};
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this.languageCode != null) obj.language_code = this.languageCode;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.designations = this._designations.toJSON();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.definitions = this._definitions.toJSON();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.notes = this._notes.toJSON();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.examples = this._examples.toJSON();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.sources = this._sources.toJSON();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.dates = this._dates.toJSON();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.related = this._related.toJSON();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.metadata = this._metadata.toJSON();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.total_items = this._totalItems;
     return obj;
   }
@@ -281,63 +391,93 @@ export class LocalizedConceptDiff extends GlossaristModel {
 export class ConceptDiff extends GlossaristModel {
   constructor(data: Record<string, unknown> = {}) {
     super();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._oldId = data.oldId ?? data.old_id ?? null;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._newId = data.newId ?? data.new_id ?? null;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._concept = data.concept instanceof ConceptLevelDiff
       ? data.concept
       : ConceptLevelDiff.fromJSON(data.concept ?? {});
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._languages = wrapListDiff(data.languages);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._localizations = {};
     const raw = data.localizations ?? {};
     for (const [lang, lcDiff] of Object.entries(raw)) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       this._localizations[lang] = lcDiff instanceof LocalizedConceptDiff
         ? lcDiff
         : LocalizedConceptDiff.fromJSON(lcDiff);
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._totalItems = data.totalItems ?? data.total_items ?? 0;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._statsCache = undefined;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._similarityCache = undefined;
   }
 
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get oldId() { return this._oldId; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get newId() { return this._newId; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get concept() { return this._concept; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get languages() { return this._languages; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get localizations() { return this._localizations; }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   get totalItems() { return this._totalItems; }
 
   get localizationLanguages() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return Object.keys(this._localizations);
   }
 
   get hasChanges() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._concept.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._languages.hasChanges
+      // @ts-expect-error TODO(Phase 2e): type this fully
       || Object.values(this._localizations).some(lc => lc.hasChanges);
   }
 
   localization(lang) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._localizations[lang] ?? null;
   }
 
   get stats() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this._statsCache === undefined) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       this._statsCache = collectStats(this.walk());
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._statsCache;
   }
 
   get similarity() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this._similarityCache === undefined) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       this._similarityCache = computeSimilarity(this.stats.total, this._totalItems);
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._similarityCache;
   }
 
   *walk() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* this._concept.walk();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('languages', this._languages);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     for (const [lang, lc] of Object.entries(this._localizations)) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       for (const { path, change } of lc.walk(`localizations.${lang}`)) {
         yield { path, change, language: lang };
       }
@@ -346,14 +486,22 @@ export class ConceptDiff extends GlossaristModel {
 
   toJSON() {
     const obj = {};
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this._oldId != null) obj.old_id = this._oldId;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this._newId != null) obj.new_id = this._newId;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.concept = this._concept.toJSON();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.languages = this._languages.toJSON();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.localizations = {};
+    // @ts-expect-error TODO(Phase 2e): type this fully
     for (const [lang, lc] of Object.entries(this._localizations)) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       obj.localizations[lang] = lc.toJSON();
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.total_items = this._totalItems;
     return obj;
   }
@@ -531,12 +679,14 @@ function fullMetadataDiff(obj, fields, direction) {
 function diffDesignations(oldTerms, newTerms) {
   return diffSet(oldTerms, newTerms, {
     identityKey: identityOf,
+    // @ts-expect-error TODO(Phase 2e): type this fully
     textKey: d => d?.designation ?? '',
   });
 }
 
 function diffTextList(oldItems, newItems) {
   return diffList(oldItems, newItems, {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     textKey: d => d?.content ?? '',
   });
 }
@@ -550,6 +700,7 @@ function diffSources(oldSources, newSources) {
 function diffDates(oldDates, newDates) {
   return diffSet(oldDates, newDates, {
     identityKey: identityOf,
+    // @ts-expect-error TODO(Phase 2e): type this fully
     textKey: d => d?.date ?? '',
   });
 }

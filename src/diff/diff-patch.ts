@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { Concept } from '../models/concept.js';
 import { ConceptSource } from '../models/concept-source.js';
 import { ConceptDate } from '../models/concept-date.js';
@@ -80,15 +79,25 @@ export function reverseDiff(diff) {
   const localizations = {};
   for (const [lang, lcDiff] of Object.entries(diff.localizations)) {
     localizations[lang] = new LocalizedConceptDiff({
+      // @ts-expect-error TODO(Phase 2e): type this fully
       languageCode: lcDiff.languageCode,
+      // @ts-expect-error TODO(Phase 2e): type this fully
       designations: reverseListDiff(lcDiff.designations),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       definitions: reverseListDiff(lcDiff.definitions),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       notes: reverseListDiff(lcDiff.notes),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       examples: reverseListDiff(lcDiff.examples),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       sources: reverseListDiff(lcDiff.sources),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       dates: reverseListDiff(lcDiff.dates),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       related: reverseListDiff(lcDiff.related),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       metadata: reverseMetadataDiff(lcDiff.metadata),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       totalItems: lcDiff._totalItems,
     });
   }
@@ -122,12 +131,14 @@ function applyConceptLevelPatch(json, conceptDiff) {
     const existing = v1ReadKeys
       .map(k => json[k])
       .find(arr => Array.isArray(arr)) ?? json[wireKey] ?? [];
+    // @ts-expect-error TODO(Phase 2e): type this fully
     json[wireKey] = applyListPatch(existing, partition, cls.identityOf);
     for (const k of v1ReadKeys) {
       if (json[k] != null && json[wireKey] != null) delete json[k];
     }
   }
 
+  // @ts-expect-error TODO(Phase 2e): type this fully
   json.tags = applyListPatch(json.tags ?? [], conceptDiff.tags);
 
   applyMetadataPatch(json, conceptDiff.metadata, CONCEPT_METADATA_JSON_KEYS);
@@ -190,9 +201,11 @@ function applyMetadataPatch(target, metadataDiff, keyMap) {
   for (const [field, change] of Object.entries(metadataDiff.changes)) {
     const jsonKey = keyMap[field];
     if (!jsonKey) continue;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (change.newValue == null) {
       delete target[jsonKey];
     } else {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       target[jsonKey] = change.newValue;
     }
   }
@@ -204,6 +217,7 @@ function reverseListDiff(listDiff) {
   const changed = listDiff.changed.map(c => new Changed({
     oldValue: c.newValue,
     newValue: c.oldValue,
+    // @ts-expect-error TODO(Phase 2e): type this fully
     textDiff: c.textDiff ? reverseTextDiff(c.textDiff) : null,
     path: c.path,
   }));
@@ -214,7 +228,9 @@ function reverseMetadataDiff(metadataDiff) {
   const changes = {};
   for (const [field, change] of Object.entries(metadataDiff.changes)) {
     changes[field] = new Changed({
+      // @ts-expect-error TODO(Phase 2e): type this fully
       oldValue: change.newValue,
+      // @ts-expect-error TODO(Phase 2e): type this fully
       newValue: change.oldValue,
     });
   }

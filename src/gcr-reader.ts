@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import JSZip from 'jszip';
 import * as yaml from 'js-yaml';
 import { conceptParser } from './concept-parser.js';
@@ -83,6 +82,7 @@ export async function loadGcr(input) {
 export class GcrPackage {
   /** @param {JSZip} zip */
   constructor(zip) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip = zip;
   }
 
@@ -110,8 +110,10 @@ export class GcrPackage {
    */
   async conceptIds() {
     const ids = [];
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip.forEach((relativePath, entry) => {
       if (!entry.dir && relativePath.startsWith('concepts/') && relativePath.endsWith('.yaml')) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         ids.push(relativePath.slice('concepts/'.length, -'.yaml'.length));
       }
     });
@@ -151,6 +153,7 @@ export class GcrPackage {
     const concepts = [];
     for (const id of ids) {
       const c = await this.concept(id);
+      // @ts-expect-error TODO(Phase 2e): type this fully
       if (c) concepts.push(c);
     }
     return concepts;
@@ -164,6 +167,7 @@ export class GcrPackage {
    */
   async compiledFormats() {
     const seen = new Set();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip.forEach((relativePath, entry) => {
       if (!entry.dir) {
         const parsed = parseCompiledPath(relativePath);
@@ -181,9 +185,11 @@ export class GcrPackage {
   async compiledFormatIds(format) {
     const prefix = `compiled/${format}/`;
     const ids = [];
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip.forEach((relativePath, entry) => {
       if (!entry.dir && relativePath.startsWith(prefix)) {
         const parsed = parseCompiledPath(relativePath);
+        // @ts-expect-error TODO(Phase 2e): type this fully
         if (parsed && parsed.format === format) ids.push(parsed.id);
       }
     });
@@ -198,6 +204,7 @@ export class GcrPackage {
   async hasCompiledFormat(format) {
     const prefix = `compiled/${format}/`;
     let found = false;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip.forEach((relativePath, entry) => {
       if (!found && !entry.dir && relativePath.startsWith(prefix)) {
         found = true;
@@ -223,6 +230,7 @@ export class GcrPackage {
    * @returns {Promise<Uint8Array | null>}
    */
   async compiledFileBuffer(format, id) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     const entry = this._zip.file(compiledPath(format, id));
     if (!entry) return null;
     return entry.async('uint8array');
@@ -262,15 +270,18 @@ export class GcrPackage {
    */
   async datasetAssetEntries() {
     const entries = [];
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip.forEach((relativePath, zipEntry) => {
       if (zipEntry.dir) return;
       const fileAsset = findFileAsset(relativePath);
       if (fileAsset) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         entries.push({ path: relativePath, type: 'file', asset: fileAsset });
         return;
       }
       const dirAsset = findDirectoryAssetPath(relativePath);
       if (dirAsset) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         entries.push({ path: relativePath, type: 'directory', asset: dirAsset });
       }
     });
@@ -306,6 +317,7 @@ export class GcrPackage {
     if (!asset) return false;
     const prefix = `${asset.path}/`;
     let found = false;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip.forEach((relativePath, entry) => {
       if (!found && !entry.dir && relativePath.startsWith(prefix)) {
         found = true;
@@ -324,8 +336,10 @@ export class GcrPackage {
     if (!asset) return [];
     const prefix = `${asset.path}/`;
     const names = [];
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip.forEach((relativePath, entry) => {
       if (!entry.dir && relativePath.startsWith(prefix)) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         names.push(relativePath);
       }
     });
@@ -341,6 +355,7 @@ export class GcrPackage {
     const asset = DATASET_ASSETS.find((a) => a.type === 'directory' && a.path === 'images');
     if (!asset) return null;
     const fullPath = path.startsWith(`${asset.path}/`) ? path : `${asset.path}/${path}`;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     const entry = this._zip.file(fullPath);
     if (!entry) return null;
     return entry.async('uint8array');
@@ -354,6 +369,7 @@ export class GcrPackage {
   async eachImageFile(callback) {
     const names = await this.imageFileNames();
     for (const name of names) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       const entry = this._zip.file(name);
       if (entry) {
         const content = await entry.async('uint8array');
@@ -378,6 +394,7 @@ export class GcrPackage {
    * @returns {Promise<string | null>} null if the file doesn't exist
    */
   async readText(filePath) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     const entry = this._zip.file(filePath);
     if (!entry) return null;
     return entry.async('text');
@@ -389,7 +406,9 @@ export class GcrPackage {
    */
   entryPaths() {
     const entries = [];
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip.forEach((relativePath, entry) => {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       entries.push({ path: relativePath, dir: !!entry.dir });
     });
     return entries;
@@ -401,6 +420,7 @@ export class GcrPackage {
    * @returns {boolean}
    */
   hasEntry(filePath) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._zip.file(filePath) != null;
   }
 
@@ -414,8 +434,10 @@ export class GcrPackage {
   async entityIds(type) {
     const prefix = `${entityDir(type)}/`;
     const ids = [];
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip.forEach((relativePath, entry) => {
       if (!entry.dir && relativePath.startsWith(prefix) && relativePath.endsWith('.yaml')) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         ids.push(relativePath.slice(prefix.length, -'.yaml'.length));
       }
     });
@@ -426,6 +448,7 @@ export class GcrPackage {
     const raw = await this.readText(entityPath(type, id));
     if (raw === null) return null;
     const yamlData = yaml.load(raw);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return NonVerbalEntity.fromData({ ...yamlData, type });
   }
 
@@ -438,12 +461,14 @@ export class GcrPackage {
 
   async allEntities(type) {
     const entities = [];
+    // @ts-expect-error TODO(Phase 2e): type this fully
     await this.eachEntity(type, (e) => { entities.push(e); });
     return entities;
   }
 
   async entityTypes() {
     const seen = new Set();
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._zip.forEach((relativePath, entry) => {
       if (!entry.dir) {
         const parsed = parseEntityPath(relativePath);

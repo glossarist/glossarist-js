@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // NonVerbal entity → RDF quads. Mirrors the v3.1.0 concept-model
 // NonVerbal class hierarchy. Two distinct shapes:
 //
@@ -46,12 +45,15 @@ export function* nonVerbalRepToQuads(nvr, { parentUri, index, language = null })
     }
   }
   if (nvr.caption) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(namedNode(subject), namedNode(PRED.gloss.caption), literal(nvr.caption, language));
   }
   if (nvr.description) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(namedNode(subject), namedNode(DCTERMS_DESCRIPTION), literal(nvr.description, language));
   }
   if (nvr.alt) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(namedNode(subject), namedNode(PRED.gloss.altText), literal(nvr.alt, language));
   }
 
@@ -85,12 +87,15 @@ export function* nonVerbalEntityToQuads(entity, options) {
   yield quad(s, namedNode(WELL_KNOWN.rdfType), namedNode(`${PRED.gloss.$ns}${entity.rdfClass()}`));
 
   if (entity.caption) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(s, namedNode(PRED.gloss.caption), literal(entity.caption, null));
   }
   if (entity.description) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(s, namedNode(DCTERMS_DESCRIPTION), literal(entity.description, null));
   }
   if (entity.alt) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(s, namedNode(PRED.gloss.altText), literal(entity.alt, null));
   }
 
@@ -152,12 +157,15 @@ function* subfigureQuads(figure, subjectUri, _options) {
   yield quad(s, namedNode(WELL_KNOWN.rdfType), namedNode(`${PRED.gloss.$ns}${figure.rdfClass()}`));
 
   if (figure.caption) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(s, namedNode(PRED.gloss.caption), literal(figure.caption, null));
   }
   if (figure.description) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(s, namedNode(DCTERMS_DESCRIPTION), literal(figure.description, null));
   }
   if (figure.alt) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(s, namedNode(PRED.gloss.altText), literal(figure.alt, null));
   }
 
@@ -175,6 +183,7 @@ function* subfigureQuads(figure, subjectUri, _options) {
 
 function* tableQuads(table, s) {
   if (table.content) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(s, namedNode(PRED.gloss.content), literal(table.content, null));
   }
   if (table.format) {
@@ -184,6 +193,7 @@ function* tableQuads(table, s) {
 
 function* formulaQuads(formula, s) {
   if (formula.expression) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     yield quad(s, namedNode(PRED.gloss.expression), literal(formula.expression, null));
   }
   if (formula.notation) {

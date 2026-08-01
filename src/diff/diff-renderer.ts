@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { TextDiff } from './text-diff.js';
 import { resolveMultiplicity } from '../models/multiplicity.js';
 
@@ -12,7 +11,9 @@ const COLORS = {
 };
 
 export function renderConceptDiff(diff, options = {}) {
+  // @ts-expect-error TODO(Phase 2e): type this fully
   const colors = options.colors ?? false;
+  // @ts-expect-error TODO(Phase 2e): type this fully
   const showUnchanged = options.showUnchanged ?? false;
   const lines = [];
 
@@ -22,22 +23,30 @@ export function renderConceptDiff(diff, options = {}) {
     : (diff.newId ?? diff.oldId ?? '?');
 
   const similarityStr = colors ? colorizeSimilarity(pct) : `${pct}%`;
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`Concept "${idPart}" — ${similarityStr} similar`);
 
   if (!diff.hasChanges && !showUnchanged) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('  (no changes)');
     return lines.join('\n');
   }
 
   if (diff.concept.hasChanges || showUnchanged) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('Concept-level:');
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(renderConceptLevel(diff.concept, colors));
   }
 
   if (diff.languages.hasChanges || showUnchanged) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('Languages:');
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(renderLanguageSet(diff.languages, colors));
   }
 
@@ -45,8 +54,11 @@ export function renderConceptDiff(diff, options = {}) {
     const lcDiff = diff.localization(lang);
     if (!lcDiff) continue;
     if (lcDiff.hasChanges || showUnchanged) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push('');
+      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(`Localization (${lang}):`);
+      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(renderLocalized(lcDiff, colors));
     }
   }
@@ -55,45 +67,64 @@ export function renderConceptDiff(diff, options = {}) {
 }
 
 export function renderCollectionDiff(diff, options = {}) {
+  // @ts-expect-error TODO(Phase 2e): type this fully
   const colors = options.colors ?? false;
   const lines = [];
 
   const pct = Math.round(diff.similarity * 100);
   const similarityStr = colors ? colorizeSimilarity(pct) : `${pct}%`;
 
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`Collection comparison — ${similarityStr} similar overall`);
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`  Old: ${diff.oldCount} concepts`);
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`  New: ${diff.newCount} concepts`);
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`  Matched: ${diff.matched.length}`);
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`  Added: ${diff.added.length}`);
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`  Removed: ${diff.removed.length}`);
 
   if (diff.added.length > 0) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(colors ? COLORS.green('Added concepts:') : 'Added concepts:');
     for (const entry of diff.added) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(`  + ${entry.value}`);
     }
   }
 
   if (diff.removed.length > 0) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(colors ? COLORS.red('Removed concepts:') : 'Removed concepts:');
     for (const entry of diff.removed) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(`  - ${entry.value}`);
     }
   }
 
   const changedDiffs = Object.entries(diff.conceptDiffs)
+    // @ts-expect-error TODO(Phase 2e): type this fully
     .filter(([, d]) => d.hasChanges)
+    // @ts-expect-error TODO(Phase 2e): type this fully
     .sort(([, a], [, b]) => a.similarity - b.similarity);
 
   if (changedDiffs.length > 0) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('Changed concepts:');
     for (const [id, conceptDiff] of changedDiffs) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       const conceptPct = Math.round(conceptDiff.similarity * 100);
       const pctStr = colors ? colorizeSimilarity(conceptPct) : `${conceptPct}%`;
+      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(`  ${id}: ${pctStr}`);
     }
   }
@@ -105,15 +136,19 @@ export function renderTextDiff(textDiff, options = {}) {
   if (!(textDiff instanceof TextDiff)) {
     textDiff = TextDiff.fromJSON(textDiff);
   }
+  // @ts-expect-error TODO(Phase 2e): type this fully
   const colors = options.colors ?? false;
   const lines = [];
 
   for (const hunk of textDiff.hunks) {
     if (hunk.type === 'equal') {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(`  ${hunk.text}`);
     } else if (hunk.type === 'added') {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(colors ? `+ ${COLORS.green(hunk.text)}` : `+ ${hunk.text}`);
     } else if (hunk.type === 'removed') {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(colors ? `- ${COLORS.red(hunk.text)}` : `- ${hunk.text}`);
     }
   }
@@ -123,16 +158,24 @@ export function renderTextDiff(textDiff, options = {}) {
 
 function renderConceptLevel(diff, colors) {
   const lines = [];
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Sources', diff.sources, colors, itemLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Dates', diff.dates, colors, itemLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Related', diff.relatedConcepts, colors, itemLabel));
   // Unified hyperedge section. Replaces the per-type sections
   // (Partitive relations, Generic relations) — the underlying diff
   // is a single ListDiff over the unified .relations array.
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Hyperedges', diff.relations, colors, relationLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Groups', diff.groups, colors, itemLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Sections', diff.sections, colors, itemLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Tags', diff.tags, colors, itemLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderMetadataDiff(diff.metadata));
   return lines.filter(Boolean).join('\n');
 }
@@ -140,9 +183,11 @@ function renderConceptLevel(diff, colors) {
 function renderLanguageSet(diff, colors) {
   const lines = [];
   for (const entry of diff.added) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(colors ? `  + ${COLORS.green(entry.value)}` : `  + ${entry.value}`);
   }
   for (const entry of diff.removed) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(colors ? `  - ${COLORS.red(entry.value)}` : `  - ${entry.value}`);
   }
   return lines.join('\n');
@@ -150,13 +195,21 @@ function renderLanguageSet(diff, colors) {
 
 function renderLocalized(diff, colors) {
   const lines = [];
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Designations', diff.designations, colors, designationLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Definitions', diff.definitions, colors, definitionLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Notes', diff.notes, colors, definitionLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Examples', diff.examples, colors, definitionLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Sources', diff.sources, colors, itemLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Dates', diff.dates, colors, itemLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Related', diff.related, colors, itemLabel));
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderMetadataDiff(diff.metadata));
   return lines.filter(Boolean).join('\n');
 }
@@ -184,7 +237,9 @@ function renderMetadataDiff(metadataDiff) {
   if (!metadataDiff.hasChanges) return [];
   const lines = [`  Metadata:`];
   for (const [field, change] of Object.entries(metadataDiff.changes)) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     const oldVal = formatScalar(change.oldValue);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     const newVal = formatScalar(change.newValue);
     lines.push(`    ~ ${field}: ${oldVal} → ${newVal}`);
   }

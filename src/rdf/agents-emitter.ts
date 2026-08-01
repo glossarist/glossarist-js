@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Agents emitter — emits foaf:Person / prov:Organization from
 // contributor declarations. Mirrors concept-browser's agents-emitter.ts.
 //
@@ -100,6 +99,7 @@ export function* agentsToQuads(agents: Record<string, unknown>[], options: Recor
   const emittedOrgs = new Set();
 
   for (const a of agents ?? []) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     const person = namedNode(a.agentIri);
     yield quad(person, namedNode(RDF_TYPE), namedNode(FOAF.Person));
     yield quad(person, namedNode(RDF_TYPE), namedNode(PROV.Person));
@@ -110,9 +110,11 @@ export function* agentsToQuads(agents: Record<string, unknown>[], options: Recor
       yield quad(person, namedNode(FOAF.mbox), namedNode(`mailto:${(a as Record<string, unknown>).email as string}`));
     }
     if (a.url) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       yield quad(person, namedNode(RDFS.seeAlso), namedNode(a.url));
     }
     if (a.role) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       yield quad(person, namedNode(DCTERMS.description), literal(a.role));
     }
 
@@ -127,6 +129,7 @@ export function* agentsToQuads(agents: Record<string, unknown>[], options: Recor
         yield quad(org, namedNode(RDF_TYPE), namedNode(FOAF.Organization));
         yield quad(org, namedNode(RDF_TYPE), namedNode(PROV.Organization));
         yield quad(org, namedNode(RDF_TYPE), namedNode(PROV.Agent));
+        // @ts-expect-error TODO(Phase 2e): type this fully
         yield quad(org, namedNode(FOAF.name), literal(a.organization));
       }
     }

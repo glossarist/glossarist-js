@@ -1,32 +1,47 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { ConceptRef } from './models/concept-ref.js';
 import { parseMention } from './reference-mention.js';
 
 export class Reference {
   constructor(type, target, relationship, source, extras = {}) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.type = type;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.target = target;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.relationship = relationship ?? null;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.source = source ?? null;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.uri = extras.uri ?? null;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.citation = extras.citation ?? null;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.sourceId = extras.sourceId ?? null;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.resolution = extras.resolution ?? null;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this.lookupKey = extras.lookupKey ?? null;
   }
 
   get dedupKey() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this.type === 'bibliography') {
       return ['bibliography',
+        // @ts-expect-error TODO(Phase 2e): type this fully
         this.sourceId ?? this.citation?.ref?.id ?? this.target];
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this.type === 'figure' || this.type === 'table' || this.type === 'formula') {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       return [this.type, this.lookupKey?.entityId ?? this.target];
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this.type === 'concept') {
       return ['concept',
+        // @ts-expect-error TODO(Phase 2e): type this fully
         this.lookupKey?.id ?? this.lookupKey?.designation ?? this.target];
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return [this.type, this.target];
   }
 }
@@ -79,6 +94,7 @@ export class ReferenceResolver {
     for (const rc of concept.relatedConcepts) {
       const target = refTarget(rc);
       if (target) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         refs.push(new Reference('concept', target, rc.type, 'relatedConcepts', {
           lookupKey: { id: target },
         }));
@@ -97,6 +113,7 @@ export class ReferenceResolver {
 
       const compTarget = hyperedgeRefTarget(rel.comprehensive);
       if (compTarget) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         refs.push(new Reference(
           'concept',
           compTarget,
@@ -115,6 +132,7 @@ export class ReferenceResolver {
         const memberRef = m?.ref ?? m;
         const pTarget = hyperedgeRefTarget(memberRef);
         if (!pTarget) continue;
+        // @ts-expect-error TODO(Phase 2e): type this fully
         refs.push(new Reference(
           'concept',
           pTarget,
@@ -126,16 +144,19 @@ export class ReferenceResolver {
     }
 
     for (const ref of concept.figures) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       refs.push(new Reference('figure', ref.display ?? ref.entityId, 'structural', 'figures', {
         lookupKey: { entityType: 'figure', entityId: ref.entityId },
       }));
     }
     for (const ref of concept.tables) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       refs.push(new Reference('table', ref.display ?? ref.entityId, 'structural', 'tables', {
         lookupKey: { entityType: 'table', entityId: ref.entityId },
       }));
     }
     for (const ref of concept.formulas) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       refs.push(new Reference('formula', ref.display ?? ref.entityId, 'structural', 'formulas', {
         lookupKey: { entityType: 'formula', entityId: ref.entityId },
       }));
@@ -149,6 +170,7 @@ export class ReferenceResolver {
         const src = lc.sources[i];
         const ref = src.origin?.toString() ?? '';
         if (ref) {
+          // @ts-expect-error TODO(Phase 2e): type this fully
           refs.push(new Reference('standard', ref, src.type, `localizations.${lang}.sources[${i}]`));
         }
       }
@@ -181,35 +203,42 @@ export class ReferenceResolver {
       const parsed = parseMention(m[1]);
       switch (parsed.kind) {
         case 'cite-ref':
+          // @ts-expect-error TODO(Phase 2e): type this fully
           refs.push(this._resolveCiteRef(parsed, source, concept));
           break;
         case 'urn-ref':
+          // @ts-expect-error TODO(Phase 2e): type this fully
           refs.push(new Reference('concept', parsed.label ?? parsed.uri, 'embedded', source, {
             uri: parsed.uri,
             resolution: null,
           }));
           break;
         case 'fig-ref':
+          // @ts-expect-error TODO(Phase 2e): type this fully
           refs.push(new Reference('figure', parsed.label ?? parsed.key, 'embedded', source, {
             lookupKey: { entityType: 'figure', entityId: parsed.key },
           }));
           break;
         case 'table-ref':
+          // @ts-expect-error TODO(Phase 2e): type this fully
           refs.push(new Reference('table', parsed.label ?? parsed.key, 'embedded', source, {
             lookupKey: { entityType: 'table', entityId: parsed.key },
           }));
           break;
         case 'formula-ref':
+          // @ts-expect-error TODO(Phase 2e): type this fully
           refs.push(new Reference('formula', parsed.label ?? parsed.key, 'embedded', source, {
             lookupKey: { entityType: 'formula', entityId: parsed.key },
           }));
           break;
         case 'numeric':
+          // @ts-expect-error TODO(Phase 2e): type this fully
           refs.push(new Reference('concept', parsed.label ?? parsed.id, 'embedded', source, {
             lookupKey: { id: parsed.id },
           }));
           break;
         case 'designation':
+          // @ts-expect-error TODO(Phase 2e): type this fully
           refs.push(new Reference('concept', parsed.label ?? parsed.id, 'embedded', source, {
             lookupKey: { designation: parsed.id },
           }));
@@ -279,6 +308,7 @@ export class ReferenceResolver {
         return registry[dataset]?.concepts?.byId(ref.lookupKey.id) ?? null;
       }
       for (const entry of Object.values(registry)) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         const found = entry?.concepts?.byId(ref.lookupKey.id);
         if (found) return found;
       }

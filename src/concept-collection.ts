@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { naturalSort } from './sort.js';
 
 const _items = Symbol('items');
@@ -87,17 +86,21 @@ export class ConceptCollection {
     if (Array.isArray(sectionId)) {
       const targetSet = new Set(sectionId);
       return new ConceptCollection(this[_items].filter(c => {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         const ids = options.register
+          // @ts-expect-error TODO(Phase 2e): type this fully
           ? options.register.conceptSectionIds(c)
           : _flatConceptSectionIds(c);
         return ids.some(id => targetSet.has(id));
       }));
     }
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (!options.register) {
       throw new Error('bySection(sectionId) requires { register } to expand the concept section closures');
     }
     const target = sectionId;
     return new ConceptCollection(this[_items].filter(c => {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       const ids = options.register.conceptSectionIds(c);
       return ids.includes(target);
     }));
@@ -112,6 +115,7 @@ export class ConceptCollection {
   sorted() {
     const copy = [...this[_items]];
     copy.sort((a, b) => naturalSort(a.id, b.id));
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return new ConceptCollection(copy);
   }
 
@@ -155,9 +159,11 @@ function _flatConceptSectionIds(concept) {
     if (!Array.isArray(source)) continue;
     for (const entry of source) {
       if (typeof entry === 'string') {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         out.push(entry);
       } else if (entry && typeof entry === 'object') {
         const id = entry.id ?? entry.sectionId ?? entry.ref?.id;
+        // @ts-expect-error TODO(Phase 2e): type this fully
         if (id) out.push(String(id));
       }
     }

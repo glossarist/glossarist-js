@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import JSZip from 'jszip';
 import { conceptSerializer } from './concept-serializer.js';
 import { InvalidInputError } from './errors.js';
@@ -55,8 +54,10 @@ export class GcrWriter {
     if (metadata instanceof GcrMetadata) {
       const meta = metadata.clone();
       if (!meta.statistics && concepts.length > 0) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         meta.statistics = GcrStatistics.fromConcepts(concepts);
       }
+      // @ts-expect-error TODO(Phase 2e): type this fully
       if (!meta.conceptCount) meta.conceptCount = concepts.length;
       return meta.toJSON();
     }
@@ -76,6 +77,7 @@ export class GcrWriter {
       if (!isKnownFormat(format)) {
         throw new RangeError(`Unknown compiled format: ${format}`);
       }
+      // @ts-expect-error TODO(Phase 2e): type this fully
       const map = entries instanceof Map ? entries : new Map(Object.entries(entries));
       for (const [id, content] of map) {
         zip.file(compiledPath(format, id), content);

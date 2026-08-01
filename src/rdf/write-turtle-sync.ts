@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Sync Turtle writer — produces Turtle from RDF/JS Quads without
 // n3's callback API. Designed for UI use cases (Vue computed, React
 // render) that need synchronous output.
@@ -20,6 +19,7 @@ const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
  * @returns {string}
  */
 export function writeTurtleSync(quads, options = {}) {
+  // @ts-expect-error TODO(Phase 2e): type this fully
   const prefixes = options.prefixes ?? {};
   const sorted = [...quads].sort(compareQuadSync);
   const grouped = groupBySubject(sorted);
@@ -28,11 +28,14 @@ export function writeTurtleSync(quads, options = {}) {
 
   // Prefix declarations — sorted by prefix name for deterministic output.
   for (const [prefix, iri] of Object.entries(prefixes).sort(([a], [b]) => a.localeCompare(b))) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(`@prefix ${prefix}: <${iri}> .`);
   }
 
   for (const { subject, triples } of grouped) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(...writeResource(subject, triples, prefixes));
   }
 
@@ -53,6 +56,7 @@ function writeResource(subject, triples, prefixes) {
 
   if (types.length > 0) {
     const typeStrs = types.map(t => formatTermSync(t.object, prefixes));
+    // @ts-expect-error TODO(Phase 2e): type this fully
     allPredObjs.push({ predStr: 'a', objStrs: typeStrs });
   }
 
@@ -65,14 +69,18 @@ function writeResource(subject, triples, prefixes) {
     byPredicate.get(predStr).push(formatTermSync(t.object, prefixes));
   }
   for (const [predStr, objStrs] of byPredicate) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     allPredObjs.push({ predStr, objStrs });
   }
 
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`${subjectStr} ${allPredObjs[0].predStr} ${allPredObjs[0].objStrs.join(', ')} ;`);
   for (let i = 1; i < allPredObjs.length; i++) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(`  ${allPredObjs[i].predStr} ${allPredObjs[i].objStrs.join(', ')} ;`);
   }
   // Replace trailing ; with .
+  // @ts-expect-error TODO(Phase 2e): type this fully
   lines[lines.length - 1] = lines[lines.length - 1].replace(/ ;$/, ' .');
   return lines;
 }
@@ -120,13 +128,17 @@ function compactIriSync(iri, prefixes) {
   let bestPrefix = null;
   let bestLen = 0;
   for (const [prefix, base] of Object.entries(prefixes)) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (iri.startsWith(base) && base.length > bestLen) {
       // Reject if local part contains characters that can't appear in a
       // Turtle pname-local (e.g. leading digit is fine per Turtle 1.1,
       // but // is not).
+      // @ts-expect-error TODO(Phase 2e): type this fully
       const local = iri.slice(base.length);
       if (!local.startsWith('//')) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         bestPrefix = prefix;
+        // @ts-expect-error TODO(Phase 2e): type this fully
         bestLen = base.length;
       }
     }

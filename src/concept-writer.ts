@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import fs from 'fs';
 import path from 'path';
 import { conceptSerializer } from './concept-serializer.js';
@@ -19,7 +18,9 @@ export function writeConcept(dir, concept, format = 'auto') {
   const y = format === 'canonical'
     ? conceptSerializer.toCanonicalYaml(concept)
     : format === 'managed'
+      // @ts-expect-error TODO(Phase 2e): type this fully
       ? conceptSerializer.toManagedYaml(concept)
+      // @ts-expect-error TODO(Phase 2e): type this fully
       : conceptSerializer.toYaml(concept);
 
   fs.writeFileSync(path.join(dir, `${concept.id}.yaml`), y, 'utf8');
@@ -30,12 +31,15 @@ export function writeConcepts(dir, concepts, options = {}) {
   fs.mkdirSync(dir, { recursive: true });
 
   for (const concept of concepts) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     writeConcept(dir, concept, options.format);
   }
 
+  // @ts-expect-error TODO(Phase 2e): type this fully
   if (options.register) {
     fs.writeFileSync(
       path.join(dir, 'register.yaml'),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       conceptSerializer.toRegisterYaml(options.register),
       'utf8',
     );

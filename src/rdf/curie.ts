@@ -1,5 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // CURIE helpers — resolve/compact IRIs against the canonical PREFIXES.
 //
 // Single source of truth for CURIE ↔ IRI conversion. Previously
@@ -33,6 +31,7 @@ export function compactIri(iri: string, prefixes: Record<string, string> = PREFI
   let bestLen = 0;
   for (const [prefix, base] of Object.entries(prefixes)) {
     if (iri.startsWith(base) && base.length > bestLen) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       best = `${prefix}:${iri.slice(base.length)}`;
       bestLen = base.length;
     }

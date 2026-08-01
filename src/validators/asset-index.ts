@@ -1,30 +1,35 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import { DATASET_ASSETS } from '../dataset-asset.js';
 
 export class AssetIndex {
   constructor() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._paths = new Set();
   }
 
   get paths() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return [...this._paths].sort();
   }
 
   get size() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._paths.size;
   }
 
   register(path) {
     if (path == null) return;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     this._paths.add(this._normalize(path));
   }
 
   has(path) {
     if (path == null) return false;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._paths.has(this._normalize(path));
   }
 
   [Symbol.iterator]() {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._paths[Symbol.iterator]();
   }
 

@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // Sections builder — transforms a Quad[] into the ClassInstance[]
 // shape consumed by Vue UI components (RdfInstanceSection,
 // RdfInstanceHeader, RdfSourcePanel).
@@ -51,6 +50,7 @@ const SKOS_PREF_LABEL = `${PREFIXES.skos}prefLabel`;
  * @returns {ClassInstance[]}
  */
 export function quadSectionsToClassInstances(quads, options = {}) {
+  // @ts-expect-error TODO(Phase 2e): type this fully
   const language = options.language ?? 'eng';
   if (!quads || quads.length === 0) return [];
 
@@ -66,6 +66,7 @@ export function quadSectionsToClassInstances(quads, options = {}) {
     const target = isBnode ? bnodeQuads : bySubject;
     if (!target.has(key)) {
       target.set(key, { subject: subj, quads: [] });
+      // @ts-expect-error TODO(Phase 2e): type this fully
       if (!isBnode) order.push(key);
     }
     target.get(key).quads.push(q);
@@ -74,6 +75,7 @@ export function quadSectionsToClassInstances(quads, options = {}) {
   const result = [];
   for (const key of order) {
     const entry = bySubject.get(key);
+    // @ts-expect-error TODO(Phase 2e): type this fully
     result.push(resourceToClassInstance(entry.subject, entry.quads, bnodeQuads, language));
   }
   return result;
@@ -87,15 +89,19 @@ function resourceToClassInstance(subject, quads, bnodeQuads, language) {
 
   for (const q of quads) {
     if (q.predicate.value === RDF_TYPE) {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       types.push(q.object.value);
     } else if (q.predicate.value === SKOS_PREF_LABEL) {
       // Prefer prefLabel in the requested language; first one wins per lang
+      // @ts-expect-error TODO(Phase 2e): type this fully
       if (!prefLabel || (q.object.language === language && prefLabel.language !== language)) {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         prefLabel = { value: q.object.value, language: q.object.language };
       }
     } else if (q.predicate.value === RDFS_LABEL && !rdfsLabel) {
       rdfsLabel = q.object.value;
     } else {
+      // @ts-expect-error TODO(Phase 2e): type this fully
       otherQuads.push(q);
     }
   }
@@ -107,6 +113,7 @@ function resourceToClassInstance(subject, quads, bnodeQuads, language) {
   const rawClassId = types.length > 0 ? types[0] : '';
   const classId = rawClassId ? compactIri(rawClassId) : '';
   const classLabel = deriveClassLabel(rawClassId);
+  // @ts-expect-error TODO(Phase 2e): type this fully
   const label = prefLabel?.value ?? rdfsLabel ?? deriveSubjectLabel(subjectStr);
 
   // Group predicates (preserve insertion order). Compact IRIs to CURIEs
@@ -116,16 +123,21 @@ function resourceToClassInstance(subject, quads, bnodeQuads, language) {
   const seenPredKeys = new Set();
 
   for (const q of otherQuads) {
+    // @ts-expect-error TODO(Phase 2e): type this fully
     const isBnodeObj = q.object.termType === 'BlankNode';
+    // @ts-expect-error TODO(Phase 2e): type this fully
     const formatted = formatTerm(q.object, bnodeQuads);
     if (formatted === '') continue;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     const predicate = compactIri(q.predicate.value);
     const dedupKey = `${predicate}#${isBnodeObj ? 'n' : 'f'}#${formatted}`;
     if (seenPredKeys.has(dedupKey)) continue;
     seenPredKeys.add(dedupKey);
 
     const prop = { predicate, values: [formatted] };
+    // @ts-expect-error TODO(Phase 2e): type this fully
     if (isBnodeObj) prop.nested = true;
+    // @ts-expect-error TODO(Phase 2e): type this fully
     props.push(prop);
   }
 

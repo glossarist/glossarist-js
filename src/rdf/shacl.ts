@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 // SHACL validator wrapper. Loads vendored concept-model shapes once and
 // validates any RDFJS Dataset against them. Mirrors the mechanics of
 // glossarist-ruby's `Glossarist::Validation::ShaclValidator`.
@@ -29,6 +28,7 @@ const FACTORY = {
   dataset: rdfDatasetFactory.dataset.bind(rdfDatasetFactory),
 };
 const createDataset = FACTORY.dataset;
+// @ts-expect-error TODO(Phase 2e): type this fully
 const ShaclValidatorCtor = ShaclValidator.default ?? ShaclValidator;
 
 // Path to the vendored SHACL shapes (synced from glossarist/concept-model
@@ -82,6 +82,7 @@ export async function loadShapes({ shapesPath = SHAPES_PATH } = {}) {
 // library's default env (from defaultEnv.js) provides one — we no longer
 // pass a custom factory. Callers still control Dataset creation via
 // quadsToDataset below.
+// @ts-expect-error TODO(Phase 2e): type this fully
 export async function validateShacl(dataDataset, { shapes, shapesPath } = {}) {
   const shapesDataset = shapes ?? await loadShapes({ shapesPath });
   const validator = new ShaclValidatorCtor(shapesDataset);

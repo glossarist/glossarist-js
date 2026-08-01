@@ -1,4 +1,3 @@
-// @ts-nocheck — TEMPORARY during TS migration. TODO(Phase 2e): remove and type fully.
 import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
@@ -29,7 +28,9 @@ export class V1Reader {
     }
 
     return new Concept({
+      // @ts-expect-error TODO(Phase 2e): type this fully
       id: String(data.termid ?? data.data?.identifier ?? path.basename(conceptDir)),
+      // @ts-expect-error TODO(Phase 2e): type this fully
       term: data.term ?? null,
       localizations,
       raw: data,
@@ -45,6 +46,7 @@ export class V1Reader {
       const conceptDir = path.join(dir, entry.name);
       if (!fs.existsSync(path.join(conceptDir, 'concept.yaml'))) continue;
       try {
+        // @ts-expect-error TODO(Phase 2e): type this fully
         concepts.push(V1Reader.readConcept(conceptDir));
       } catch { /* skip unreadable concepts */ }
     }

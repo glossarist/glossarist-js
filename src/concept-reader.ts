@@ -106,12 +106,18 @@ function _mergePerFileHyperedges(dir: string, concepts: Concept[]) {
   }
 }
 
-function _sameHyperedge(a: any, b: any) {
-  const aCls = a?.constructor;
-  const bCls = b?.constructor;
+interface HyperedgeForIdentity {
+  constructor: { identityOf?: (v: unknown) => string };
+}
+
+function _sameHyperedge(a: unknown, b: unknown) {
+  const ax = a as HyperedgeForIdentity | null | undefined;
+  const bx = b as HyperedgeForIdentity | null | undefined;
+  const aCls = ax?.constructor;
+  const bCls = bx?.constructor;
   if (aCls !== bCls) return false;
-  if (typeof aCls.identityOf !== 'function') return false;
-  return aCls.identityOf(a) === bCls.identityOf(b);
+  if (typeof aCls?.identityOf !== 'function') return false;
+  return aCls.identityOf(a) === aCls.identityOf(b);
 }
 
 /**

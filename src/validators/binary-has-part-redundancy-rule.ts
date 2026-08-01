@@ -16,6 +16,17 @@ import type { Concept } from '../models/concept.js';
 import type { ValidationResult } from './validation-result.js';
 import { refKey } from './ref-keys.js';
 
+interface PartitiveMemberShape { ref?: { source?: string; id?: string } | null }
+interface PartitiveRelationShape {
+  comprehensive?: { source?: string; id?: string } | null;
+  partitives?: ReadonlyArray<PartitiveMemberShape>;
+  parts?: ReadonlyArray<PartitiveMemberShape>;
+}
+interface RelatedConceptShape {
+  type: string;
+  ref?: { source?: string; id?: string } | null;
+}
+
 const BINARY_HAS_PART_TYPES = new Set(['has_part', 'is_part_of']);
 
 export class BinaryHasPartRedundancyRule extends ValidationRule {
@@ -26,12 +37,12 @@ export class BinaryHasPartRedundancyRule extends ValidationRule {
 
     // Collect partitive refs from PartitiveRelations.
     const relationTargets = new Set<string>();
-    for (const rel of relations as any[]) {
+    for (const rel of relations as unknown as PartitiveRelationShape[]) {
       const compKey = refKey(rel?.comprehensive ?? null);
       const members = rel?.partitives ?? rel?.parts ?? [];
       for (const member of members) {
-        const ref = member?.ref ?? member;
-        const key = refKey(ref ?? null);
+        const ref = (member?.ref ?? member ?? null) as { source?: string; id?: string } | null;
+        const key = refKey(ref);
         if (key && key !== compKey) relationTargets.add(key);
       }
     }
@@ -39,9 +50,9 @@ export class BinaryHasPartRedundancyRule extends ValidationRule {
     // Collect binary has_part refs.
     const binaryTargets = new Set<string>();
     const related = concept.relatedConcepts ?? [];
-    for (const rc of related as any[]) {
+    for (const rc of related as unknown as RelatedConceptShape[]) {
       if (!BINARY_HAS_PART_TYPES.has(rc.type)) continue;
-      const key = refKey(rc?.ref ?? null);
+      const key = refKey((rc?.ref ?? null) as { source?: string; id?: string } | null);
       if (key) binaryTargets.add(key);
     }
 

@@ -121,13 +121,22 @@ export class ReferenceResolver {
       }
     }
 
+interface HyperedgeForRef {
+  comprehensive?: { id?: string; source?: string } | null;
+  members?: ReadonlyArray<{ ref?: { id?: string; source?: string } | null }>;
+  partitives?: ReadonlyArray<{ ref?: { id?: string; source?: string } | null }>;
+  parts?: ReadonlyArray<{ ref?: { id?: string; source?: string } | null }>;
+  constructor: { typeTag?: string };
+}
+interface NvrForRef { display?: string; entityId?: string }
+
     const relations = concept.relations ?? [];
     for (let i = 0; i < relations.length; i++) {
-      const rel = relations[i] as any;
+      const rel = relations[i] as unknown as HyperedgeForRef;
       const relType: string = rel?.constructor?.typeTag ?? 'hyperedge';
       const relPath = `relations[${i}]`;
 
-      const compTarget = hyperedgeRefTarget(rel.comprehensive);
+      const compTarget = hyperedgeRefTarget(rel.comprehensive ?? null);
       if (compTarget) {
         refs.push(new Reference(
           'concept',
@@ -141,7 +150,7 @@ export class ReferenceResolver {
       const members = rel.members ?? rel.partitives ?? rel.parts ?? [];
       for (let j = 0; j < members.length; j++) {
         const m = members[j];
-        const memberRef = m?.ref ?? m;
+        const memberRef = m?.ref ?? null;
         const pTarget = hyperedgeRefTarget(memberRef);
         if (!pTarget) continue;
         refs.push(new Reference(
@@ -155,20 +164,20 @@ export class ReferenceResolver {
     }
 
     for (const ref of concept.figures ?? []) {
-      const r = ref as any;
-      refs.push(new Reference('figure', r.display ?? r.entityId, 'structural', 'figures', {
+      const r = ref as unknown as NvrForRef;
+      refs.push(new Reference('figure', r.display ?? r.entityId ?? '', 'structural', 'figures', {
         lookupKey: { entityType: 'figure', entityId: r.entityId },
       }));
     }
     for (const ref of concept.tables ?? []) {
-      const r = ref as any;
-      refs.push(new Reference('table', r.display ?? r.entityId, 'structural', 'tables', {
+      const r = ref as unknown as NvrForRef;
+      refs.push(new Reference('table', r.display ?? r.entityId ?? '', 'structural', 'tables', {
         lookupKey: { entityType: 'table', entityId: r.entityId },
       }));
     }
     for (const ref of concept.formulas ?? []) {
-      const r = ref as any;
-      refs.push(new Reference('formula', r.display ?? r.entityId, 'structural', 'formulas', {
+      const r = ref as unknown as NvrForRef;
+      refs.push(new Reference('formula', r.display ?? r.entityId ?? '', 'structural', 'formulas', {
         lookupKey: { entityType: 'formula', entityId: r.entityId },
       }));
     }
@@ -254,7 +263,7 @@ export class ReferenceResolver {
   }
 
   _resolveCiteRef(parsed: MentionParseResult, source: string, concept: Concept): Reference {
-    const sourceEntry = (concept as any)?.findSourceById?.(parsed.key) ?? null;
+    const sourceEntry = (concept as Concept & { findSourceById?: (key: string) => { id?: string; origin?: { toString(): string } } | null })?.findSourceById?.(parsed.key ?? '') ?? null;
     if (!sourceEntry) {
       return new Reference(
         'bibliography',
@@ -270,7 +279,8 @@ export class ReferenceResolver {
     }
     const displayTarget = parsed.label
       ?? sourceEntry.origin?.toString()
-      ?? sourceEntry.id;
+      ?? sourceEntry.id
+      ?? '';
     return new Reference(
       'bibliography',
       displayTarget,
@@ -300,8 +310,8 @@ export class ReferenceResolver {
     }
   }
 
-  _resolveNonVerbal(ref: Reference, registry: Registry): unknown {
-    return findNonVerbalEntity(ref as any, registry);
+  _resolveNonVerbal(ref: Parameters<typeof findNonVerbalEntity>[0], registry: Registry): unknown {
+    return findNonVerbalEntity(ref as unknown as Parameters<typeof findNonVerbalEntity>[0], registry);
   }
 
   _resolveConcept(ref: Reference, registry: Registry): unknown {
@@ -325,13 +335,13 @@ export class ReferenceResolver {
   }
 
   _resolveBibliography(ref: Reference, registry: Registry): unknown {
-    const citation = ref.citation as { ref?: { source?: string; id?: string } } | null;
+    const citation = ref.citation as { ref?: { source?: string; id?: string; version?: string } } | null;
     if (citation) {
-      return resolveBibliographyRecord(citation.ref as any, registry) ?? citation;
+      return resolveBibliographyRecord(citation.ref ?? null, registry) ?? citation;
     }
-    const resolution = ref.resolution as { source?: string } | null | undefined;
+    const resolution = ref.resolution as { source?: string; id?: string; version?: string } | null | undefined;
     if (ref.uri && resolution?.source) {
-      return resolveBibliographyRecord(resolution as any, registry) ?? null;
+      return resolveBibliographyRecord(resolution, registry) ?? null;
     }
     return null;
   }

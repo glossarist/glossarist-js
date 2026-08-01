@@ -59,14 +59,14 @@ export class ReferenceClassifier {
   }
 
   _classifyBibliography(ref: AnyRef): string {
-    const citation = ref.citation as { ref?: unknown } | undefined;
+    const citation = ref.citation as { ref?: { source?: string; id?: string; version?: string } } | undefined;
     if (citation) {
-      return resolveBibliographyRecord(citation.ref as any, this.registry)
+      return resolveBibliographyRecord(citation.ref ?? null, this.registry as Registry)
         ? 'internal-citation'
         : 'self-contained-citation';
     }
     if (ref.uri) {
-      return resolveBibliographyRecord(ref.resolution as any, this.registry)
+      return resolveBibliographyRecord(ref.resolution as { source?: string; id?: string; version?: string } | null, this.registry as Registry)
         ? 'internal-citation'
         : 'external-citation';
     }
@@ -78,7 +78,7 @@ export class ReferenceClassifier {
   }
 
   _classifyNonVerbal(ref: AnyRef): string {
-    return findNonVerbalEntity(ref as any, this.registry as any)
+    return findNonVerbalEntity(ref as unknown as Parameters<typeof findNonVerbalEntity>[0], this.registry as Registry)
       ? 'internal-citation'
       : 'external-citation';
   }

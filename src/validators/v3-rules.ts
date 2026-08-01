@@ -186,7 +186,7 @@ function _findCiteMentions(concept: Concept): CiteMention[] {
 
 function _findDuplicateSourceIds(concept: Concept): Map<string, unknown[]> {
   const seen = new Map<string, unknown[]>();
-  const record = (source: any) => {
+  const record = (source: { id?: string | null } | null) => {
     if (source?.id == null) return;
     if (!seen.has(source.id)) seen.set(source.id, []);
     seen.get(source.id)!.push(source);
@@ -300,7 +300,7 @@ export class NonVerbalRefIntegrityRule extends ValidationRule {
   }
 
   override validate(concept: Concept, path: string, result: ValidationResult) {
-    const c = concept as any;
+    const c = concept as unknown as Record<string, ReadonlyArray<{ entityId?: string | null }>>;
     for (const { name } of NVR_ARRAYS) {
       const counts = new Map<string, number>();
       for (const ref of c[name] ?? []) {
@@ -342,7 +342,11 @@ export class OrphanedImagesRule {
   readonly name = 'orphaned-images';
   readonly severity = 'warning' as const;
 
-  check(context: { assetIndex?: any; concepts: Concept[]; resolver?: any }): Array<{ path: string; severity: string; message: string }> {
+  check(context: {
+    assetIndex?: { size: number; paths: Iterable<string> };
+    concepts: Concept[];
+    resolver?: { extractReferences(concept: Concept): Array<{ target?: string }> };
+  }): Array<{ path: string; severity: string; message: string }> {
     const { assetIndex, concepts, resolver } = context;
     if (!assetIndex || assetIndex.size === 0) return [];
 

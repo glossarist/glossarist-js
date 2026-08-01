@@ -75,7 +75,7 @@ export function* localizedConceptToQuads(localizedConcept: LocalizedConceptLike,
 
   let nvrIndex = 0;
   for (const nvr of localizedConcept.nonVerbalRep ?? []) {
-    yield* nonVerbalRepToQuads(nvr as any, { parentUri: subjectUri, index: nvrIndex, language });
+    yield* nonVerbalRepToQuads(nvr as unknown as Parameters<typeof nonVerbalRepToQuads>[0], { parentUri: subjectUri, index: nvrIndex, language });
     nvrIndex += 1;
   }
 

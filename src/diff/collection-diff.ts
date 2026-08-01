@@ -1,161 +1,148 @@
 import { GlossaristModel } from '../models/base.js';
 import { Added, Removed, Matched, deserializeChange } from './change.js';
+import type { Added as AddedType, Removed as RemovedType, Matched as MatchedType } from './change.js';
 import { ConceptDiff, DiffStats, diffConcepts } from './concept-diff.js';
 import { averageSimilarity } from './similarity.js';
+import type { Concept } from '../models/concept.js';
+
+interface CollectionDiffData {
+  oldCount?: number;
+  old_count?: number;
+  newCount?: number;
+  new_count?: number;
+  matched?: unknown[];
+  added?: unknown[];
+  removed?: unknown[];
+  conceptDiffs?: Record<string, ConceptDiff | Record<string, unknown>>;
+  concept_diffs?: Record<string, ConceptDiff | Record<string, unknown>>;
+}
 
 export class ConceptCollectionDiff extends GlossaristModel {
-  constructor(data: Record<string, unknown> = {}) {
+  oldCount: number;
+  newCount: number;
+  private _matched: MatchedType[];
+  private _added: AddedType[];
+  private _removed: RemovedType[];
+  private _conceptDiffs: Record<string, ConceptDiff>;
+  private _statsCache?: DiffStats;
+  private _similarityCache?: number;
+
+  constructor(data: CollectionDiffData = {}) {
     super();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.oldCount = data.oldCount ?? data.old_count ?? 0;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.newCount = data.newCount ?? data.new_count ?? 0;
 
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._matched = wrapIdList(data.matched, Matched);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._added = wrapIdList(data.added, Added);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._removed = wrapIdList(data.removed, Removed);
 
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._conceptDiffs = {};
     const raw = data.conceptDiffs ?? data.concept_diffs ?? {};
     for (const [id, diff] of Object.entries(raw)) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       this._conceptDiffs[id] = diff instanceof ConceptDiff
         ? diff
         : ConceptDiff.fromJSON(diff);
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._statsCache = undefined;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._similarityCache = undefined;
   }
 
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get matched() { return this._matched; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get added() { return this._added; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get removed() { return this._removed; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get conceptDiffs() { return this._conceptDiffs; }
+  get matched(): MatchedType[] { return this._matched; }
+  get added(): AddedType[] { return this._added; }
+  get removed(): RemovedType[] { return this._removed; }
+  get conceptDiffs(): Record<string, ConceptDiff> { return this._conceptDiffs; }
 
-  get changedIds() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get changedIds(): string[] {
     return Object.keys(this._conceptDiffs);
   }
 
-  get hasChanges() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get hasChanges(): boolean {
     return this._added.length > 0
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._removed.length > 0
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || Object.values(this._conceptDiffs).some(d => d.hasChanges);
   }
 
-  conceptDiff(id) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  conceptDiff(id: string): ConceptDiff | null {
     return this._conceptDiffs[id] ?? null;
   }
 
-  get stats() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get stats(): DiffStats {
     if (this._statsCache === undefined) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       let added = this._added.length;
-      // @ts-expect-error TODO(Phase 2e): type this fully
       let removed = this._removed.length;
       let changed = 0;
-      // @ts-expect-error TODO(Phase 2e): type this fully
       for (const diff of Object.values(this._conceptDiffs)) {
-        // @ts-expect-error TODO(Phase 2e): type this fully
         const s = diff.stats;
         added += s.added;
         removed += s.removed;
         changed += s.changed;
       }
-      // @ts-expect-error TODO(Phase 2e): type this fully
       this._statsCache = new DiffStats({ added, removed, changed });
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._statsCache;
   }
 
-  get similarity() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get similarity(): number {
     if (this._similarityCache === undefined) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       if (this._matched.length === 0) {
-        // @ts-expect-error TODO(Phase 2e): type this fully
         this._similarityCache = 0;
       } else {
-        // @ts-expect-error TODO(Phase 2e): type this fully
         const values = this._matched.map(entry => {
-          const id = entry.value;
-          // @ts-expect-error TODO(Phase 2e): type this fully
+          const id = entry.value as string;
           const diff = this._conceptDiffs[id];
           return diff ? diff.similarity : 1.0;
         });
-        // @ts-expect-error TODO(Phase 2e): type this fully
         this._similarityCache = averageSimilarity(values);
       }
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._similarityCache;
   }
 
-  *walk() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  *walk(): Generator<{ path: string; change: AddedType | RemovedType | unknown; conceptId?: string; language?: string }> {
     for (let i = 0; i < this._added.length; i++) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      yield { path: `added[${i}]`, change: this._added[i] };
+      yield { path: `added[${i}]`, change: this._added[i]! };
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     for (let i = 0; i < this._removed.length; i++) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      yield { path: `removed[${i}]`, change: this._removed[i] };
+      yield { path: `removed[${i}]`, change: this._removed[i]! };
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     for (const [id, diff] of Object.entries(this._conceptDiffs)) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       for (const entry of diff.walk()) {
         yield { path: `concepts.${id}.${entry.path}`, change: entry.change, conceptId: id, language: entry.language };
       }
     }
   }
 
-  toJSON() {
-    const obj = {
-      // @ts-expect-error TODO(Phase 2e): type this fully
+  override toJSON(): Record<string, unknown> {
+    const obj: Record<string, unknown> = {
       old_count: this.oldCount,
-      // @ts-expect-error TODO(Phase 2e): type this fully
       new_count: this.newCount,
-      // @ts-expect-error TODO(Phase 2e): type this fully
       matched: this._matched.map(c => c.toJSON()),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       added: this._added.map(c => c.toJSON()),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       removed: this._removed.map(c => c.toJSON()),
       concept_diffs: {},
     };
-    // @ts-expect-error TODO(Phase 2e): type this fully
+    const conceptDiffs = obj.concept_diffs as Record<string, unknown>;
     for (const [id, diff] of Object.entries(this._conceptDiffs)) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      obj.concept_diffs[id] = diff.toJSON();
+      conceptDiffs[id] = diff.toJSON();
     }
     return obj;
   }
 
-  static fromJSON(data) {
+  static override fromJSON(data: CollectionDiffData): ConceptCollectionDiff {
     return new ConceptCollectionDiff(data);
   }
 }
 
-export function diffConceptCollections(oldCollection, newCollection, options = {}) {
-  // @ts-expect-error TODO(Phase 2e): type this fully
+interface DiffCollectionsOptions {
+  language?: string;
+  skipUnchanged?: boolean;
+}
+
+export function diffConceptCollections(
+  oldCollection: Iterable<Concept> | Concept[] | null,
+  newCollection: Iterable<Concept> | Concept[] | null,
+  options: DiffCollectionsOptions = {},
+): ConceptCollectionDiff {
   const language = options.language ?? 'eng';
 
   const oldConcepts = extractConcepts(oldCollection);
@@ -171,20 +158,17 @@ export function diffConceptCollections(oldCollection, newCollection, options = {
   const addedIds = [...newIds].filter(id => !oldIds.has(id)).sort();
   const removedIds = [...oldIds].filter(id => !newIds.has(id)).sort();
 
-  const conceptDiffs = {};
+  const conceptDiffs: Record<string, ConceptDiff> = {};
   for (const id of matchedIds) {
     const oldConcept = oldMap.get(id);
     const newConcept = newMap.get(id);
 
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (options.skipUnchanged && conceptsEqual(oldConcept, newConcept)) {
       continue;
     }
 
-    const diff = diffConcepts(oldConcept, newConcept, language);
-    // @ts-expect-error TODO(Phase 2e): type this fully
+    const diff = diffConcepts(oldConcept as any, newConcept as any, language);
     if (diff.hasChanges || !options.skipUnchanged) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       conceptDiffs[id] = diff;
     }
   }
@@ -199,15 +183,15 @@ export function diffConceptCollections(oldCollection, newCollection, options = {
   });
 }
 
-function extractConcepts(collection) {
+function extractConcepts(collection: Iterable<Concept> | Concept[] | null): Concept[] {
   if (collection == null) return [];
   if (Array.isArray(collection)) return collection;
-  if (typeof collection.toArray === 'function') return collection.toArray();
+  if (typeof (collection as any).toArray === 'function') return (collection as any).toArray();
   if (Symbol.iterator in Object(collection)) return [...collection];
   return [];
 }
 
-function conceptsEqual(a, b) {
+function conceptsEqual(a: Concept | undefined, b: Concept | undefined): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
   if (typeof a.equals === 'function' && typeof b.equals === 'function') {
@@ -216,14 +200,12 @@ function conceptsEqual(a, b) {
   return JSON.stringify(a?.toJSON?.()) === JSON.stringify(b?.toJSON?.());
 }
 
-// `wrapIdList` deserializes each entry via deserializeChange, which
-// dispatches on `type`. The `expectedClass` parameter is a defensive
-// check: if the entry's deserialized type doesn't match the slot it's
-// being loaded into, throw. Prevents the round-1 bug where removed
-// entries silently became Added after a JSON round-trip.
-function wrapIdList(data, expectedClass) {
+type ChangeClass = typeof Added | typeof Removed | typeof Matched;
+type ChangeInstance = AddedType | RemovedType | MatchedType;
+
+function wrapIdList<T extends ChangeInstance>(data: ReadonlyArray<unknown> | null | undefined, expectedClass: ChangeClass): T[] {
   if (!data) return [];
-  return data.map(c => {
+  return (data as ReadonlyArray<unknown>).map(c => {
     if (c instanceof Added || c instanceof Removed || c instanceof Matched) {
       if (!(c instanceof expectedClass)) {
         throw new Error(
@@ -231,15 +213,15 @@ function wrapIdList(data, expectedClass) {
           `does not match slot ${expectedClass.name}`,
         );
       }
-      return c;
+      return c as T;
     }
-    const deserialized = deserializeChange(c);
+    const deserialized = deserializeChange(c as any);
     if (!(deserialized instanceof expectedClass)) {
       throw new Error(
         `ConceptCollectionDiff: deserialized entry type ` +
         `${deserialized.constructor.name} does not match slot ${expectedClass.name}`,
       );
     }
-    return deserialized;
+    return deserialized as T;
   });
 }

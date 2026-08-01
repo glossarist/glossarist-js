@@ -11,10 +11,18 @@ import { WELL_KNOWN } from './prefixes.js';
 import { deterministicBnode } from './deterministic-id.js';
 import { namedNode, literal, quad } from './terms.js';
 
-export function* detailedDefinitionToQuads(definition, {
+export type DefinitionRole = 'hasDefinition' | 'hasNote' | 'hasExample' | 'hasScopedExample' | 'hasAnnotation';
+
+interface DetailedDefinitionLike {
+  content?: string | null;
+  examples?: ReadonlyArray<DetailedDefinitionLike>;
+}
+export type { DetailedDefinitionLike };
+
+export function* detailedDefinitionToQuads(definition: DetailedDefinitionLike, {
   subjectUri, language, index, role,
-}) {
-  const linkPredicate = linkPredicateFor(role);
+}: { subjectUri: string; language?: string | null; index: number; role: string }): Generator<ReturnType<typeof quad>> {
+  const linkPredicate = linkPredicateFor(role as DefinitionRole);
   const defSubject = deterministicBnode(subjectUri, role, index);
 
   yield quad(namedNode(subjectUri), namedNode(linkPredicate), namedNode(defSubject));
@@ -24,46 +32,42 @@ export function* detailedDefinitionToQuads(definition, {
     yield quad(
       namedNode(defSubject),
       namedNode(WELL_KNOWN.rdfValue),
-      literal(definition.content, language),
+      literal(definition.content, language ?? undefined),
     );
   }
 
-  // Plain SKOS direct literal — so non-SKOS-XL consumers see definitions.
-  // The reified form above carries the same text with sources/examples;
-  // this direct literal makes SPARQL `?c skos:definition ?d` work.
-  const directPredicate = directSkosPredicateFor(role);
+  const directPredicate = directSkosPredicateFor(role as DefinitionRole);
   if (directPredicate && definition.content) {
-    yield quad(namedNode(subjectUri), namedNode(directPredicate), literal(definition.content, language));
+    yield quad(namedNode(subjectUri), namedNode(directPredicate), literal(definition.content, language ?? undefined));
   }
 
   let exampleIndex = 0;
   for (const example of definition.examples ?? []) {
     yield* detailedDefinitionToQuads(example, {
-      subjectUri: defSubject, language, index: exampleIndex, role: 'hasScopedExample',
+      subjectUri: defSubject, language, index: exampleIndex, role: 'hasScopedExample' as DefinitionRole,
     });
     exampleIndex += 1;
   }
 }
 
-function linkPredicateFor(role) {
+function linkPredicateFor(role: DefinitionRole): string {
   switch (role) {
     case 'hasDefinition': return PRED.gloss.hasDefinition;
     case 'hasNote': return PRED.gloss.hasNote;
     case 'hasExample': return PRED.gloss.hasExample;
     case 'hasScopedExample': return PRED.gloss.hasScopedExample;
     case 'hasAnnotation': return PRED.gloss.hasAnnotation;
-    default: throw new Error(`Unknown detailed-definition role: ${role}`);
+    default: throw new Error(`Unknown detailed-definition role: ${String(role)}`);
   }
 }
 
-function directSkosPredicateFor(role) {
+function directSkosPredicateFor(role: DefinitionRole): string | null {
   switch (role) {
     case 'hasDefinition': return PRED.skos.definition;
     case 'hasNote': return PRED.skos.scopeNote;
     case 'hasExample': return PRED.skos.example;
     case 'hasScopedExample': return PRED.skos.example;
-    // No direct SKOS counterpart for annotations.
     case 'hasAnnotation': return null;
-    default: return null;
+    default: throw new Error(`Unknown detailed-definition role: ${String(role)}`);
   }
 }

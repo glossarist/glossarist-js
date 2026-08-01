@@ -31,7 +31,14 @@ import { namedNode, literal, quad } from './terms.js';
 
 const COMPLETENESS_NS = 'https://www.glossarist.org/ontologies/completeness/';
 
-export function* partitiveRelationToQuads(relation, { parentUri, index }) {
+interface PartitiveRelationLike {
+  comprehensive?: { source?: string; id?: string } | null;
+  partitives?: ReadonlyArray<any>;
+  completeness?: string | null;
+  criterion?: Record<string, unknown> | null;
+}
+
+export function* partitiveRelationToQuads(relation: PartitiveRelationLike, { parentUri, index }: { parentUri: string; index: number }) {
   const subjectUri = partitiveRelationSubjectUri(parentUri, relation, index);
   const s = namedNode(subjectUri);
 
@@ -65,21 +72,14 @@ export function* partitiveRelationToQuads(relation, { parentUri, index }) {
   }
 }
 
-// Subject URI scheme: `<base>/partitive-relation/<carrying-id>/<comprehensive-id>`.
-// Matches the Ruby emitter's scheme. Falls back to an index suffix if
-// the comprehensive has no id, so two relations on the same concept
-// never collide.
-export function partitiveRelationSubjectUri(parentUri, relation, index) {
+export function partitiveRelationSubjectUri(parentUri: string, relation: PartitiveRelationLike, index: number): string {
   const base = parentUri.replace(/\/concept\/[^/]+$/, '');
   const carrierId = parentUri.split('/concept/')[1] ?? `carrier-${index}`;
   const compId = relation?.comprehensive?.id ?? `comp-${index}`;
   return `${base}/partitive-relation/${carrierId}/${compId}`;
 }
 
-// ConceptRef URI resolution: `<base>/concept/<id>` for any ref with an
-// id. Source is dropped (matches Ruby). Falls back to a stable urn:/
-// form for refs with only a source (rare).
-function conceptRefUri(ref, parentUri) {
+function conceptRefUri(ref: { id?: string; source?: string } | null | undefined, parentUri: string): string {
   const id = ref?.id;
   if (id) {
     const base = parentUri.split('/concept/')[0];

@@ -1,4 +1,5 @@
 import { ValidationRule } from './validation-rule.js';
+import type { Concept } from '../models/concept.js';
 import { ValidationResult } from './validation-result.js';
 
 const VALID_DESIGNATION_TYPES = new Set([
@@ -11,7 +12,7 @@ const VALID_ENTRY_STATUSES = new Set([
 
 export class LanguageCodeRule extends ValidationRule {
   constructor() { super('language-code'); }
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     for (const lang of concept.languages) {
       if (!/^[a-z]{3}$/.test(lang)) {
         this.addIssue(result,
@@ -24,12 +25,12 @@ export class LanguageCodeRule extends ValidationRule {
 
 export class DesignationTypeRule extends ValidationRule {
   constructor() { super('designation-type'); }
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     for (const lang of concept.languages) {
       const lc = concept.localization(lang);
       if (!lc) continue;
       for (let i = 0; i < lc.terms.length; i++) {
-        const type = lc.terms[i].type;
+        const type = lc.terms[i]!.type;
         if (type && !VALID_DESIGNATION_TYPES.has(type)) {
           this.addIssue(result,
             `${path}localizations.${lang}.terms[${i}].type`,
@@ -42,7 +43,7 @@ export class DesignationTypeRule extends ValidationRule {
 
 export class EntryStatusRule extends ValidationRule {
   constructor() { super('entry-status'); }
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     for (const lang of concept.languages) {
       const lc = concept.localization(lang);
       if (!lc) continue;
@@ -56,15 +57,14 @@ export class EntryStatusRule extends ValidationRule {
 }
 
 export class ConceptValidator {
-  _rules = [];
+  _rules: ValidationRule[] = [];
 
-  addRule(rule) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  addRule(rule: ValidationRule) {
     this._rules.push(rule);
     return this;
   }
 
-  validate(concept) {
+  validate(concept: Concept) {
     const result = new ValidationResult();
 
     if (!concept.id) {
@@ -84,7 +84,6 @@ export class ConceptValidator {
     }
 
     for (const rule of this._rules) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       rule.validate(concept, '', result);
     }
 

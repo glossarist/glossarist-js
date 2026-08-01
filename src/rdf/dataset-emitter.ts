@@ -23,39 +23,36 @@ const PROV_NS    = PREFIXES.prov;
 const GLOSS_NS   = PREFIXES.gloss;
 const XSD_NS     = PREFIXES.xsd;
 
-/**
- * @typedef {Object} DatasetDistribution
- * @property {string} id
- * @property {string} title
- * @property {string} mediaType
- * @property {string} downloadUrl
- * @property {number} [byteSize]
- */
-/**
- * @typedef {Object} DatasetSection
- * @property {string} collectionIri
- * @property {string} title
- * @property {readonly string[]} memberUris
- * @property {string} [parentCollectionIri]
- * @property {readonly string[]} [childCollectionIris]
- */
-/**
- * @typedef {Object} DatasetEmitterInput
- * @property {string} datasetIri
- * @property {string} registerId
- * @property {string} title
- * @property {string} [description]
- * @property {string} modified — ISO date (YYYY-MM-DD)
- * @property {readonly string[]} languages
- * @property {readonly DatasetDistribution[]} distributions
- * @property {readonly string[]} topConceptUris
- * @property {readonly DatasetSection[]} sections
- * @property {string} [sourceRepoUrl]
- * @property {string} [publisherIri]
- * @property {string} [contactIri]
- */
+export interface DatasetDistribution {
+  id: string;
+  title: string;
+  mediaType: string;
+  downloadUrl: string;
+  byteSize?: number;
+}
+export interface DatasetSection {
+  collectionIri: string;
+  title: string;
+  memberUris?: readonly string[];
+  parentCollectionIri?: string;
+  childCollectionIris?: readonly string[];
+}
+export interface DatasetEmitterInput {
+  datasetIri: string;
+  registerId: string;
+  title: string;
+  description?: string;
+  modified: string;
+  languages?: readonly string[];
+  distributions?: readonly DatasetDistribution[];
+  topConceptUris?: readonly string[];
+  sections?: readonly DatasetSection[];
+  sourceRepoUrl?: string;
+  publisherIri?: string;
+  contactIri?: string;
+}
 
-const DCAT = {
+const DCAT: any = {
   Dataset: `${DCAT_NS}Dataset`,
   ConceptScheme: `${SKOS_NS}ConceptScheme`,
   Distribution: `${DCAT_NS}Distribution`,
@@ -66,7 +63,7 @@ const DCAT = {
   distribution: `${DCAT_NS}distribution`,
   contactPoint: `${DCAT_NS}contactPoint`,
 };
-const DCTERMS = {
+const DCTERMS: any = {
   title: `${DCTERMS_NS}title`,
   description: `${DCTERMS_NS}description`,
   modified: `${DCTERMS_NS}modified`,
@@ -74,14 +71,14 @@ const DCTERMS = {
   language: `${DCTERMS_NS}language`,
   publisher: `${DCTERMS_NS}publisher`,
 };
-const SKOS = {
+const SKOS: any = {
   hasTopConcept: `${SKOS_NS}hasTopConcept`,
   member: `${SKOS_NS}member`,
 };
-const PROV = {
+const PROV: any = {
   wasDerivedFrom: `${PROV_NS}wasDerivedFrom`,
 };
-const GLOSS = {
+const GLOSS: any = {
   hasParentSection: `${GLOSS_NS}hasParentSection`,
   hasChildSection: `${GLOSS_NS}hasChildSection`,
 };
@@ -95,7 +92,7 @@ const XSD_INTEGER = `${XSD_NS}integer`;
  * @param {DatasetEmitterInput} input
  * @returns {Generator<Quad, void, unknown>}
  */
-export function* datasetToQuads(input) {
+export function* datasetToQuads(input: DatasetEmitterInput) {
   const ds = namedNode(input.datasetIri);
 
   yield quad(ds, namedNode(RDF_TYPE), namedNode(DCAT.Dataset));
@@ -135,7 +132,7 @@ export function* datasetToQuads(input) {
   }
 }
 
-function* distributionToQuads(ds, dist) {
+function* distributionToQuads(ds: ReturnType<typeof namedNode>, dist: DatasetDistribution) {
   // Distributions are blank nodes — they don't have stable identity
   // outside their parent dataset. Using blankNode() (not namedNode with
   // a "_:..." string) so the n3 writer serializes them as _:bXXXX
@@ -151,7 +148,7 @@ function* distributionToQuads(ds, dist) {
   }
 }
 
-function* sectionToQuads(section) {
+function* sectionToQuads(section: DatasetSection) {
   const coll = namedNode(section.collectionIri);
   yield quad(coll, namedNode(RDF_TYPE), namedNode(DCAT.Collection));
   yield quad(coll, namedNode(DCTERMS.title), literal(section.title));

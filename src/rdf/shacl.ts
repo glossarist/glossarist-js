@@ -4,10 +4,12 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// @ts-expect-error missing declarations on @rdfjs/data-model
 import dataModel from '@rdfjs/data-model';
+// @ts-expect-error missing declarations on @rdfjs/dataset
 import rdfDatasetFactory from '@rdfjs/dataset';
 import { Parser as N3Parser } from 'n3';
-import { default as ShaclValidator } from 'rdf-validate-shacl';
+import ShaclValidator from 'rdf-validate-shacl';
 
 // rdf-validate-shacl needs an RDFJS factory that produces both terms
 // and Datasets. @rdfjs/data-model is the spec-complete term factory;
@@ -16,7 +18,7 @@ import { default as ShaclValidator } from 'rdf-validate-shacl';
 // The data-model default export carries its methods on the prototype
 // (non-enumerable), so a spread ({ ...dataModel }) does not capture
 // them. List the RDF/JS surface explicitly.
-const FACTORY = {
+const FACTORY: any = {
   namedNode: dataModel.namedNode.bind(dataModel),
   blankNode: dataModel.blankNode.bind(dataModel),
   literal: dataModel.literal.bind(dataModel),
@@ -27,10 +29,8 @@ const FACTORY = {
   fromQuad: dataModel.fromQuad.bind(dataModel),
   dataset: rdfDatasetFactory.dataset.bind(rdfDatasetFactory),
 };
-const createDataset = FACTORY.dataset;
-// @ts-expect-error TODO(Phase 2e): type this fully
-const ShaclValidatorCtor = ShaclValidator.default ?? ShaclValidator;
-
+const createDataset: (quads?: Iterable<unknown>) => any = FACTORY.dataset;
+const ShaclValidatorCtor = (ShaclValidator as any).default ?? ShaclValidator;
 // Path to the vendored SHACL shapes (synced from glossarist/concept-model
 // via `npm run sync:model`). Resolved relative to this source file so it
 // works regardless of the consumer's cwd.
@@ -48,9 +48,9 @@ const SHAPES_PATH = resolve(
 
 // Cache keyed by absolute path so callers swapping shapes via the
 // `shapesPath` option (or future overrides) don't get cross-talk.
-const SHAPES_CACHE = new Map();
+const SHAPES_CACHE = new Map<string, unknown>();
 
-async function parseTurtle(text, baseIri) {
+async function parseTurtle(text: string, baseIri: string): Promise<any> {
   const parser = new N3Parser({ baseIRI: baseIri });
   const out = createDataset();
   return new Promise((resolve, reject) => {
@@ -62,7 +62,7 @@ async function parseTurtle(text, baseIri) {
   });
 }
 
-export async function loadShapes({ shapesPath = SHAPES_PATH } = {}) {
+export async function loadShapes({ shapesPath = SHAPES_PATH }: { shapesPath?: string } = {}): Promise<unknown> {
   const cached = SHAPES_CACHE.get(shapesPath);
   if (cached) return cached;
   const text = await readFile(shapesPath, 'utf8');
@@ -82,17 +82,13 @@ export async function loadShapes({ shapesPath = SHAPES_PATH } = {}) {
 // library's default env (from defaultEnv.js) provides one — we no longer
 // pass a custom factory. Callers still control Dataset creation via
 // quadsToDataset below.
-// @ts-expect-error TODO(Phase 2e): type this fully
-export async function validateShacl(dataDataset, { shapes, shapesPath } = {}) {
+export async function validateShacl(dataDataset: unknown, { shapes, shapesPath }: { shapes?: unknown; shapesPath?: string } = {}) {
   const shapesDataset = shapes ?? await loadShapes({ shapesPath });
   const validator = new ShaclValidatorCtor(shapesDataset);
   return validator.validate(dataDataset);
 }
 
-// Convenience: builds an RDFJS Dataset from a quad iterable (e.g. the
-// output of conceptToQuads). Useful when chaining the RDF emitters with
-// SHACL validation.
-export function quadsToDataset(quads) {
+export function quadsToDataset(quads: Iterable<unknown>): unknown {
   const ds = createDataset();
   for (const q of quads) ds.add(q);
   return ds;

@@ -1,21 +1,24 @@
 import { TextDiff } from './text-diff.js';
 import { resolveMultiplicity } from '../models/multiplicity.js';
+import type { ConceptDiff, ConceptLevelDiff, LocalizedConceptDiff, MetadataDiff } from './concept-diff.js';
+import type { ConceptCollectionDiff } from './collection-diff.js';
+import type { ListDiff } from './list-diff.js';
 
 const COLORS = {
-  red: s => `\x1b[31m${s}\x1b[0m`,
-  green: s => `\x1b[32m${s}\x1b[0m`,
-  yellow: s => `\x1b[33m${s}\x1b[0m`,
-  cyan: s => `\x1b[36m${s}\x1b[0m`,
-  dim: s => `\x1b[2m${s}\x1b[0m`,
-  bold: s => `\x1b[1m${s}\x1b[0m`,
-};
+  red: (s: string) => `\x1b[31m${s}\x1b[0m`,
+  green: (s: string) => `\x1b[32m${s}\x1b[0m`,
+  yellow: (s: string) => `\x1b[33m${s}\x1b[0m`,
+  cyan: (s: string) => `\x1b[36m${s}\x1b[0m`,
+  dim: (s: string) => `\x1b[2m${s}\x1b[0m`,
+  bold: (s: string) => `\x1b[1m${s}\x1b[0m`,
+} as const;
 
-export function renderConceptDiff(diff, options = {}) {
-  // @ts-expect-error TODO(Phase 2e): type this fully
+interface RenderOptions { colors?: boolean; showUnchanged?: boolean }
+
+export function renderConceptDiff(diff: ConceptDiff, options: RenderOptions = {}): string {
   const colors = options.colors ?? false;
-  // @ts-expect-error TODO(Phase 2e): type this fully
   const showUnchanged = options.showUnchanged ?? false;
-  const lines = [];
+  const lines: string[] = [];
 
   const pct = Math.round(diff.similarity * 100);
   const idPart = diff.oldId && diff.newId && diff.oldId !== diff.newId
@@ -23,30 +26,22 @@ export function renderConceptDiff(diff, options = {}) {
     : (diff.newId ?? diff.oldId ?? '?');
 
   const similarityStr = colors ? colorizeSimilarity(pct) : `${pct}%`;
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`Concept "${idPart}" — ${similarityStr} similar`);
 
   if (!diff.hasChanges && !showUnchanged) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('  (no changes)');
     return lines.join('\n');
   }
 
   if (diff.concept.hasChanges || showUnchanged) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('Concept-level:');
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(renderConceptLevel(diff.concept, colors));
   }
 
   if (diff.languages.hasChanges || showUnchanged) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('Languages:');
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(renderLanguageSet(diff.languages, colors));
   }
 
@@ -54,11 +49,8 @@ export function renderConceptDiff(diff, options = {}) {
     const lcDiff = diff.localization(lang);
     if (!lcDiff) continue;
     if (lcDiff.hasChanges || showUnchanged) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push('');
-      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(`Localization (${lang}):`);
-      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(renderLocalized(lcDiff, colors));
     }
   }
@@ -66,65 +58,44 @@ export function renderConceptDiff(diff, options = {}) {
   return lines.join('\n');
 }
 
-export function renderCollectionDiff(diff, options = {}) {
-  // @ts-expect-error TODO(Phase 2e): type this fully
+export function renderCollectionDiff(diff: ConceptCollectionDiff, options: RenderOptions = {}): string {
   const colors = options.colors ?? false;
-  const lines = [];
+  const lines: string[] = [];
 
   const pct = Math.round(diff.similarity * 100);
   const similarityStr = colors ? colorizeSimilarity(pct) : `${pct}%`;
 
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`Collection comparison — ${similarityStr} similar overall`);
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`  Old: ${diff.oldCount} concepts`);
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`  New: ${diff.newCount} concepts`);
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`  Matched: ${diff.matched.length}`);
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`  Added: ${diff.added.length}`);
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(`  Removed: ${diff.removed.length}`);
 
   if (diff.added.length > 0) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(colors ? COLORS.green('Added concepts:') : 'Added concepts:');
     for (const entry of diff.added) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(`  + ${entry.value}`);
     }
   }
 
   if (diff.removed.length > 0) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push(colors ? COLORS.red('Removed concepts:') : 'Removed concepts:');
     for (const entry of diff.removed) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(`  - ${entry.value}`);
     }
-  }
-
-  const changedDiffs = Object.entries(diff.conceptDiffs)
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  }  const changedDiffs = Object.entries(diff.conceptDiffs)
     .filter(([, d]) => d.hasChanges)
-    // @ts-expect-error TODO(Phase 2e): type this fully
     .sort(([, a], [, b]) => a.similarity - b.similarity);
 
   if (changedDiffs.length > 0) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('');
-    // @ts-expect-error TODO(Phase 2e): type this fully
     lines.push('Changed concepts:');
     for (const [id, conceptDiff] of changedDiffs) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       const conceptPct = Math.round(conceptDiff.similarity * 100);
       const pctStr = colors ? colorizeSimilarity(conceptPct) : `${conceptPct}%`;
-      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(`  ${id}: ${pctStr}`);
     }
   }
@@ -132,23 +103,20 @@ export function renderCollectionDiff(diff, options = {}) {
   return lines.join('\n');
 }
 
-export function renderTextDiff(textDiff, options = {}) {
-  if (!(textDiff instanceof TextDiff)) {
-    textDiff = TextDiff.fromJSON(textDiff);
+export function renderTextDiff(textDiff: TextDiff | Record<string, unknown>, options: RenderOptions = {}): string {
+  let td = textDiff;
+  if (!(td instanceof TextDiff)) {
+    td = TextDiff.fromJSON(td);
   }
-  // @ts-expect-error TODO(Phase 2e): type this fully
   const colors = options.colors ?? false;
-  const lines = [];
+  const lines: string[] = [];
 
-  for (const hunk of textDiff.hunks) {
+  for (const hunk of td.hunks) {
     if (hunk.type === 'equal') {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(`  ${hunk.text}`);
     } else if (hunk.type === 'added') {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(colors ? `+ ${COLORS.green(hunk.text)}` : `+ ${hunk.text}`);
     } else if (hunk.type === 'removed') {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       lines.push(colors ? `- ${COLORS.red(hunk.text)}` : `- ${hunk.text}`);
     }
   }
@@ -156,67 +124,48 @@ export function renderTextDiff(textDiff, options = {}) {
   return lines.join('\n');
 }
 
-function renderConceptLevel(diff, colors) {
-  const lines = [];
-  // @ts-expect-error TODO(Phase 2e): type this fully
+function renderConceptLevel(diff: ConceptLevelDiff, colors: boolean): string {
+  const lines: string[] = [];
   lines.push(...renderListDiff('Sources', diff.sources, colors, itemLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Dates', diff.dates, colors, itemLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Related', diff.relatedConcepts, colors, itemLabel));
-  // Unified hyperedge section. Replaces the per-type sections
-  // (Partitive relations, Generic relations) — the underlying diff
-  // is a single ListDiff over the unified .relations array.
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Hyperedges', diff.relations, colors, relationLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Groups', diff.groups, colors, itemLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Sections', diff.sections, colors, itemLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Tags', diff.tags, colors, itemLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  lines.push(...renderMetadataDiff(diff.metadata));
+  lines.push(renderMetadataDiff(diff.metadata));
   return lines.filter(Boolean).join('\n');
 }
 
-function renderLanguageSet(diff, colors) {
-  const lines = [];
+function renderLanguageSet(diff: ListDiff, colors: boolean): string {
+  const lines: string[] = [];
   for (const entry of diff.added) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    lines.push(colors ? `  + ${COLORS.green(entry.value)}` : `  + ${entry.value}`);
+    lines.push(colors ? `  + ${COLORS.green(String(entry.value))}` : `  + ${entry.value}`);
   }
   for (const entry of diff.removed) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    lines.push(colors ? `  - ${COLORS.red(entry.value)}` : `  - ${entry.value}`);
+    lines.push(colors ? `  - ${COLORS.red(String(entry.value))}` : `  - ${entry.value}`);
   }
   return lines.join('\n');
 }
 
-function renderLocalized(diff, colors) {
-  const lines = [];
-  // @ts-expect-error TODO(Phase 2e): type this fully
+function renderLocalized(diff: LocalizedConceptDiff, colors: boolean): string {
+  const lines: string[] = [];
   lines.push(...renderListDiff('Designations', diff.designations, colors, designationLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Definitions', diff.definitions, colors, definitionLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Notes', diff.notes, colors, definitionLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Examples', diff.examples, colors, definitionLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Sources', diff.sources, colors, itemLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Dates', diff.dates, colors, itemLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
   lines.push(...renderListDiff('Related', diff.related, colors, itemLabel));
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  lines.push(...renderMetadataDiff(diff.metadata));
+  lines.push(renderMetadataDiff(diff.metadata));
   return lines.filter(Boolean).join('\n');
 }
 
-function renderListDiff(label, listDiff, colors, labelFn) {
+type LabelFn = (v: unknown) => string;
+
+function renderListDiff(label: string, listDiff: ListDiff, colors: boolean, labelFn: LabelFn): string[] {
   if (!listDiff.hasChanges) return [];
-  const lines = [`  ${label}:`];
+  const lines: string[] = [`  ${label}:`];
   for (const entry of listDiff.added) {
     const text = `    + ${labelFn(entry.value)}`;
     lines.push(colors ? COLORS.green(text) : text);
@@ -233,52 +182,44 @@ function renderListDiff(label, listDiff, colors, labelFn) {
   return lines;
 }
 
-function renderMetadataDiff(metadataDiff) {
-  if (!metadataDiff.hasChanges) return [];
-  const lines = [`  Metadata:`];
+function renderMetadataDiff(metadataDiff: MetadataDiff): string {
+  if (!metadataDiff.hasChanges) return '';
+  const lines: string[] = [`  Metadata:`];
   for (const [field, change] of Object.entries(metadataDiff.changes)) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
     const oldVal = formatScalar(change.oldValue);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     const newVal = formatScalar(change.newValue);
     lines.push(`    ~ ${field}: ${oldVal} → ${newVal}`);
   }
-  return lines;
+  return lines.join('\n');
 }
 
-function designationLabel(d) {
+function designationLabel(d: any): string {
   if (!d) return '?';
   const text = d.designation ?? '?';
   const status = d.normativeStatus ? ` (${d.normativeStatus})` : '';
   return `${text}${status}`;
 }
 
-function definitionLabel(d) {
+function definitionLabel(d: any): string {
   if (!d) return '?';
   return d.content ?? '?';
 }
 
-function relationLabel(r) {
+function relationLabel(r: any): string {
   if (!r) return '?';
   const c = r.comprehensive;
   const head = c?.id ?? c?.source ?? c?.text ?? '?';
-  // PartitiveHyperedge exposes .partitives as the wire alias for
-  // .members; GenericHyperedge uses .members directly. Read both.
   const members = Array.isArray(r.partitives) ? r.partitives : r.members;
   const memberText = Array.isArray(members)
-    ? members.map(m => {
+    ? members.map((m: any) => {
         const ref = m?.ref ?? m ?? {};
         let tail = '';
         const mult = resolveMultiplicity(m);
         if (mult && mult !== 'compulsory') tail += ` (${mult})`;
-        // PartitiveMember uses is_delimiting (boolean flag).
         if (m?.is_delimiting === true) tail += ' ⊘';
-        // GenericMember uses delimitingCharacteristic (string value per
-        // ISO 704:2022 §5.5.4.2.1) — show the delimiting characteristic
-        // text so reviewers can see the intension difference.
         if (m?.delimitingCharacteristic) {
-          const c = Object.values(m.delimitingCharacteristic)[0];
-          if (typeof c === 'string' && c.length > 0) tail += ` ⟨${c}⟩`;
+          const cv = Object.values(m.delimitingCharacteristic)[0];
+          if (typeof cv === 'string' && cv.length > 0) tail += ` ⟨${cv}⟩`;
         }
         return `${ref.id ?? ref.source ?? ref.text ?? '?'}${tail}`;
       }).join(', ')
@@ -287,27 +228,21 @@ function relationLabel(r) {
   const criterion = r.criterion
     ? ` / ${Object.values(r.criterion)[0] ?? ''}`
     : '';
-  // Each hyperedge leaf declares a short static kindLabel (PART, GEN, …).
-  // Read it via the constructor so adding a new hyperedge type needs no
-  // renderer edit. The blank-string default keeps backward-compat with
-  // any AbstractHyperedge subclass that doesn't declare kindLabel.
   const kindLabel = r?.constructor?.kindLabel ?? '';
   const typeTag = kindLabel ? `${kindLabel} ` : '';
   return `${typeTag}${head} → {${memberText}}${completeness}${criterion}`;
 }
 
-// Aggregate multiplicity + delimiting stats across a concept's
-// PartitiveRelations. Used by dataset-level summaries, not by the
-// per-relation diff label.
-//
-// v4: presence and count are independent dimensions. Stats include
-// byPresence and byCount breakdowns so tools can query each axis
-// independently ("show me all optional parts" or "show me all
-// multiple-count parts").
-export function multiplicityStats(relations) {
-  const byMultiplicity = {};
-  const byPresence = {};
-  const byCount = {};
+export function multiplicityStats(relations: ReadonlyArray<any>): {
+  total: number;
+  byMultiplicity: Record<string, number>;
+  byPresence: Record<string, number>;
+  byCount: Record<string, number>;
+  delimiting: number;
+} {
+  const byMultiplicity: Record<string, number> = {};
+  const byPresence: Record<string, number> = {};
+  const byCount: Record<string, number> = {};
   let delimitingCount = 0;
   let total = 0;
   for (const rel of relations ?? []) {
@@ -325,23 +260,23 @@ export function multiplicityStats(relations) {
   return { total, byMultiplicity, byPresence, byCount, delimiting: delimitingCount };
 }
 
-function itemLabel(item) {
+function itemLabel(item: unknown): string {
   if (item == null) return '?';
   if (typeof item === 'string') return item;
   if (typeof item === 'number') return String(item);
-  if (typeof item.toJSON === 'function') {
-    return JSON.stringify(item.toJSON());
+  if (typeof (item as any).toJSON === 'function') {
+    return JSON.stringify((item as any).toJSON());
   }
   return String(item);
 }
 
-function formatScalar(val) {
+function formatScalar(val: unknown): string {
   if (val == null) return '∅';
   if (typeof val === 'string') return val;
   return String(val);
 }
 
-function colorizeSimilarity(pct) {
+function colorizeSimilarity(pct: number): string {
   if (pct >= 95) return COLORS.green(`${pct}%`);
   if (pct >= 80) return COLORS.yellow(`${pct}%`);
   return COLORS.red(`${pct}%`);

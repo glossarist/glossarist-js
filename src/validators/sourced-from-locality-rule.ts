@@ -10,17 +10,19 @@
 // the reader.
 
 import { ValidationRule } from './validation-rule.js';
+import type { Concept } from '../models/concept.js';
+import type { ValidationResult } from './validation-result.js';
 
 export class SourcedFromLocalityRule extends ValidationRule {
   constructor() { super('sourced-from-locality', 'error'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     const sources = concept.sources ?? [];
     for (let i = 0; i < sources.length; i++) {
-      const source = sources[i];
+      const source = sources[i] as any;
       const sourcedFrom = source.sourcedFrom ?? source.sourced_from ?? [];
       for (let j = 0; j < sourcedFrom.length; j++) {
-        const citation = sourcedFrom[j];
+        const citation = sourcedFrom[j] as any;
         const locality = citation?.locality;
         if (!locality || (!locality.type && !locality.referenceFrom && !locality.reference_from)) {
           this.addIssue(result,
@@ -36,10 +38,10 @@ export class SourcedFromLocalityRule extends ValidationRule {
       if (!lc) continue;
       const lcSources = lc.sources ?? [];
       for (let i = 0; i < lcSources.length; i++) {
-        const source = lcSources[i];
+        const source = lcSources[i] as any;
         const sourcedFrom = source.sourcedFrom ?? source.sourced_from ?? [];
         for (let j = 0; j < sourcedFrom.length; j++) {
-          const citation = sourcedFrom[j];
+          const citation = sourcedFrom[j] as any;
           const locality = citation?.locality;
           if (!locality || (!locality.type && !locality.referenceFrom && !locality.reference_from)) {
             this.addIssue(result,

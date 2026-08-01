@@ -18,7 +18,7 @@ const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
 const GLOSS_NS   = PREFIXES.gloss;
 const XSD_NS     = PREFIXES.xsd;
 
-const PROV = {
+const PROV: any = {
   Activity: `${PROV_NS}Activity`,
   StartingPoint: `${PROV_NS}StartingPoint`,
   EndingPoint: `${PROV_NS}EndingPoint`,
@@ -32,14 +32,14 @@ const PROV = {
   wasAssociatedWith: `${PROV_NS}wasAssociatedWith`,
   version: `${PROV_NS}version`,
 };
-const DCTERMS = {
+const DCTERMS: any = {
   identifier: `${DCTERMS_NS}identifier`,
   description: `${DCTERMS_NS}description`,
 };
-const FOAF = {
+const FOAF: any = {
   Person: `${FOAF_NS}Person`,
 };
-const GLOSS = {
+const GLOSS: any = {
   conceptCount: `${GLOSS_NS}conceptCount`,
 };
 const XSD_DATE_TIME = `${XSD_NS}dateTime`;
@@ -60,10 +60,24 @@ const XSD_INTEGER = `${XSD_NS}integer`;
  * @property {string} [baseUri] — default https://glossarist.org
  */
 
+export interface BuildActivityInput {
+  runId: string;
+  startedAt: string;
+  endedAt: string;
+  gitSha?: string;
+  gitBranch?: string;
+  toolId: string;
+  toolVersion: string;
+  datasetRegisters?: readonly string[];
+  conceptCount: number;
+  associatedAgentIri?: string;
+  baseUri?: string;
+}
+
 /**
  * Returns the canonical relative IRI for a build activity.
  */
-export function buildActivityIri(input) {
+export function buildActivityIri(input: BuildActivityInput) {
   return `activity/build/${input.runId}`;
 }
 
@@ -76,7 +90,7 @@ export function buildActivityIri(input) {
  * @param {BuildActivityInput} input
  * @returns {Generator<Quad, void, unknown>}
  */
-export function* buildActivityToQuads(input) {
+export function* buildActivityToQuads(input: BuildActivityInput) {
   const baseUri = input.baseUri;
   if (!baseUri) throw new Error('buildActivityToQuads requires input.baseUri — the deployment canonical URI root. glossarist-js does NOT default to glossarist.org because instance data identity must reflect the consumer domain.');
   const activityIri = `${baseUri}/${buildActivityIri(input)}`;

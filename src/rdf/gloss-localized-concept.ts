@@ -8,17 +8,35 @@
 import { PRED, PREFIXES } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { designationToQuads, skosLabelPredicate } from './gloss-designation.js';
+import type { DesignationLike } from './gloss-designation.js';
 import { detailedDefinitionToQuads } from './gloss-detailed-definition.js';
+import type { DetailedDefinitionLike, DefinitionRole } from './gloss-detailed-definition.js';
 import { conceptSourceToQuads } from './gloss-source.js';
+import type { ConceptSourceLike } from './gloss-source.js';
 import { nonVerbalRepToQuads } from './gloss-non-verbal-rep.js';
 import { namedNode, literal, quad } from './terms.js';
+
+interface LocalizedConceptLike {
+  entryStatus?: string | null;
+  domain?: string | null;
+  release?: string | null;
+  script?: string | null;
+  system?: string | null;
+  terms?: ReadonlyArray<DesignationLike>;
+  definitions?: ReadonlyArray<DetailedDefinitionLike>;
+  notes?: ReadonlyArray<DetailedDefinitionLike>;
+  examples?: ReadonlyArray<DetailedDefinitionLike>;
+  annotations?: ReadonlyArray<DetailedDefinitionLike>;
+  nonVerbalRep?: ReadonlyArray<unknown>;
+  sources?: ReadonlyArray<ConceptSourceLike>;
+}
 const DCTERMS_LANGUAGE = `${PREFIXES.dcterms}language`;
 
-export function localizedConceptUri(parentUri, language) {
+export function localizedConceptUri(parentUri: string, language: string): string {
   return `${parentUri}/${language}`;
 }
 
-export function* localizedConceptToQuads(localizedConcept, { parentUri, language }) {
+export function* localizedConceptToQuads(localizedConcept: LocalizedConceptLike, { parentUri, language }: { parentUri: string; language: string }) {
   const subjectUri = localizedConceptUri(parentUri, language);
   const s = namedNode(subjectUri);
 
@@ -46,8 +64,7 @@ export function* localizedConceptToQuads(localizedConcept, { parentUri, language
   let desigIndex = 0;
   for (const designation of localizedConcept.terms ?? []) {
     yield* designationToQuads(designation, { subjectUri, language, index: desigIndex });
-    // Direct SKOS literal alongside the reified SKOS-XL form.
-    yield quad(s, namedNode(skosLabelPredicate(designation)), literal(designation.designation, language));
+    yield quad(s, namedNode(skosLabelPredicate(designation)), literal(designation.designation ?? '', language));
     desigIndex += 1;
   }
 
@@ -58,18 +75,18 @@ export function* localizedConceptToQuads(localizedConcept, { parentUri, language
 
   let nvrIndex = 0;
   for (const nvr of localizedConcept.nonVerbalRep ?? []) {
-    yield* nonVerbalRepToQuads(nvr, { parentUri: subjectUri, index: nvrIndex, language });
+    yield* nonVerbalRepToQuads(nvr as any, { parentUri: subjectUri, index: nvrIndex, language });
     nvrIndex += 1;
   }
 
   let srcIndex = 0;
   for (const source of localizedConcept.sources ?? []) {
-    yield* conceptSourceToQuads(source, { subjectUri, index: srcIndex });
+    yield* conceptSourceToQuads(source as ConceptSourceLike, { subjectUri, index: srcIndex });
     srcIndex += 1;
   }
 }
 
-function* definitionsToQuads(definitions, { subjectUri, language, role }) {
+function* definitionsToQuads(definitions: ReadonlyArray<DetailedDefinitionLike> | null | undefined, { subjectUri, language, role }: { subjectUri: string; language: string; role: DefinitionRole }) {
   if (!definitions) return;
   let i = 0;
   for (const def of definitions) {

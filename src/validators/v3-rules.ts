@@ -1,8 +1,12 @@
 import { ValidationRule } from './validation-rule.js';
+import type { Concept } from '../models/concept.js';
+import type { ValidationResult } from './validation-result.js';
 import { parseMention } from '../reference-mention.js';
 import { GraphicalSymbol } from '../models/designation.js';
 
-const _eachLocalization = (concept, fn) => {
+type LocalizedConcept = NonNullable<ReturnType<Concept['localization']>>;
+
+const _eachLocalization = (concept: Concept, fn: (lang: string, lc: LocalizedConcept) => void) => {
   for (const lang of concept.languages) {
     const lc = concept.localization(lang);
     if (lc) fn(lang, lc);
@@ -12,13 +16,13 @@ const _eachLocalization = (concept, fn) => {
 export class RefShapeRule extends ValidationRule {
   constructor() { super('ref-shape'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     let sourceIdx = 0;
     _eachLocalization(concept, (lang, lc) => {
       const sources = lc.sources;
       for (let i = 0; i < sources.length; i++) {
         sourceIdx++;
-        const origin = sources[i].origin;
+        const origin = sources[i]!.origin as any;
         if (!origin) continue;
 
         const ref = origin.ref;
@@ -36,7 +40,7 @@ export class RefShapeRule extends ValidationRule {
 
     const related = concept.relatedConcepts;
     for (let i = 0; i < related.length; i++) {
-      const ref = related[i].ref;
+      const ref = related[i]!.ref as any;
       if (!ref) continue;
       if (!ref.source && !ref.id) {
         this.addIssue(result,
@@ -50,14 +54,14 @@ export class RefShapeRule extends ValidationRule {
 export class LocalityCompletenessRule extends ValidationRule {
   constructor() { super('locality-completeness', 'warning'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     _eachLocalization(concept, (lang, lc) => {
       const sources = lc.sources;
       for (let i = 0; i < sources.length; i++) {
-        const origin = sources[i].origin;
+        const origin = sources[i]!.origin as any;
         if (!origin || !origin.locality) continue;
 
-        const loc = origin.locality;
+        const loc = origin.locality as any;
         if (!loc.type) {
           this.addIssue(result,
             `${path}localizations.${lang}.sources[${i}].origin.locality.type`,
@@ -76,9 +80,10 @@ export class LocalityCompletenessRule extends ValidationRule {
 export class LocalizationConsistencyRule extends ValidationRule {
   constructor() { super('localization-consistency'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     const langs = concept.languages;
-    const data = concept.raw?.data || {};
+    const raw = concept.raw as any;
+    const data = raw?.data || {};
     const declaredLangs = data.localized_concepts
       ? Object.keys(data.localized_concepts)
       : langs;
@@ -96,7 +101,7 @@ export class LocalizationConsistencyRule extends ValidationRule {
 export class SchemaVersionRule extends ValidationRule {
   constructor() { super('schema-version', 'warning'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     if (concept.schemaVersion && String(concept.schemaVersion) !== '3') {
       this.addIssue(result,
         `${path}schema_version`,
@@ -108,9 +113,9 @@ export class SchemaVersionRule extends ValidationRule {
 export class DomainRefRule extends ValidationRule {
   constructor() { super('domain-ref', 'warning'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     for (let i = 0; i < concept.domains.length; i++) {
-      const json = concept.domains[i].toJSON();
+      const json = concept.domains[i]!.toJSON() as any;
       if (!json.concept_id && !json.urn) {
         this.addIssue(result,
           `${path}domains[${i}]`,
@@ -123,7 +128,7 @@ export class DomainRefRule extends ValidationRule {
 export class UuidFormatRule extends ValidationRule {
   constructor() { super('uuid-format'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const id = concept.id;
 
@@ -140,13 +145,13 @@ export class UuidFormatRule extends ValidationRule {
 export class SourceUrnFormatRule extends ValidationRule {
   constructor() { super('source-urn-format', 'warning'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     const URN_RE = /^urn:[a-z0-9][a-z0-9-]{0,31}:[a-z0-9()+,\-.:=@;$_!*'%/?#]+$/i;
 
     _eachLocalization(concept, (lang, lc) => {
       const sources = lc.sources;
       for (let i = 0; i < sources.length; i++) {
-        const source = lc.sources[i].origin?.ref?.source;
+        const source = (sources[i]!.origin as any)?.ref?.source;
         if (!source || !source.startsWith('urn:')) continue;
         if (!URN_RE.test(source)) {
           this.addIssue(result,
@@ -160,26 +165,27 @@ export class SourceUrnFormatRule extends ValidationRule {
 
 const CITE_MENTION_RE = /\{\{\s*cite:([^,}\s]+)[^}]*?\}\}/g;
 
-function _findCiteMentions(concept) {
-  const mentions = [];
+interface CiteMention { key: string; source: string; }
+
+function _findCiteMentions(concept: Concept): CiteMention[] {
+  const mentions: CiteMention[] = [];
   for (const { text, source } of concept.walkTexts()) {
     if (typeof text !== 'string' || text.length === 0) continue;
     CITE_MENTION_RE.lastIndex = 0;
-    let m;
+    let m: RegExpExecArray | null;
     while ((m = CITE_MENTION_RE.exec(text)) !== null) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      mentions.push({ key: m[1].trim(), source });
+      mentions.push({ key: m[1]!.trim(), source });
     }
   }
   return mentions;
 }
 
-function _findDuplicateSourceIds(concept) {
-  const seen = new Map();
-  const record = (source) => {
+function _findDuplicateSourceIds(concept: Concept): Map<string, unknown[]> {
+  const seen = new Map<string, unknown[]>();
+  const record = (source: any) => {
     if (source?.id == null) return;
     if (!seen.has(source.id)) seen.set(source.id, []);
-    seen.get(source.id).push(source);
+    seen.get(source.id)!.push(source);
   };
 
   for (const source of concept.sources) record(source);
@@ -192,15 +198,15 @@ function _findDuplicateSourceIds(concept) {
     }
   }
 
-  const duplicates = new Map();
+  const duplicates = new Map<string, unknown[]>();
   for (const [id, sources] of seen) {
     if (sources.length > 1) duplicates.set(id, sources);
   }
   return duplicates;
 }
 
-function _collectSourceIds(concept) {
-  const ids = new Set();
+function _collectSourceIds(concept: Concept): Set<string> {
+  const ids = new Set<string>();
   for (const source of concept.sources) {
     if (source?.id != null) ids.add(source.id);
   }
@@ -224,7 +230,7 @@ export class CiteRefIntegrityRule extends ValidationRule {
     super('cite-ref-integrity', 'warning');
   }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     // 1. Check unique source ids.
     const duplicates = _findDuplicateSourceIds(concept);
     for (const [id] of duplicates) {
@@ -260,19 +266,20 @@ const NVR_ARRAYS = Object.freeze([
   { name: 'formulas', entityType: 'formula' },
 ]);
 
-function _findNvrMentions(concept) {
-  const mentions = [];
-  const walkText = (text, source) => {
+interface NvrMention { key: string; source: string; }
+
+function _findNvrMentions(concept: Concept): NvrMention[] {
+  const mentions: NvrMention[] = [];
+  const walkText = (text: unknown, source: string) => {
     if (typeof text !== 'string' || text.length === 0) return;
     const re = /\{\{([^{}]*?)\}\}/g;
-    let m;
+    let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
-      const parsed = parseMention(m[1]);
+      const parsed = parseMention(m[1]!);
       if (parsed.kind === 'fig-ref' ||
           parsed.kind === 'table-ref' ||
           parsed.kind === 'formula-ref') {
-        // @ts-expect-error TODO(Phase 2e): type this fully
-        mentions.push({ key: parsed.key, source });
+        mentions.push({ key: parsed.key ?? '', source });
       }
     }
   };
@@ -288,10 +295,11 @@ export class NonVerbalRefIntegrityRule extends ValidationRule {
     super('nvr-integrity', 'warning');
   }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
+    const c = concept as any;
     for (const { name } of NVR_ARRAYS) {
-      const counts = new Map();
-      for (const ref of concept[name]) {
+      const counts = new Map<string, number>();
+      for (const ref of c[name] ?? []) {
         if (ref.entityId == null) continue;
         counts.set(ref.entityId, (counts.get(ref.entityId) ?? 0) + 1);
       }
@@ -306,9 +314,9 @@ export class NonVerbalRefIntegrityRule extends ValidationRule {
     const mentions = _findNvrMentions(concept);
     if (mentions.length === 0) return;
 
-    const knownIds = new Set();
+    const knownIds = new Set<string>();
     for (const { name } of NVR_ARRAYS) {
-      for (const ref of concept[name]) {
+      for (const ref of c[name] ?? []) {
         if (ref.entityId != null) knownIds.add(ref.entityId);
       }
     }
@@ -327,18 +335,14 @@ export class NonVerbalRefIntegrityRule extends ValidationRule {
 // directly by GcrValidator (not in concept validator chain).
 
 export class OrphanedImagesRule {
-  constructor() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    this.name = 'orphaned-images';
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    this.severity = 'warning';
-  }
+  readonly name = 'orphaned-images';
+  readonly severity = 'warning' as const;
 
-  check(context) {
+  check(context: { assetIndex?: any; concepts: Concept[]; resolver?: any }): Array<{ path: string; severity: string; message: string }> {
     const { assetIndex, concepts, resolver } = context;
     if (!assetIndex || assetIndex.size === 0) return [];
 
-    const referenced = new Set();
+    const referenced = new Set<string>();
 
     for (const concept of concepts) {
       if (resolver) {
@@ -366,10 +370,9 @@ export class OrphanedImagesRule {
       }
     }
 
-    const issues = [];
+    const issues: Array<{ path: string; severity: string; message: string }> = [];
     for (const imgPath of assetIndex.paths) {
       if (!referenced.has(imgPath)) {
-        // @ts-expect-error TODO(Phase 2e): type this fully
         issues.push({
           path: imgPath,
           severity: 'warning',
@@ -380,3 +383,4 @@ export class OrphanedImagesRule {
     return issues;
   }
 }
+

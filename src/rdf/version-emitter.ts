@@ -16,13 +16,13 @@ const PROV_NS    = PREFIXES.prov;
 const DCTERMS_NS = PREFIXES.dcterms;
 const XSD_NS     = PREFIXES.xsd;
 
-const PROV = {
+const PROV: any = {
   Entity: `${PROV_NS}Entity`,
   wasRevisionOf: `${PROV_NS}wasRevisionOf`,
   generatedAtTime: `${PROV_NS}generatedAtTime`,
   wasAssociatedWith: `${PROV_NS}wasAssociatedWith`,
 };
-const DCTERMS = {
+const DCTERMS: any = {
   isVersionOf: `${DCTERMS_NS}isVersionOf`,
   description: `${DCTERMS_NS}description`,
 };
@@ -53,10 +53,32 @@ const XSD_DATE_TIME = `${XSD_NS}dateTime`;
  * @property {string} [associatedAgentIri]
  */
 
+export interface DatasetVersionInput {
+  registerId: string;
+  version: string;
+  versionIri: string;
+  datasetIri: string;
+  generatedAt: string;
+  previousVersionIri?: string;
+  changeSummary?: string;
+  associatedAgentIri?: string;
+}
+export interface VersionHistoryEntry {
+  version: string;
+  generatedAt: string;
+  changeSummary?: string;
+}
+export interface VersionEmitAllInput {
+  registerId: string;
+  datasetIri: string;
+  versions?: readonly VersionHistoryEntry[];
+  associatedAgentIri?: string;
+}
+
 /**
  * Emits a single prov:Entity version with its provenance chain.
  */
-export function* versionToQuads(input) {
+export function* versionToQuads(input: DatasetVersionInput) {
   const v = namedNode(input.versionIri);
   yield quad(v, namedNode(RDF_TYPE), namedNode(PROV.Entity));
   yield quad(v, namedNode(DCTERMS.isVersionOf), namedNode(input.datasetIri));
@@ -78,8 +100,8 @@ export function* versionToQuads(input) {
  *
  * The version IRI is constructed as `${datasetIri}versions/${version}`.
  */
-export function* versionHistoryToQuads(input) {
-  let previousIri;
+export function* versionHistoryToQuads(input: VersionEmitAllInput) {
+  let previousIri: string | undefined;
   for (const v of input.versions ?? []) {
     const versionIri = `${input.datasetIri}versions/${v.version}`;
     yield* versionToQuads({

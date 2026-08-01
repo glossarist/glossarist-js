@@ -4,51 +4,42 @@
 // (fromRDF + compact against the canonical context). N-Triples is provided
 // as a stable fallback that doesn't depend on prefix maps.
 import { Writer as N3Writer } from 'n3';
+// @ts-expect-error jsonld has no type declarations
 import jsonld from 'jsonld';
 import { PREFIXES } from './prefixes.js';
+import type { Quad } from '@rdfjs/types';
 
-// Collects all quads yielded by an emitter into an array. Useful for tests
-// and for callers that want to inspect the quad stream directly.
-export function collectQuads(quadsIterable) {
-  const out: unknown[] = [];
+export function collectQuads(quadsIterable: Iterable<Quad>): Quad[] {
+  const out: Quad[] = [];
   for (const q of quadsIterable) out.push(q);
   return out;
 }
 
-// Returns a Turtle serialization of `quads` using the canonical prefix map
-// generated from the vendored concept-model JSON-LD context. Quads are
-// sorted deterministically so the same input always produces byte-equivalent
-// output across runs.
-export function writeTurtle(quads, { prefixes = PREFIXES } = {}) {
+export function writeTurtle(quads: Iterable<Quad>, { prefixes = PREFIXES }: { prefixes?: Record<string, string> } = {}): Promise<string> {
   const sorted = sortQuads(quads);
   return new Promise((resolve, reject) => {
     const writer = new N3Writer({ prefixes, format: 'Turtle' });
-    for (const q of sorted) writer.addQuad(q);
-    writer.end((err, result) => {
+    for (const q of sorted) writer.addQuad(q as any);
+    writer.end((err: Error | null, result: string) => {
       if (err) reject(err);
       else resolve(result);
     });
   });
 }
 
-// Returns an N-Triples serialization of `quads` — no prefixes, no bnode
-// shortening. Useful when consumers need a totally stable wire format.
-export function writeNTriples(quads) {
+export function writeNTriples(quads: Iterable<Quad>): Promise<string> {
   const sorted = sortQuads(quads);
   return new Promise((resolve, reject) => {
     const writer = new N3Writer({ format: 'N-Triples' });
-    for (const q of sorted) writer.addQuad(q);
-    writer.end((err, result) => {
+    for (const q of sorted) writer.addQuad(q as any);
+    writer.end((err: Error | null, result: string) => {
       if (err) reject(err);
       else resolve(result);
     });
   });
 }
 
-// Returns a compacted JSON-LD serialization of `quads`. The context defaults
-// to the canonical glossarist JSON-LD context derived from the vendored
-// PREFIXES. Quads are sorted first for deterministic output.
-export async function writeJsonld(quads, { context = defaultJsonldContext() } = {}) {
+export async function writeJsonld(quads: Iterable<Quad>, { context = defaultJsonldContext() }: { context?: Record<string, string> } = {}): Promise<string> {
   const sorted = sortQuads(quads);
   const nquads = await writeNTriples(sorted);
   const expanded = await jsonld.fromRDF(nquads, { format: 'application/n-quads' });
@@ -56,22 +47,19 @@ export async function writeJsonld(quads, { context = defaultJsonldContext() } = 
   return JSON.stringify(compacted, null, 2);
 }
 
-function defaultJsonldContext() {
-  const ctx = {};
+function defaultJsonldContext(): Record<string, string> {
+  const ctx: Record<string, string> = {};
   for (const [prefix, uri] of Object.entries(PREFIXES)) {
     ctx[prefix] = uri;
   }
   return ctx;
 }
 
-// Sort by (subject.value, predicate.value, object.termType, object.value,
-// graph.value). Bnodes sort by their generated ID which is deterministic
-// because we use content-addressed IDs.
-export function sortQuads(quads) {
+export function sortQuads(quads: Iterable<Quad>): Quad[] {
   return [...quads].sort(compareQuad);
 }
 
-function compareQuad(a, b) {
+function compareQuad(a: Quad, b: Quad): number {
   let cmp = cmpTerm(a.subject, b.subject);
   if (cmp !== 0) return cmp;
   cmp = cmpTerm(a.predicate, b.predicate);
@@ -81,7 +69,7 @@ function compareQuad(a, b) {
   return cmpTerm(a.graph, b.graph);
 }
 
-function cmpTerm(a, b) {
+function cmpTerm(a: Quad['subject'] | Quad['object'] | Quad['graph'], b: Quad['subject'] | Quad['object'] | Quad['graph']): number {
   if (a.termType !== b.termType) return a.termType.localeCompare(b.termType);
   return String(a.value).localeCompare(String(b.value));
 }

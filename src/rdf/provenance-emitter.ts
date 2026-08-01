@@ -14,7 +14,7 @@ const PROV_NS    = PREFIXES.prov;
 const DCTERMS_NS = PREFIXES.dcterms;
 const XSD_NS     = PREFIXES.xsd;
 
-const PROV = {
+const PROV: any = {
   Activity:        `${PROV_NS}Activity`,
   Entity:          `${PROV_NS}Entity`,
   SoftwareAgent:   `${PROV_NS}SoftwareAgent`,
@@ -25,7 +25,7 @@ const PROV = {
   startedAtTime:   `${PROV_NS}startedAtTime`,
   endedAtTime:     `${PROV_NS}endedAtTime`,
 };
-const DCTERMS = {
+const DCTERMS: any = {
   isVersionOf:  `${DCTERMS_NS}isVersionOf`,
   title:        `${DCTERMS_NS}title`,
 };
@@ -41,6 +41,14 @@ const XSD_DATETIME = `${XSD_NS}dateTime`;
  * @property {string} [canonicalUri] — for dcterms:isVersionOf (versions)
  */
 
+export interface ProvenanceInput {
+  subjectUri: string;
+  serializer: string;
+  serializerVersion: string;
+  generatedAt: string;
+  canonicalUri?: string;
+}
+
 /**
  * Emits provenance quads linking subjectUri to a prov:Activity
  * performed by a prov:SoftwareAgent. The activity IRI is relative
@@ -52,7 +60,7 @@ const XSD_DATETIME = `${XSD_NS}dateTime`;
  * @param {ProvenanceInput} input
  * @returns {Generator<import('@rdfjs/dataset').Quad, void, unknown>}
  */
-export function* provenanceToQuads(input) {
+export function* provenanceToQuads(input: ProvenanceInput) {
   if (!input?.subjectUri) throw new Error('provenanceToQuads: subjectUri is required');
   if (!input?.serializer) throw new Error('provenanceToQuads: serializer is required');
   if (!input?.serializerVersion) throw new Error('provenanceToQuads: serializerVersion is required');

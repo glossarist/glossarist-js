@@ -23,19 +23,18 @@
 // the same comprehensive+criterion don't false-positive.
 
 import { ValidationRule } from './validation-rule.js';
+import type { Concept } from '../models/concept.js';
+import type { ValidationResult } from './validation-result.js';
 import { refKey, criterionKey } from './ref-keys.js';
 import { AbstractHyperedge } from '../models/abstract-hyperedge.js';
 
 export class HyperedgeCoherenceRule extends ValidationRule {
   constructor() { super('hyperedge-coherence'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     const hyperedges = (concept.relations ?? []).filter(r => r instanceof AbstractHyperedge);
     if (hyperedges.length === 0) return;
 
-    // Check 1: ≥2 members per hyperedge. (The constructor also
-    // rejects this, but a warning here surfaces it in the result
-    // bundle for CI visibility.)
     for (let i = 0; i < hyperedges.length; i++) {
       const memberCount = (hyperedges[i]?.members ?? []).length;
       if (memberCount < 2) {
@@ -47,14 +46,11 @@ export class HyperedgeCoherenceRule extends ValidationRule {
       }
     }
 
-    // Check 2: no duplicate (type + comprehensive + criterion) on the same concept.
-    // Scope by type so a Partitive and a Generic with the same comp+criterion
-    // don't false-positive — they're different decompositions.
-    const seen = new Map();
+    const seen = new Map<string, number>();
     for (let i = 0; i < hyperedges.length; i++) {
-      const rel = hyperedges[i];
+      const rel = hyperedges[i] as any;
       const typeTag = rel?.constructor?.typeTag ?? '';
-      const compKey = refKey(rel?.comprehensive);
+      const compKey = refKey(rel?.comprehensive ?? null);
       const critKey = criterionKey(rel?.criterion);
       if (compKey == null || critKey == null) continue;
       const key = `${typeTag}|${compKey}|${critKey}`;
@@ -62,25 +58,25 @@ export class HyperedgeCoherenceRule extends ValidationRule {
         this.addIssue(result,
           `${path}relations[${i}]`,
           `duplicate ${rel.constructor.name} (same comprehensive + same criterion ` +
-          `as relation ${seen.get(key) + 1}); violates ISO 12620 coordinate-concept coherence`,
+          `as relation ${(seen.get(key) ?? 0) + 1}); violates ISO 12620 coordinate-concept coherence`,
         );
       } else {
         seen.set(key, i);
       }
     }
 
-    // Check 3: criterion documentation (warning) when concept has multiple
-    // hyperedges of the same type. Same-type-scope rationale as Check 2.
-    const byType = new Map();
+    const byType = new Map<string, any[]>();
     for (const rel of hyperedges) {
-      const typeTag = rel?.constructor?.typeTag ?? '';
+      const r = rel as any;
+      const typeTag = r?.constructor?.typeTag ?? '';
       if (!byType.has(typeTag)) byType.set(typeTag, []);
-      byType.get(typeTag).push(rel);
+      byType.get(typeTag)!.push(rel);
     }
     for (const [typeTag, rels] of byType) {
       if (rels.length <= 1) continue;
       for (const rel of rels) {
-        if (!rel.criterion) {
+        const r = rel as any;
+        if (!r.criterion) {
           const idx = hyperedges.indexOf(rel);
           result.addWarning(
             `${path}relations[${idx}].criterion`,

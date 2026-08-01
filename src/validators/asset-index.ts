@@ -1,43 +1,42 @@
 import { DATASET_ASSETS } from '../dataset-asset.js';
+import type { GcrPackage } from '../gcr-reader.js';
+
+interface DatasetAsset { path: string; type: string; }
+type FsLike = {
+  existsSync(path: string): boolean;
+  readdirSync(path: string, opts: { withFileTypes: true }): Array<{ name: string; isDirectory(): boolean }>;
+};
 
 export class AssetIndex {
-  constructor() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    this._paths = new Set();
-  }
+  private _paths: Set<string> = new Set();
 
-  get paths() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get paths(): string[] {
     return [...this._paths].sort();
   }
 
-  get size() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get size(): number {
     return this._paths.size;
   }
 
-  register(path) {
+  register(path: string | null | undefined): void {
     if (path == null) return;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._paths.add(this._normalize(path));
   }
 
-  has(path) {
+  has(path: string | null | undefined): boolean {
     if (path == null) return false;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._paths.has(this._normalize(path));
   }
 
-  [Symbol.iterator]() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  [Symbol.iterator](): Iterator<string> {
     return this._paths[Symbol.iterator]();
   }
 
-  _normalize(path) {
+  _normalize(path: string): string {
     return String(path).replace(/^\//, '');
   }
 
-  static async fromGcrPackage(pkg) {
+  static async fromGcrPackage(pkg: GcrPackage): Promise<AssetIndex> {
     const index = new AssetIndex();
     const names = await pkg.imageFileNames();
     for (const name of names) {
@@ -46,9 +45,9 @@ export class AssetIndex {
     return index;
   }
 
-  static fromDirectory(datasetPath, fs) {
+  static fromDirectory(datasetPath: string, fs: FsLike): AssetIndex {
     const index = new AssetIndex();
-    const imagesAsset = DATASET_ASSETS.find(
+    const imagesAsset = (DATASET_ASSETS as readonly DatasetAsset[]).find(
       a => a.type === 'directory' && a.path === 'images');
     if (!imagesAsset) return index;
 
@@ -58,7 +57,7 @@ export class AssetIndex {
   }
 }
 
-function _walkDir(fs, dirPath, relativePrefix, index) {
+function _walkDir(fs: FsLike, dirPath: string, relativePrefix: string, index: AssetIndex): void {
   if (!fs.existsSync(dirPath)) return;
   for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
     const fullPath = `${dirPath}/${entry.name}`;

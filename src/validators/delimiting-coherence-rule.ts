@@ -24,12 +24,14 @@
 // Per TODO.partitive-relation-v3/06.
 
 import { ValidationRule } from './validation-rule.js';
+import type { Concept } from '../models/concept.js';
+import type { ValidationResult } from './validation-result.js';
 import { refKey, criterionKey } from './ref-keys.js';
 
 export class DelimitingCoherenceRule extends ValidationRule {
   constructor() { super('delimiting-coherence'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     const relations = concept.relations ?? [];
     if (relations.length === 0) return;
 
@@ -39,12 +41,12 @@ export class DelimitingCoherenceRule extends ValidationRule {
   }
 }
 
-function _checkOveruse(relations, path, result) {
+function _checkOveruse(relations: ReadonlyArray<any>, path: string, result: ValidationResult) {
   for (let i = 0; i < relations.length; i++) {
     const rel = relations[i];
     const members = rel?.partitives ?? [];
     if (members.length < 2) continue;
-    const delimitingCount = members.filter(m => m?.is_delimiting === true).length;
+    const delimitingCount = members.filter((m: any) => m?.is_delimiting === true).length;
     if (delimitingCount === members.length) {
       result.addWarning(
         `${path}partitiveRelations[${i}]`,
@@ -55,18 +57,18 @@ function _checkOveruse(relations, path, result) {
   }
 }
 
-function _checkInconsistentAcrossRelations(relations, path, result, rule) {
-  const byCriterion = new Map();
+function _checkInconsistentAcrossRelations(relations: ReadonlyArray<any>, path: string, result: ValidationResult, rule: DelimitingCoherenceRule) {
+  const byCriterion = new Map<string, Array<{ rel: any; i: number }>>();
   for (let i = 0; i < relations.length; i++) {
     const rel = relations[i];
     const critKey = criterionKey(rel?.criterion);
     if (critKey == null) continue;
     if (!byCriterion.has(critKey)) byCriterion.set(critKey, []);
-    byCriterion.get(critKey).push({ rel, i });
+    byCriterion.get(critKey)!.push({ rel, i });
   }
 
   for (const [, group] of byCriterion) {
-    const refDelimiting = new Map();
+    const refDelimiting = new Map<string, { delimiting: boolean; relIdx: number }>();
     for (const { rel, i } of group) {
       for (const m of rel?.partitives ?? []) {
         const key = refKey(m?.ref);
@@ -89,11 +91,11 @@ function _checkInconsistentAcrossRelations(relations, path, result, rule) {
   }
 }
 
-function _checkDelimitingWithoutCriterion(relations, path, result) {
+function _checkDelimitingWithoutCriterion(relations: ReadonlyArray<any>, path: string, result: ValidationResult) {
   for (let i = 0; i < relations.length; i++) {
     const rel = relations[i];
     if (rel?.criterion) continue;
-    const anyDelimiting = (rel?.partitives ?? []).some(m => m?.is_delimiting === true);
+    const anyDelimiting = (rel?.partitives ?? []).some((m: any) => m?.is_delimiting === true);
     if (anyDelimiting) {
       result.addWarning(
         `${path}partitiveRelations[${i}].criterion`,

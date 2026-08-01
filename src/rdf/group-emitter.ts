@@ -21,7 +21,7 @@ const DCTERMS_NS = PREFIXES.dcterms;
 const SKOS_NS    = PREFIXES.skos;
 const PROV_NS    = PREFIXES.prov;
 
-const DCAT = {
+const DCAT: any = {
   DatasetSeries: `${DCAT_NS}DatasetSeries`,
   Catalog: `${DCAT_NS}Catalog`,
   ConceptScheme: `${SKOS_NS}ConceptScheme`,
@@ -32,14 +32,14 @@ const DCAT = {
   keyword: `${DCAT_NS}keyword`,
   contactPoint: `${DCAT_NS}contactPoint`,
 };
-const DCTERMS = {
+const DCTERMS: any = {
   title: `${DCTERMS_NS}title`,
   description: `${DCTERMS_NS}description`,
   identifier: `${DCTERMS_NS}identifier`,
   subject: `${DCTERMS_NS}subject`,
   publisher: `${DCTERMS_NS}publisher`,
 };
-const PROV = {
+const PROV: any = {
   wasDerivedFrom: `${PROV_NS}wasDerivedFrom`,
 };
 
@@ -63,9 +63,27 @@ const PROV = {
  * @property {string} [sourceRepo]
  */
 
+export type DatasetGroupKind = 'lineage' | 'topic' | 'family' | 'collection' | 'default';
+
+export interface GroupEmitInput {
+  groupId: string;
+  groupIri: string;
+  kind: DatasetGroupKind;
+  title: string;
+  description?: string;
+  memberIris?: readonly string[];
+  currentMemberIri?: string;
+  subject?: string;
+  themes?: readonly string[];
+  keywords?: readonly string[];
+  publisher?: string;
+  contact?: string;
+  sourceRepo?: string;
+}
+
 // Returns the RDF class IRIs for a group kind. Empty for 'default'
 // (no semantics — group is purely a presentation concern).
-function rdfClassesForKind(kind) {
+function rdfClassesForKind(kind: DatasetGroupKind): string[] {
   switch (kind) {
     case 'lineage': return [DCAT.DatasetSeries, DCAT.ConceptScheme];
     case 'topic':
@@ -84,7 +102,7 @@ function rdfClassesForKind(kind) {
  * @param {GroupEmitInput} input
  * @returns {Generator<Quad, void, unknown>}
  */
-export function* groupToQuads(input) {
+export function* groupToQuads(input: GroupEmitInput) {
   const classes = rdfClassesForKind(input.kind);
   if (classes.length === 0) return;
 

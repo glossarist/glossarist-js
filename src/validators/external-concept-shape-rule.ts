@@ -11,11 +11,13 @@
 // to a real concept status (valid, draft, etc.).
 
 import { ValidationRule } from './validation-rule.js';
+import type { Concept } from '../models/concept.js';
+import type { ValidationResult } from './validation-result.js';
 
 export class ExternalConceptShapeRule extends ValidationRule {
   constructor() { super('external-concept-shape', 'error'); }
 
-  validate(concept, path, result) {
+  override validate(concept: Concept, path: string, result: ValidationResult) {
     if (concept.status !== 'external') return;
 
     // Every concept — even an external one — needs at least one

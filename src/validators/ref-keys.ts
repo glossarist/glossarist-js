@@ -6,7 +6,12 @@
 // and "same criterion" instead of each defining its own _refKey and
 // _criterionKey with subtly different behaviors.
 
-export function refKey(ref) {
+interface ConceptRef {
+  source?: string;
+  id?: string;
+}
+
+export function refKey(ref: ConceptRef | null | undefined): string | null {
   if (!ref) return null;
   const source = ref.source ?? '';
   const id = ref.id ?? '';
@@ -14,13 +19,7 @@ export function refKey(ref) {
   return `${source}:${id}`;
 }
 
-// Hashable key for a criterion (lang-keyed hash). Returns null when
-// no criterion is set OR when the criterion contains no string values.
-// Values are sorted so two criteria with the same strings in different
-// language-key order produce the same key (ISO 12620 coordinate-
-// concept coherence cares about the criterion's content, not the
-// language label order).
-export function criterionKey(criterion) {
+export function criterionKey(criterion: Record<string, unknown> | null | undefined): string | null {
   if (!criterion || typeof criterion !== 'object') return null;
   const values = Object.values(criterion)
     .filter(v => typeof v === 'string')

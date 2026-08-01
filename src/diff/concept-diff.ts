@@ -2,133 +2,136 @@ import { GlossaristModel } from '../models/base.js';
 import { PartitiveHyperedge } from '../models/partitive-hyperedge.js';
 import { GenericHyperedge } from '../models/generic-hyperedge.js';
 import { Added, Removed, Changed } from './change.js';
+import type { Added as AddedType, Removed as RemovedType, Changed as ChangedType } from './change.js';
 import { ListDiff, diffList, diffSet } from './list-diff.js';
 import { identityOf } from './identity.js';
 import { canonicalJson } from './canonical-json.js';
 import { computeSimilarity } from './similarity.js';
+import type { Concept } from '../models/concept.js';
+import type { LocalizedConcept } from '../models/localized-concept.js';
 
-// Metadata field lists for the diff layer.
-//
-// Concept and LocalizedConcept also expose static DIFF_FIELDS that
-// mirror these arrays. The duplication is intentional: concept-diff.js
-// cannot import Concept (Concept imports diffConcepts from this module,
-// creating a cycle). Instead, a spec (test/diff/field-sync.test.js)
-// asserts the two stay in sync. Adding a new scalar metadata field
-// requires editing both sites; forgetting one fails the test loudly.
-//
-// (Invariant N2 — TODO.hyperedges-v2/07.)
 const CONCEPT_METADATA_FIELDS = Object.freeze([
   'status', 'term', 'uri', 'schemaVersion',
-]);
+]) as readonly string[];
 
 const LOCALIZATION_METADATA_FIELDS = Object.freeze([
   'entryStatus', 'classification', 'reviewType', 'domain', 'release',
   'lineageSourceSimilarity', 'script', 'system',
   'reviewDate', 'reviewDecisionDate', 'reviewDecisionEvent',
   'reviewStatus', 'reviewDecision', 'reviewDecisionNotes',
-]);
+]) as readonly string[];
 
-// Metadata field lists are sourced from the models per invariant N2.
-// (See file-top comment about why they're duplicated rather than imported.)
+interface DiffStatsData { added?: number; removed?: number; changed?: number }
 
 export class DiffStats extends GlossaristModel {
-  constructor(data: Record<string, unknown> = {}) {
+  private _added: number;
+  private _removed: number;
+  private _changed: number;
+
+  constructor(data: DiffStatsData = {}) {
     super();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._added = data.added ?? 0;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._removed = data.removed ?? 0;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._changed = data.changed ?? 0;
   }
 
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get added() { return this._added; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get removed() { return this._removed; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get changed() { return this._changed; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get total() { return this._added + this._removed + this._changed; }
+  get added(): number { return this._added; }
+  get removed(): number { return this._removed; }
+  get changed(): number { return this._changed; }
+  get total(): number { return this._added + this._removed + this._changed; }
 
-  toJSON() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  override toJSON(): DiffStatsData {
     return { added: this._added, removed: this._removed, changed: this._changed };
   }
 
-  static fromJSON(data) {
+  static override fromJSON(data: DiffStatsData): DiffStats {
     return new DiffStats(data ?? {});
   }
 }
 
+interface MetadataDiffData {
+  changes?: Record<string, ChangedType | Record<string, unknown>>;
+}
+
 export class MetadataDiff extends GlossaristModel {
-  constructor(data: Record<string, unknown> = {}) {
+  private _changes: Record<string, ChangedType>;
+
+  constructor(data: MetadataDiffData = {}) {
     super();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._changes = {};
     const raw = data.changes ?? data ?? {};
     for (const [field, change] of Object.entries(raw)) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       this._changes[field] = change instanceof Changed ? change : Changed.fromJSON(change);
     }
   }
 
-  get changes() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get changes(): Record<string, ChangedType> {
     return this._changes;
   }
 
-  get hasChanges() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get hasChanges(): boolean {
     return Object.keys(this._changes).length > 0;
   }
 
-  get count() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get count(): number {
     return Object.keys(this._changes).length;
   }
 
-  *walk(section) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  *walk(section?: string): Generator<{ path: string; change: ChangedType }> {
     for (const [field, change] of Object.entries(this._changes)) {
       const path = section ? `${section}.${field}` : field;
       yield { path, change };
     }
   }
 
-  toJSON() {
-    const obj = {};
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  override toJSON(): Record<string, unknown> {
+    const obj: Record<string, unknown> = {};
     for (const [field, change] of Object.entries(this._changes)) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       obj[field] = change.toJSON();
     }
     return obj;
   }
 
-  static fromJSON(data) {
-    return new MetadataDiff({ changes: data ?? {} });
+  static override fromJSON(data: Record<string, unknown>): MetadataDiff {
+    return new MetadataDiff({ changes: data as Record<string, ChangedType> });
   }
 }
 
+interface ConceptLevelDiffData {
+  sources?: ListDiff;
+  dates?: ListDiff;
+  relatedConcepts?: ListDiff;
+  related_concepts?: ListDiff;
+  relations?: ListDiff;
+  partitiveRelations?: ListDiff;
+  partitive_relations?: ListDiff;
+  partitiveHyperedges?: ListDiff;
+  partitive_hyperedges?: ListDiff;
+  groups?: ListDiff;
+  sections?: ListDiff;
+  tags?: ListDiff;
+  metadata?: MetadataDiff | Record<string, unknown>;
+}
+
+function asMetadataDiff(m: MetadataDiff | Record<string, unknown> | undefined): MetadataDiff {
+  return m instanceof MetadataDiff ? m : MetadataDiff.fromJSON(m ?? {});
+}
+
 export class ConceptLevelDiff extends GlossaristModel {
-  constructor(data: Record<string, unknown> = {}) {
+  private _sources: ListDiff;
+  private _dates: ListDiff;
+  private _relatedConcepts: ListDiff;
+  private _relations: ListDiff;
+  private _groups: ListDiff;
+  private _sections: ListDiff;
+  private _tags: ListDiff;
+  private _metadata: MetadataDiff;
+
+  constructor(data: ConceptLevelDiffData = {}) {
     super();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._sources = wrapListDiff(data.sources);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._dates = wrapListDiff(data.dates);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._relatedConcepts = wrapListDiff(data.relatedConcepts ?? data.related_concepts);
-    // Unified hyperedge diff. Accepts:
-    //   - data.relations                   (new unified shape)
-    //   - data.partitiveRelations /
-    //     data.partitive_relations /
-    //     data.partitiveHyperedges /
-    //     data.partitive_hyperedges        (legacy partitive-only shape)
-    // Old diffs only had partitive, so the legacy fallback treats them
-    // as a unified list with one type present.
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._relations = wrapListDiff(
       data.relations
         ?? data.partitiveRelations
@@ -136,382 +139,290 @@ export class ConceptLevelDiff extends GlossaristModel {
         ?? data.partitiveHyperedges
         ?? data.partitive_hyperedges,
     );
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._groups = wrapListDiff(data.groups);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._sections = wrapListDiff(data.sections);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._tags = wrapListDiff(data.tags);
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    this._metadata = data.metadata instanceof MetadataDiff
-      ? data.metadata
-      : MetadataDiff.fromJSON(data.metadata ?? {});
+    this._metadata = asMetadataDiff(data.metadata);
   }
 
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get sources() { return this._sources; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get dates() { return this._dates; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get relatedConcepts() { return this._relatedConcepts; }
-  /** Unified hyperedge diff (PartitiveHyperedge + GenericHyperedge). */
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get relations() { return this._relations; }
-  /**
-   * Filtered view of `relations` containing only PartitiveHyperedge
-   * entries. Backward compat for callers that read .partitiveRelations
-   * directly on a ConceptLevelDiff.
-   */
-  get partitiveRelations() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get sources(): ListDiff { return this._sources; }
+  get dates(): ListDiff { return this._dates; }
+  get relatedConcepts(): ListDiff { return this._relatedConcepts; }
+  get relations(): ListDiff { return this._relations; }
+  get partitiveRelations(): ListDiff {
     return filterListDiffByType(this._relations, PartitiveHyperedge);
   }
-  /** @deprecated use .relations */ get partitiveHyperedges() { return this.partitiveRelations; }
-  /**
-   * Filtered view of `relations` containing only GenericHyperedge
-   * entries. Backward compat for callers that read .genericRelations
-   * directly on a ConceptLevelDiff.
-   */
-  get genericRelations() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  /** @deprecated use .relations */ get partitiveHyperedges(): ListDiff { return this.partitiveRelations; }
+  get genericRelations(): ListDiff {
     return filterListDiffByType(this._relations, GenericHyperedge);
   }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get groups() { return this._groups; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get sections() { return this._sections; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get tags() { return this._tags; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get metadata() { return this._metadata; }
+  get groups(): ListDiff { return this._groups; }
+  get sections(): ListDiff { return this._sections; }
+  get tags(): ListDiff { return this._tags; }
+  get metadata(): MetadataDiff { return this._metadata; }
 
-  get hasChanges() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get hasChanges(): boolean {
     return this._sources.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._dates.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._relatedConcepts.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._relations.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._groups.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._sections.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._tags.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._metadata.hasChanges;
   }
 
-  *walk() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  *walk(): Generator<{ path: string; change: AddedType | RemovedType | ChangedType }> {
     yield* walkList('concept.sources', this._sources);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.dates', this._dates);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.relatedConcepts', this._relatedConcepts);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.relations', this._relations);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.groups', this._groups);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.sections', this._sections);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('concept.tags', this._tags);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* this._metadata.walk('concept.metadata');
   }
 
-  toJSON() {
+  override toJSON(): Record<string, unknown> {
     return {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       sources: this._sources.toJSON(),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       dates: this._dates.toJSON(),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       related_concepts: this._relatedConcepts.toJSON(),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       relations: this._relations.toJSON(),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       groups: this._groups.toJSON(),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       sections: this._sections.toJSON(),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       tags: this._tags.toJSON(),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       metadata: this._metadata.toJSON(),
     };
   }
 
-  static fromJSON(data) {
+  static override fromJSON(data: ConceptLevelDiffData): ConceptLevelDiff {
     return new ConceptLevelDiff(data);
   }
 }
 
+interface LocalizedConceptDiffData {
+  languageCode?: string | null;
+  language_code?: string | null;
+  designations?: ListDiff;
+  definitions?: ListDiff;
+  notes?: ListDiff;
+  examples?: ListDiff;
+  sources?: ListDiff;
+  dates?: ListDiff;
+  related?: ListDiff;
+  metadata?: MetadataDiff | Record<string, unknown>;
+  totalItems?: number;
+  total_items?: number;
+}
+
 export class LocalizedConceptDiff extends GlossaristModel {
-  constructor(data: Record<string, unknown> = {}) {
+  languageCode: string | null;
+  private _designations: ListDiff;
+  private _definitions: ListDiff;
+  private _notes: ListDiff;
+  private _examples: ListDiff;
+  private _sources: ListDiff;
+  private _dates: ListDiff;
+  private _related: ListDiff;
+  private _metadata: MetadataDiff;
+  private _totalItems: number;
+  private _statsCache?: DiffStats;
+  private _similarityCache?: number;
+
+  constructor(data: LocalizedConceptDiffData = {}) {
     super();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this.languageCode = data.languageCode ?? data.language_code ?? null;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._designations = wrapListDiff(data.designations);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._definitions = wrapListDiff(data.definitions);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._notes = wrapListDiff(data.notes);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._examples = wrapListDiff(data.examples);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._sources = wrapListDiff(data.sources);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._dates = wrapListDiff(data.dates);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._related = wrapListDiff(data.related);
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    this._metadata = data.metadata instanceof MetadataDiff
-      ? data.metadata
-      : MetadataDiff.fromJSON(data.metadata ?? {});
-    // @ts-expect-error TODO(Phase 2e): type this fully
+    this._metadata = asMetadataDiff(data.metadata);
     this._totalItems = data.totalItems ?? data.total_items ?? 0;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._statsCache = undefined;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._similarityCache = undefined;
   }
 
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get designations() { return this._designations; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get definitions() { return this._definitions; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get notes() { return this._notes; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get examples() { return this._examples; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get sources() { return this._sources; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get dates() { return this._dates; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get related() { return this._related; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get metadata() { return this._metadata; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get totalItems() { return this._totalItems; }
+  get designations(): ListDiff { return this._designations; }
+  get definitions(): ListDiff { return this._definitions; }
+  get notes(): ListDiff { return this._notes; }
+  get examples(): ListDiff { return this._examples; }
+  get sources(): ListDiff { return this._sources; }
+  get dates(): ListDiff { return this._dates; }
+  get related(): ListDiff { return this._related; }
+  get metadata(): MetadataDiff { return this._metadata; }
+  get totalItems(): number { return this._totalItems; }
 
-  get hasChanges() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get hasChanges(): boolean {
     return this._designations.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._definitions.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._notes.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._examples.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._sources.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._dates.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._related.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._metadata.hasChanges;
   }
 
-  get stats() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get stats(): DiffStats {
     if (this._statsCache === undefined) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       this._statsCache = collectStats(this.walk());
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._statsCache;
   }
 
-  get similarity() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get similarity(): number {
     if (this._similarityCache === undefined) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       this._similarityCache = computeSimilarity(this.stats.total, this._totalItems);
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._similarityCache;
   }
 
-  *walk(prefix) {
+  *walk(prefix?: string): Generator<{ path: string; change: AddedType | RemovedType | ChangedType }> {
     const base = prefix ?? '';
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.designations`, this._designations);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.definitions`, this._definitions);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.notes`, this._notes);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.examples`, this._examples);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.sources`, this._sources);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.dates`, this._dates);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList(`${base}.related`, this._related);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* this._metadata.walk(`${base}.metadata`);
   }
 
-  toJSON() {
-    const obj = {};
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  override toJSON(): Record<string, unknown> {
+    const obj: Record<string, unknown> = {};
     if (this.languageCode != null) obj.language_code = this.languageCode;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.designations = this._designations.toJSON();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.definitions = this._definitions.toJSON();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.notes = this._notes.toJSON();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.examples = this._examples.toJSON();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.sources = this._sources.toJSON();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.dates = this._dates.toJSON();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.related = this._related.toJSON();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.metadata = this._metadata.toJSON();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.total_items = this._totalItems;
     return obj;
   }
 
-  static fromJSON(data) {
+  static override fromJSON(data: LocalizedConceptDiffData): LocalizedConceptDiff {
     return new LocalizedConceptDiff(data);
   }
 }
 
+interface ConceptDiffData {
+  oldId?: string | null;
+  old_id?: string | null;
+  newId?: string | null;
+  new_id?: string | null;
+  concept?: ConceptLevelDiff | Record<string, unknown>;
+  languages?: ListDiff;
+  localizations?: Record<string, LocalizedConceptDiff | Record<string, unknown>>;
+  totalItems?: number;
+  total_items?: number;
+}
+
 export class ConceptDiff extends GlossaristModel {
-  constructor(data: Record<string, unknown> = {}) {
+  private _oldId: string | null;
+  private _newId: string | null;
+  private _concept: ConceptLevelDiff;
+  private _languages: ListDiff;
+  private _localizations: Record<string, LocalizedConceptDiff>;
+  private _totalItems: number;
+  private _statsCache?: DiffStats;
+  private _similarityCache?: number;
+
+  constructor(data: ConceptDiffData = {}) {
     super();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._oldId = data.oldId ?? data.old_id ?? null;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._newId = data.newId ?? data.new_id ?? null;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._concept = data.concept instanceof ConceptLevelDiff
       ? data.concept
       : ConceptLevelDiff.fromJSON(data.concept ?? {});
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._languages = wrapListDiff(data.languages);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._localizations = {};
     const raw = data.localizations ?? {};
     for (const [lang, lcDiff] of Object.entries(raw)) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       this._localizations[lang] = lcDiff instanceof LocalizedConceptDiff
         ? lcDiff
         : LocalizedConceptDiff.fromJSON(lcDiff);
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._totalItems = data.totalItems ?? data.total_items ?? 0;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._statsCache = undefined;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     this._similarityCache = undefined;
   }
 
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get oldId() { return this._oldId; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get newId() { return this._newId; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get concept() { return this._concept; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get languages() { return this._languages; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get localizations() { return this._localizations; }
-  // @ts-expect-error TODO(Phase 2e): type this fully
-  get totalItems() { return this._totalItems; }
+  get oldId(): string | null { return this._oldId; }
+  get newId(): string | null { return this._newId; }
+  get concept(): ConceptLevelDiff { return this._concept; }
+  get languages(): ListDiff { return this._languages; }
+  get localizations(): Record<string, LocalizedConceptDiff> { return this._localizations; }
+  get totalItems(): number { return this._totalItems; }
 
-  get localizationLanguages() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get localizationLanguages(): string[] {
     return Object.keys(this._localizations);
   }
 
-  get hasChanges() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get hasChanges(): boolean {
     return this._concept.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || this._languages.hasChanges
-      // @ts-expect-error TODO(Phase 2e): type this fully
       || Object.values(this._localizations).some(lc => lc.hasChanges);
   }
 
-  localization(lang) {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  localization(lang: string): LocalizedConceptDiff | null {
     return this._localizations[lang] ?? null;
   }
 
-  get stats() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get stats(): DiffStats {
     if (this._statsCache === undefined) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       this._statsCache = collectStats(this.walk());
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._statsCache;
   }
 
-  get similarity() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  get similarity(): number {
     if (this._similarityCache === undefined) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       this._similarityCache = computeSimilarity(this.stats.total, this._totalItems);
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     return this._similarityCache;
   }
 
-  *walk() {
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  *walk(): Generator<{ path: string; change: AddedType | RemovedType | ChangedType; language?: string }> {
     yield* this._concept.walk();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     yield* walkList('languages', this._languages);
-    // @ts-expect-error TODO(Phase 2e): type this fully
     for (const [lang, lc] of Object.entries(this._localizations)) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       for (const { path, change } of lc.walk(`localizations.${lang}`)) {
         yield { path, change, language: lang };
       }
     }
   }
 
-  toJSON() {
-    const obj = {};
-    // @ts-expect-error TODO(Phase 2e): type this fully
+  override toJSON(): Record<string, unknown> {
+    const obj: Record<string, unknown> = {};
     if (this._oldId != null) obj.old_id = this._oldId;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     if (this._newId != null) obj.new_id = this._newId;
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.concept = this._concept.toJSON();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.languages = this._languages.toJSON();
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.localizations = {};
-    // @ts-expect-error TODO(Phase 2e): type this fully
+    const localizations = obj.localizations as Record<string, unknown>;
     for (const [lang, lc] of Object.entries(this._localizations)) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
-      obj.localizations[lang] = lc.toJSON();
+      localizations[lang] = lc.toJSON();
     }
-    // @ts-expect-error TODO(Phase 2e): type this fully
     obj.total_items = this._totalItems;
     return obj;
   }
 
-  static fromJSON(data) {
+  static override fromJSON(data: ConceptDiffData): ConceptDiff {
     return new ConceptDiff(data);
   }
 }
 
-export function diffConcepts(oldConcept, newConcept, language) {
+type ConceptLike = Concept | { id?: string; languages?: readonly string[]; localization(lang: string): unknown } & Record<string, any> | null;
+
+export function diffConcepts(oldConcept: ConceptLike, newConcept: ConceptLike, language?: string | null): ConceptDiff {
   if (!oldConcept && !newConcept) {
     return new ConceptDiff({});
   }
@@ -521,7 +432,7 @@ export function diffConcepts(oldConcept, newConcept, language) {
   const oldLangs = oldConcept?.languages ?? [];
   const newLangs = newConcept?.languages ?? [];
 
-  let langs;
+  let langs: string[];
   if (language === 'all') {
     langs = union(oldLangs, newLangs);
   } else if (language) {
@@ -533,18 +444,15 @@ export function diffConcepts(oldConcept, newConcept, language) {
     }
     langs = [language];
   } else {
-    // No language specified: diff everything that exists. Avoids the
-    // silent 'eng' fallback that masked changes in concepts without an
-    // English localization.
     langs = union(oldLangs, newLangs);
   }
 
   const conceptDiff = diffConceptLevel(oldConcept ?? null, newConcept ?? null);
   const languageDiff = diffLanguageSets(oldLangs, newLangs);
-  const localizations = {};
+  const localizations: Record<string, LocalizedConceptDiff> = {};
   for (const lang of langs) {
-    const oldLoc = oldConcept?.localization(lang) ?? null;
-    const newLoc = newConcept?.localization(lang) ?? null;
+    const oldLoc = (oldConcept?.localization?.(lang) as LocalizedConcept | null) ?? null;
+    const newLoc = (newConcept?.localization?.(lang) as LocalizedConcept | null) ?? null;
     const lcDiff = diffLocalizedConcepts(oldLoc, newLoc);
     localizations[lang] = lcDiff;
   }
@@ -561,7 +469,9 @@ export function diffConcepts(oldConcept, newConcept, language) {
   });
 }
 
-export function diffLocalizedConcepts(oldLoc, newLoc) {
+type LocalizedConceptLike = { languageCode?: string | null; [k: string]: any } | null;
+
+export function diffLocalizedConcepts(oldLoc: LocalizedConceptLike, newLoc: LocalizedConceptLike): LocalizedConceptDiff {
   if (!oldLoc && !newLoc) {
     return new LocalizedConceptDiff({ languageCode: null });
   }
@@ -569,7 +479,7 @@ export function diffLocalizedConcepts(oldLoc, newLoc) {
   const lang = newLoc?.languageCode ?? oldLoc?.languageCode ?? null;
 
   if (!oldLoc) {
-    return fullyDiff(newLoc, lang, 'added');
+    return fullyDiff(newLoc!, lang, 'added');
   }
   if (!newLoc) {
     return fullyDiff(oldLoc, lang, 'removed');
@@ -589,7 +499,7 @@ export function diffLocalizedConcepts(oldLoc, newLoc) {
   });
 }
 
-function diffConceptLevel(oldConcept, newConcept) {
+function diffConceptLevel(oldConcept: ConceptLike, newConcept: ConceptLike): ConceptLevelDiff {
   if (!oldConcept && !newConcept) {
     return new ConceptLevelDiff({});
   }
@@ -597,7 +507,7 @@ function diffConceptLevel(oldConcept, newConcept) {
   const Direction = !oldConcept ? 'added' : !newConcept ? 'removed' : null;
 
   if (Direction) {
-    const c = (oldConcept ?? newConcept);
+    const c = (oldConcept ?? newConcept) as any;
     return new ConceptLevelDiff({
       sources: fullListDiff(c.sources ?? [], Direction),
       dates: fullListDiff(c.dates ?? [], Direction),
@@ -611,21 +521,21 @@ function diffConceptLevel(oldConcept, newConcept) {
   }
 
   return new ConceptLevelDiff({
-    sources: diffSources(oldConcept.sources ?? [], newConcept.sources ?? []),
-    dates: diffDates(oldConcept.dates ?? [], newConcept.dates ?? []),
-    relatedConcepts: diffRelatedConcepts(oldConcept.relatedConcepts ?? [], newConcept.relatedConcepts ?? []),
+    sources: diffSources(oldConcept!.sources ?? [], newConcept!.sources ?? []),
+    dates: diffDates(oldConcept!.dates ?? [], newConcept!.dates ?? []),
+    relatedConcepts: diffRelatedConcepts(oldConcept!.relatedConcepts ?? [], newConcept!.relatedConcepts ?? []),
     relations: diffHyperedges(
-      oldConcept.relations ?? [],
-      newConcept.relations ?? [],
+      oldConcept!.relations ?? [],
+      newConcept!.relations ?? [],
     ),
-    groups: diffStringSet(oldConcept.groups ?? [], newConcept.groups ?? []),
-    sections: diffStringSet(oldConcept.sections ?? [], newConcept.sections ?? []),
-    tags: diffStringSet(oldConcept.tags ?? [], newConcept.tags ?? []),
-    metadata: diffMetadata(oldConcept, newConcept, CONCEPT_METADATA_FIELDS),
+    groups: diffStringSet(oldConcept!.groups ?? [], newConcept!.groups ?? []),
+    sections: diffStringSet(oldConcept!.sections ?? [], newConcept!.sections ?? []),
+    tags: diffStringSet(oldConcept!.tags ?? [], newConcept!.tags ?? []),
+    metadata: diffMetadata(oldConcept!, newConcept!, CONCEPT_METADATA_FIELDS),
   });
 }
 
-function diffLanguageSets(oldLangs, newLangs) {
+function diffLanguageSets(oldLangs: readonly string[], newLangs: readonly string[]): ListDiff {
   const oldSet = new Set(oldLangs);
   const newSet = new Set(newLangs);
   const added = newLangs
@@ -639,31 +549,31 @@ function diffLanguageSets(oldLangs, newLangs) {
   return new ListDiff({ added, removed, changed: [] });
 }
 
-function fullyDiff(loc, lang, direction) {
+function fullyDiff(loc: any, lang: string | null, direction: 'added' | 'removed'): LocalizedConceptDiff {
   const ChangeClass = direction === 'added' ? Added : Removed;
   const key = direction;
   const lc = new LocalizedConceptDiff({
     languageCode: lang,
-    designations: new ListDiff({ [key]: (loc.terms ?? []).map(v => new ChangeClass({ value: v })) }),
-    definitions: new ListDiff({ [key]: (loc.definitions ?? []).map(v => new ChangeClass({ value: v })) }),
-    notes: new ListDiff({ [key]: (loc.notes ?? []).map(v => new ChangeClass({ value: v })) }),
-    examples: new ListDiff({ [key]: (loc.examples ?? []).map(v => new ChangeClass({ value: v })) }),
-    sources: new ListDiff({ [key]: (loc.sources ?? []).map(v => new ChangeClass({ value: v })) }),
-    dates: new ListDiff({ [key]: (loc.dates ?? []).map(v => new ChangeClass({ value: v })) }),
-    related: new ListDiff({ [key]: (loc.related ?? []).map(v => new ChangeClass({ value: v })) }),
+    designations: new ListDiff({ [key]: (loc.terms ?? []).map((v: unknown) => new ChangeClass({ value: v })) }),
+    definitions: new ListDiff({ [key]: (loc.definitions ?? []).map((v: unknown) => new ChangeClass({ value: v })) }),
+    notes: new ListDiff({ [key]: (loc.notes ?? []).map((v: unknown) => new ChangeClass({ value: v })) }),
+    examples: new ListDiff({ [key]: (loc.examples ?? []).map((v: unknown) => new ChangeClass({ value: v })) }),
+    sources: new ListDiff({ [key]: (loc.sources ?? []).map((v: unknown) => new ChangeClass({ value: v })) }),
+    dates: new ListDiff({ [key]: (loc.dates ?? []).map((v: unknown) => new ChangeClass({ value: v })) }),
+    related: new ListDiff({ [key]: (loc.related ?? []).map((v: unknown) => new ChangeClass({ value: v })) }),
     metadata: fullMetadataDiff(loc, LOCALIZATION_METADATA_FIELDS, direction),
     totalItems: countLocalizedItems(direction === 'added' ? null : loc, direction === 'added' ? loc : null),
   });
   return lc;
 }
 
-function fullListDiff(items, direction) {
+function fullListDiff(items: readonly unknown[], direction: 'added' | 'removed'): ListDiff {
   const ChangeClass = direction === 'added' ? Added : Removed;
   return new ListDiff({ [direction]: items.map(v => new ChangeClass({ value: v })) });
 }
 
-function fullMetadataDiff(obj, fields, direction) {
-  const changes = {};
+function fullMetadataDiff(obj: Record<string, any>, fields: readonly string[], direction: 'added' | 'removed'): MetadataDiff {
+  const changes: Record<string, ChangedType> = {};
   for (const field of fields) {
     const val = obj[field];
     if (val != null) {
@@ -676,63 +586,55 @@ function fullMetadataDiff(obj, fields, direction) {
   return new MetadataDiff({ changes });
 }
 
-function diffDesignations(oldTerms, newTerms) {
+function diffDesignations(oldTerms: readonly unknown[], newTerms: readonly unknown[]): ListDiff {
   return diffSet(oldTerms, newTerms, {
     identityKey: identityOf,
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    textKey: d => d?.designation ?? '',
+    textKey: (d: any) => d?.designation ?? '',
   });
 }
 
-function diffTextList(oldItems, newItems) {
+function diffTextList(oldItems: readonly unknown[], newItems: readonly unknown[]): ListDiff {
   return diffList(oldItems, newItems, {
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    textKey: d => d?.content ?? '',
+    textKey: (d: any) => d?.content ?? '',
   });
 }
 
-function diffSources(oldSources, newSources) {
+function diffSources(oldSources: readonly unknown[], newSources: readonly unknown[]): ListDiff {
   return diffSet(oldSources, newSources, {
     identityKey: identityOf,
   });
 }
 
-function diffDates(oldDates, newDates) {
+function diffDates(oldDates: readonly unknown[], newDates: readonly unknown[]): ListDiff {
   return diffSet(oldDates, newDates, {
     identityKey: identityOf,
-    // @ts-expect-error TODO(Phase 2e): type this fully
-    textKey: d => d?.date ?? '',
+    textKey: (d: any) => d?.date ?? '',
   });
 }
 
-function diffRelated(oldRelated, newRelated) {
+function diffRelated(oldRelated: readonly unknown[], newRelated: readonly unknown[]): ListDiff {
   return diffSet(oldRelated, newRelated, {
     identityKey: identityOf,
   });
 }
 
-function diffRelatedConcepts(oldRC, newRC) {
+function diffRelatedConcepts(oldRC: readonly unknown[], newRC: readonly unknown[]): ListDiff {
   return diffSet(oldRC, newRC, {
     identityKey: identityOf,
   });
 }
 
-// Diff two unified hyperedge arrays. Identity is polymorphic —
-// dispatches via value.constructor.identityOf so PartitiveHyperedge
-// and GenericHyperedge (and any future hyperedge subclass) coexist in
-// the same list. Cross-type entries with matching identity are still
-// treated as different (because their constructor differs and they
-// live under different wire keys).
-function diffHyperedges(oldR, newR) {
+function diffHyperedges(oldR: readonly unknown[], newR: readonly unknown[]): ListDiff {
   return diffSet(oldR, newR, {
     identityKey: relationIdentityOf,
     textKey: relationText,
   });
 }
 
-function relationIdentityOf(value) {
+function relationIdentityOf(value: unknown): string {
   if (value == null) return '';
-  const Cls = value.constructor;
+  const v = value as { constructor?: { name?: string; identityOf?: (v: unknown) => string } };
+  const Cls = v.constructor;
   if (typeof Cls?.identityOf === 'function') {
     const typed = Cls.identityOf(value);
     return `${Cls.name}::${typed}`;
@@ -740,7 +642,7 @@ function relationIdentityOf(value) {
   return identityOf(value);
 }
 
-function filterListDiffByType(listDiff, Cls) {
+function filterListDiffByType(listDiff: ListDiff, Cls: new (...args: any[]) => unknown): ListDiff {
   if (!listDiff) return listDiff;
   return new ListDiff({
     added: listDiff.added.filter(e => e.value instanceof Cls),
@@ -751,19 +653,19 @@ function filterListDiffByType(listDiff, Cls) {
   });
 }
 
-function relationText(r) {
+function relationText(r: any): string {
   if (!r) return '';
   return canonicalJson(typeof r.toJSON === 'function' ? r.toJSON() : r);
 }
 
-function diffStringSet(oldStrings, newStrings) {
+function diffStringSet(oldStrings: readonly unknown[], newStrings: readonly unknown[]): ListDiff {
   return diffSet(oldStrings, newStrings, {
     identityKey: identityOf,
   });
 }
 
-function diffMetadata(oldObj, newObj, fields) {
-  const changes = {};
+function diffMetadata(oldObj: Record<string, any>, newObj: Record<string, any>, fields: readonly string[]): MetadataDiff {
+  const changes: Record<string, ChangedType> = {};
   for (const field of fields) {
     const oldVal = oldObj[field];
     const newVal = newObj[field];
@@ -774,12 +676,12 @@ function diffMetadata(oldObj, newObj, fields) {
   return new MetadataDiff({ changes });
 }
 
-function wrapListDiff(data) {
+function wrapListDiff(data: ListDiff | Record<string, unknown> | null | undefined): ListDiff {
   if (data instanceof ListDiff) return data;
   return ListDiff.fromJSON(data ?? {});
 }
 
-function collectStats(walker) {
+function collectStats(walker: Iterable<{ change: { type: string } }>): DiffStats {
   let added = 0;
   let removed = 0;
   let changed = 0;
@@ -791,11 +693,11 @@ function collectStats(walker) {
   return new DiffStats({ added, removed, changed });
 }
 
-function maxOf(a, b) {
+function maxOf(a: number | undefined, b: number | undefined): number {
   return Math.max(a ?? 0, b ?? 0);
 }
 
-function countConceptItems(oldConcept, newConcept, langs) {
+function countConceptItems(oldConcept: ConceptLike, newConcept: ConceptLike, langs: readonly string[]): number {
   let count = 0;
 
   count += maxOf(oldConcept?.sources?.length, newConcept?.sources?.length);
@@ -815,15 +717,15 @@ function countConceptItems(oldConcept, newConcept, langs) {
   count += maxOf(oldLangs.length, newLangs.length);
 
   for (const lang of langs) {
-    const oldLoc = oldConcept?.localization(lang) ?? null;
-    const newLoc = newConcept?.localization(lang) ?? null;
+    const oldLoc = (oldConcept?.localization?.(lang) as any) ?? null;
+    const newLoc = (newConcept?.localization?.(lang) as any) ?? null;
     count += countLocalizedItems(oldLoc, newLoc);
   }
 
   return count;
 }
 
-function countLocalizedItems(oldLoc, newLoc) {
+function countLocalizedItems(oldLoc: any, newLoc: any): number {
   let count = 0;
   count += maxOf(oldLoc?.terms?.length, newLoc?.terms?.length);
   count += maxOf(oldLoc?.definitions?.length, newLoc?.definitions?.length);
@@ -836,18 +738,18 @@ function countLocalizedItems(oldLoc, newLoc) {
   return count;
 }
 
-function* walkList(section, listDiff) {
+function* walkList(section: string, listDiff: ListDiff): Generator<{ path: string; change: AddedType | RemovedType | ChangedType }> {
   for (let i = 0; i < listDiff.added.length; i++) {
-    yield { path: `${section}.added[${i}]`, change: listDiff.added[i] };
+    yield { path: `${section}.added[${i}]`, change: listDiff.added[i]! };
   }
   for (let i = 0; i < listDiff.removed.length; i++) {
-    yield { path: `${section}.removed[${i}]`, change: listDiff.removed[i] };
+    yield { path: `${section}.removed[${i}]`, change: listDiff.removed[i]! };
   }
   for (let i = 0; i < listDiff.changed.length; i++) {
-    yield { path: `${section}.changed[${i}]`, change: listDiff.changed[i] };
+    yield { path: `${section}.changed[${i}]`, change: listDiff.changed[i]! };
   }
 }
 
-function union(a, b) {
-  return [...new Set([...a, ...b])].sort();
+function union<T>(a: readonly T[], b: readonly T[]): T[] {
+  return [...new Set([...a, ...b])] as T[];
 }

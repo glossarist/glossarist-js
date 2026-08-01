@@ -1,7 +1,12 @@
 import { ValidationResult } from './validation-result.js';
 
+interface RegisterLike {
+  schema_version?: string;
+  shortname?: string;
+}
+
 export class RegisterValidator {
-  validate(register) {
+  validate(register: RegisterLike | null | undefined) {
     const result = new ValidationResult();
     if (!register || typeof register !== 'object') {
       result.addError('', 'Register must be a non-null object');

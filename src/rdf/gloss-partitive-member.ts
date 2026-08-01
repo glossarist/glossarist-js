@@ -22,6 +22,7 @@
 import { PRED } from './predicates.js';
 import { namedNode, literal, quad } from './terms.js';
 import { resolveMultiplicity } from '../models/multiplicity.js';
+import type { PartitiveMember } from '../models/partitive-member.js';
 
 // SKOS taxonomy namespaces (concept-model will ship these taxonomies).
 // Until then, the URIs are forward-compatible and resolve once the
@@ -30,7 +31,7 @@ export const PRESENCE_NS = 'https://www.glossarist.org/ontologies/presence/';
 export const COUNT_NS = 'https://www.glossarist.org/ontologies/count/';
 export const MULTIPLICITY_NS = 'https://www.glossarist.org/ontologies/multiplicity/';
 
-export function* partitiveMemberToQuads(member, { memberUri }) {
+export function* partitiveMemberToQuads(member: PartitiveMember, { memberUri }: { memberUri: string }) {
   if (member?.presence) {
     yield quad(
       namedNode(memberUri),

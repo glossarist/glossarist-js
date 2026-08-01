@@ -1,4 +1,5 @@
 import type { ValidationResult } from './validation-result.js';
+import type { Concept } from '../models/concept.js';
 
 export abstract class ValidationRule {
   readonly name: string;
@@ -9,7 +10,7 @@ export abstract class ValidationRule {
     this.severity = severity;
   }
 
-  abstract validate(concept: unknown, path: string, result: ValidationResult): void;
+  abstract validate(concept: Concept, path: string, result: ValidationResult): void;
 
   addIssue(result: ValidationResult, path: string, message: string): void {
     if (this.severity === 'warning') {

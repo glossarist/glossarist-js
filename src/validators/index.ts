@@ -23,6 +23,8 @@ export { ExternalConceptShapeRule } from './external-concept-shape-rule.js';
 export { BinaryHasPartRedundancyRule } from './binary-has-part-redundancy-rule.js';
 export { DelimitingCoherenceRule } from './delimiting-coherence-rule.js';
 
+import type { Concept } from '../models/concept.js';
+import type { GcrPackage } from '../gcr-reader.js';
 import { ConceptValidator, LanguageCodeRule, DesignationTypeRule, EntryStatusRule } from './concept-validator.js';
 import { RegisterValidator } from './register-validator.js';
 import { GcrValidator } from './gcr-validator.js';
@@ -64,7 +66,7 @@ const _default = new ConceptValidator()
   .addRule(new BinaryHasPartRedundancyRule())
   .addRule(new DelimitingCoherenceRule());
 
-export function validateConcept(concept) {
+export function validateConcept(concept: Concept) {
   return _default.validate(concept);
 }
 
@@ -72,10 +74,10 @@ export function createConceptValidator() {
   return new ConceptValidator();
 }
 
-export function validateRegister(register) {
-  return new RegisterValidator().validate(register);
+export function validateRegister(register: unknown) {
+  return new RegisterValidator().validate(register as any);
 }
 
-export async function validateGcrPackage(pkg) {
+export async function validateGcrPackage(pkg: GcrPackage) {
   return new GcrValidator().validate(pkg);
 }

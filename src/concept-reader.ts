@@ -9,7 +9,7 @@ import { naturalSort } from './sort.js';
 import { InvalidInputError } from './errors.js';
 import { Register } from './models/register.js';
 
-function assertDir(dir, fnName) {
+function assertDir(dir: unknown, fnName: string): asserts dir is string {
   if (typeof dir !== 'string' || dir.trim() === '') {
     throw new InvalidInputError(`${fnName} requires a directory path`, 'non-empty string');
   }
@@ -33,7 +33,7 @@ function assertDir(dir, fnName) {
  * const concepts = readConcepts('./geolexica-v2/');
  * console.log(concepts[0].localization('eng').terms[0].designation);
  */
-export function readConcepts(dir) {
+export function readConcepts(dir: string) {
   assertDir(dir, 'readConcepts');
   const files = fs.readdirSync(dir)
     .filter(f => f.endsWith('.yaml') && f !== 'register.yaml')
@@ -66,7 +66,7 @@ export function readConcepts(dir) {
  * const concept = readConcept('./geolexica-v2/', '3.1.1.1');
  * if (concept) console.log(concept.termid);
  */
-export function readConcept(dir, id) {
+export function readConcept(dir: string, id: string) {
   assertDir(dir, 'readConcept');
   if (typeof id !== 'string' || id.trim() === '') {
     throw new InvalidInputError('readConcept requires a concept ID', 'non-empty string');
@@ -88,7 +88,7 @@ export function readConcept(dir, id) {
 // Throws if a per-file hyperedge fails to construct (bad YAML, missing
 // type, invalid members) — surfaces corruption loudly per the
 // RelationLoader contract.
-function _mergePerFileHyperedges(dir, concepts) {
+function _mergePerFileHyperedges(dir: string, concepts: Concept[]) {
   const relationsDir = path.join(dir, 'relations');
   if (!fs.existsSync(relationsDir)) return;
 
@@ -111,7 +111,7 @@ function _mergePerFileHyperedges(dir, concepts) {
   }
 }
 
-function _sameHyperedge(a, b) {
+function _sameHyperedge(a: any, b: any) {
   const aCls = a?.constructor;
   const bCls = b?.constructor;
   if (aCls !== bCls) return false;
@@ -129,7 +129,7 @@ function _sameHyperedge(a, b) {
  * @example
  * const ids = listConceptIds('./geolexica-v2/', '3.1.'); // ['3.1.1.1', '3.1.1.2', ...]
  */
-export function listConceptIds(dir, prefix) {
+export function listConceptIds(dir: string, prefix?: string) {
   assertDir(dir, 'listConceptIds');
   let files = fs.readdirSync(dir).filter(f => f.endsWith('.yaml') && f !== 'register.yaml');
   if (prefix) {
@@ -146,7 +146,7 @@ export function listConceptIds(dir, prefix) {
  * @returns {Record<string, unknown> | null}
  * @throws {InvalidInputError} if dir is missing or empty
  */
-export function readRegister(dir) {
+export function readRegister(dir: string) {
   assertDir(dir, 'readRegister');
   const p = path.join(dir, 'register.yaml');
   if (!fs.existsSync(p)) return null;

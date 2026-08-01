@@ -31,7 +31,6 @@ export function compactIri(iri: string, prefixes: Record<string, string> = PREFI
   let bestLen = 0;
   for (const [prefix, base] of Object.entries(prefixes)) {
     if (iri.startsWith(base) && base.length > bestLen) {
-      // @ts-expect-error TODO(Phase 2e): type this fully
       best = `${prefix}:${iri.slice(base.length)}`;
       bestLen = base.length;
     }
@@ -44,3 +43,4 @@ export function compactIri(iri: string, prefixes: Record<string, string> = PREFI
 export const RDF_TYPE = `${PREFIXES.rdf}type`;
 export const RDF_VALUE = `${PREFIXES.rdf}value`;
 export const RDFS_LABEL = `${PREFIXES.rdfs}label`;
+

@@ -16,14 +16,14 @@ const DCTERMS_NS = PREFIXES.dcterms;
 const DCAT_NS    = PREFIXES.dcat ?? 'http://www.w3.org/ns/dcat#';
 const XSD_NS     = PREFIXES.xsd;
 
-const FOAF = {
+const FOAF: any = {
   Image: `${FOAF_NS}Image`,
 };
-const DCTERMS = {
+const DCTERMS: any = {
   format: `${DCTERMS_NS}format`,
   language: `${DCTERMS_NS}language`,
 };
-const DCAT = {
+const DCAT: any = {
   byteSize: `${DCAT_NS}byteSize`,
   downloadURL: `${DCAT_NS}downloadURL`,
 };
@@ -31,41 +31,32 @@ const XSD_INTEGER = `${XSD_NS}integer`;
 
 // No hardcoded default base URI. Callers MUST pass baseUri explicitly.
 
-/**
- * @typedef {'svg' | 'png' | 'webp' | 'jpg' | 'gif'} ImageFormat
- */
-/**
- * @typedef {Object} ImageVariantInput
- * @property {string} registerId
- * @property {string} figureId
- * @property {string} [lang]
- * @property {ImageFormat} format
- * @property {number} [byteSize]
- * @property {string} downloadUrl
- */
+export type ImageFormat = 'svg' | 'png' | 'webp' | 'jpg' | 'gif';
 
-const MIME_BY_FORMAT = Object.freeze({
+export interface ImageVariantInput {
+  registerId: string;
+  figureId: string;
+  lang?: string;
+  format: ImageFormat;
+  byteSize?: number;
+  downloadUrl: string;
+}
+
+const MIME_BY_FORMAT: Readonly<Record<ImageFormat, string>> = Object.freeze({
   svg: 'image/svg+xml',
   png: 'image/png',
   webp: 'image/webp',
   jpg: 'image/jpeg',
   gif: 'image/gif',
-});
+}) as Readonly<Record<ImageFormat, string>>;
 
-/**
- * Returns the canonical IRI for an image variant. Includes the lang
- * segment when the variant is localized, otherwise omits it.
- */
-export function imageVariantIri(input, baseUri) {
+export function imageVariantIri(input: ImageVariantInput, baseUri: string): string {
   if (!baseUri) throw new Error('imageVariantIri requires baseUri — the deployment canonical URI root.');
   const langSuffix = input.lang ? `${input.lang}.` : '';
   return `${baseUri}/${input.registerId}/image/${input.figureId}/${langSuffix}${input.format}`;
 }
 
-/**
- * Emits foaf:Image quads for one image variant.
- */
-export function* imageVariantToQuads(input, baseUri) {
+export function* imageVariantToQuads(input: ImageVariantInput, baseUri: string) {
   if (!baseUri) throw new Error('imageVariantToQuads requires baseUri — the deployment canonical URI root.');
   const img = namedNode(imageVariantIri(input, baseUri));
   yield quad(img, namedNode(RDF_TYPE), namedNode(FOAF.Image));

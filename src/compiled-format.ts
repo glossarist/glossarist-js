@@ -31,7 +31,7 @@ const COMPILED_FORMATS = Object.freeze([...COMPILED_EXTENSIONS.keys()]);
  * @param {string} id - concept ID or document name (e.g. '3.1.1.1', 'glossary')
  * @returns {string} e.g. '3.1.1.1.jsonld', 'glossary.tbx.xml'
  */
-function compiledFilename(format, id) {
+function compiledFilename(format: string, id: string) {
   const ext = COMPILED_EXTENSIONS.get(format);
   if (!ext) throw new RangeError(`Unknown compiled format: ${format}`);
   return `${id}.${ext}`;
@@ -39,32 +39,22 @@ function compiledFilename(format, id) {
 
 /**
  * Returns the full ZIP path for a compiled-format entry.
- *
- * @param {string} format
- * @param {string} id
- * @returns {string} e.g. 'compiled/jsonld/3.1.1.1.jsonld'
  */
-function compiledPath(format, id) {
+function compiledPath(format: string, id: string) {
   return `compiled/${format}/${compiledFilename(format, id)}`;
 }
 
 /**
  * Checks whether a format name is a known compiled format.
- * @param {string} format
- * @returns {boolean}
  */
-function isKnownFormat(format) {
+function isKnownFormat(format: string) {
   return COMPILED_EXTENSIONS.has(format);
 }
 
 /**
  * Extracts the entry ID (concept ID or document name) from a compiled-format ZIP path.
- * Returns null if the path doesn't match the expected pattern.
- *
- * @param {string} zipPath - e.g. 'compiled/jsonld/3.1.1.1.jsonld'
- * @returns {{ format: string, id: string } | null}
  */
-function parseCompiledPath(zipPath) {
+function parseCompiledPath(zipPath: string): { format: string; id: string } | null {
   if (!zipPath.startsWith('compiled/')) return null;
   const rest = zipPath.slice('compiled/'.length);
   const slash = rest.indexOf('/');

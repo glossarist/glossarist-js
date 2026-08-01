@@ -5,21 +5,21 @@ import { Concept } from './models/concept.js';
 import { InvalidInputError } from './errors.js';
 
 export class V1Reader {
-  static isV1Directory(dir) {
+  static isV1Directory(dir: string): boolean {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     return entries.some(e =>
       e.isDirectory() && fs.existsSync(path.join(dir, e.name, 'concept.yaml'))
     );
   }
 
-  static readConcept(conceptDir) {
+  static readConcept(conceptDir: string): Concept {
     const conceptFile = path.join(conceptDir, 'concept.yaml');
     if (!fs.existsSync(conceptFile)) {
       throw new InvalidInputError(`No concept.yaml found in ${conceptDir}`);
     }
 
-    const data = yaml.load(fs.readFileSync(conceptFile, 'utf8'));
-    const localizations = {};
+    const data = yaml.load(fs.readFileSync(conceptFile, 'utf8')) as Record<string, any>;
+    const localizations: Record<string, any> = {};
 
     for (const file of fs.readdirSync(conceptDir)) {
       if (file === 'concept.yaml' || !file.endsWith('.yaml')) continue;
@@ -28,25 +28,22 @@ export class V1Reader {
     }
 
     return new Concept({
-      // @ts-expect-error TODO(Phase 2e): type this fully
       id: String(data.termid ?? data.data?.identifier ?? path.basename(conceptDir)),
-      // @ts-expect-error TODO(Phase 2e): type this fully
       term: data.term ?? null,
       localizations,
       raw: data,
     });
   }
 
-  static readAll(dir) {
+  static readAll(dir: string): Concept[] {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
-    const concepts = [];
+    const concepts: Concept[] = [];
 
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       const conceptDir = path.join(dir, entry.name);
       if (!fs.existsSync(path.join(conceptDir, 'concept.yaml'))) continue;
       try {
-        // @ts-expect-error TODO(Phase 2e): type this fully
         concepts.push(V1Reader.readConcept(conceptDir));
       } catch { /* skip unreadable concepts */ }
     }
@@ -55,7 +52,7 @@ export class V1Reader {
   }
 }
 
-export async function migrateV1ToV2(v1Dir, v2Dir) {
+export async function migrateV1ToV2(v1Dir: string, v2Dir: string): Promise<void> {
   const concepts = V1Reader.readAll(v1Dir);
   const { writeConcept } = await import('./concept-writer.js');
   fs.mkdirSync(v2Dir, { recursive: true });
@@ -64,3 +61,4 @@ export async function migrateV1ToV2(v1Dir, v2Dir) {
     writeConcept(v2Dir, concept, 'canonical');
   }
 }
+

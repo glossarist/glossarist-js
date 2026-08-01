@@ -30,7 +30,7 @@ const DIRECTORY_ASSETS = Object.freeze(
  * @param {string} path
  * @returns {{ path: string, type: string } | undefined}
  */
-function findFileAsset(path) {
+function findFileAsset(path: string) {
   return FILE_ASSETS.find((a) => a.path === path);
 }
 
@@ -40,7 +40,7 @@ function findFileAsset(path) {
  * @param {string} zipPath
  * @returns {{ path: string, type: string } | undefined}
  */
-function findDirectoryAssetPath(zipPath) {
+function findDirectoryAssetPath(zipPath: string) {
   for (const asset of DIRECTORY_ASSETS) {
     if (zipPath === asset.path || zipPath.startsWith(`${asset.path}/`)) {
       return asset;
@@ -54,7 +54,7 @@ function findDirectoryAssetPath(zipPath) {
  * @param {string} zipPath
  * @returns {boolean}
  */
-function isDatasetAssetPath(zipPath) {
+function isDatasetAssetPath(zipPath: string) {
   return findFileAsset(zipPath) !== undefined || findDirectoryAssetPath(zipPath) !== undefined;
 }
 

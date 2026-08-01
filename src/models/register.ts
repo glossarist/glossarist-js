@@ -214,7 +214,7 @@ export class Register extends GlossaristModel {
   }
 
   override toJSON(): RegisterJson {
-    const obj = { ...this._raw, schema_version: this.schemaVersion } as RegisterJson;
+    const obj: any = { ...this._raw, schema_version: this.schemaVersion } as RegisterJson;
     if (this.id != null) obj.id = this.id;
     if (this.name != null) obj.name = this.name;
     if (this.ref != null) obj.ref = this.ref;

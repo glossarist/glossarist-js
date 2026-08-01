@@ -2,7 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
 import { Concept } from './models/concept.js';
+import type { LocalizedConceptJson } from './models/localized-concept.js';
 import { InvalidInputError } from './errors.js';
+
+type YamlDoc = Record<string, any>;
 
 export class V1Reader {
   static isV1Directory(dir: string): boolean {
@@ -18,13 +21,13 @@ export class V1Reader {
       throw new InvalidInputError(`No concept.yaml found in ${conceptDir}`);
     }
 
-    const data = yaml.load(fs.readFileSync(conceptFile, 'utf8')) as Record<string, any>;
-    const localizations: Record<string, any> = {};
+    const data = yaml.load(fs.readFileSync(conceptFile, 'utf8')) as YamlDoc;
+    const localizations: Record<string, LocalizedConceptJson> = {};
 
     for (const file of fs.readdirSync(conceptDir)) {
       if (file === 'concept.yaml' || !file.endsWith('.yaml')) continue;
       const lang = file.slice(0, -'.yaml'.length);
-      localizations[lang] = yaml.load(fs.readFileSync(path.join(conceptDir, file), 'utf8'));
+      localizations[lang] = yaml.load(fs.readFileSync(path.join(conceptDir, file), 'utf8')) as LocalizedConceptJson;
     }
 
     return new Concept({

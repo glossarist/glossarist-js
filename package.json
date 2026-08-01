@@ -57,15 +57,16 @@
   "scripts": {
     "lint": "eslint src/ test/",
     "typecheck": "tsc --noEmit",
-    "build": "tsc",
+    "typecheck:test": "tsc -p tsconfig.test.json --noEmit",
+    "build": "tsc -p tsconfig.build.json",
     "sync:model": "node scripts/sync-concept-model.mjs",
     "gen:predicates": "node scripts/gen-predicates.mjs",
     "prebuild": "npm run gen:predicates",
-    "pretest": "node test/fixtures/build-fixtures.js",
+    "pretest": "node test/fixtures/build-fixtures.mjs",
     "test": "find test \\( -name '*.test.js' -o -name '*.test.ts' \\) | sort | xargs node --import tsx --test",
     "test:verbose": "find test \\( -name '*.test.js' -o -name '*.test.ts' \\) | sort | xargs node --import tsx --test --test-reporter spec",
     "test:coverage": "find test \\( -name '*.test.js' -o -name '*.test.ts' \\) | sort | xargs node --import tsx --test --experimental-test-coverage",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build && npm run typecheck && npm test"
   },
   "keywords": [
     "glossarist",

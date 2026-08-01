@@ -32,6 +32,28 @@ function _registryStructuralKeys() {
   return out;
 }
 
+type YamlObject = Record<string, unknown>;
+
+function asObject(v: unknown): YamlObject {
+  return v as YamlObject;
+}
+
+function nested(v: unknown, key: string): unknown {
+  if (v && typeof v === 'object' && key in v) return (v as Record<string, unknown>)[key];
+  return undefined;
+}
+
+function deepIdentifier(docs: unknown[]): unknown {
+  const first = docs[0];
+  return nested(nested(first, 'data'), 'identifier');
+}
+
+// YAML documents are inherently unstructured at parse time — the Concept
+// constructor applies the real type constraints. We use a permissive type
+// here because the alternative (asserting each field shape individually)
+// would duplicate the validation the model layer already does.
+type YamlDoc = Record<string, any>;
+
 function _camelCase(s: unknown): string {
   if (typeof s !== 'string' || !s.includes('_')) return s as string;
   return s.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -68,16 +90,17 @@ export class ConceptParser {
 
   _detectFormat(docs: unknown[], label: string): 'managed' | 'canonical' {
     const first = docs[0] as Record<string, unknown> | undefined;
-    if (docs.length >= 1 && (first as any)?.data?.identifier !== undefined) return 'managed';
+    if (docs.length >= 1 && deepIdentifier(docs) !== undefined) return 'managed';
     if (first == null) throw new YamlParseError(label, new Error('YAML document is empty'));
     return 'canonical';
   }
 
-  _parseCanonical(doc: Record<string, any>) {
+  _parseCanonical(doc: YamlDoc) {
     const localizations: Record<string, LocalizedConceptJson> = {};
     for (const key of Object.keys(doc)) {
-      if (!STRUCTURAL_KEYS.has(key) && typeof doc[key] === 'object' && doc[key] !== null) {
-        localizations[key] = doc[key];
+      const val = doc[key];
+      if (!STRUCTURAL_KEYS.has(key) && typeof val === 'object' && val !== null) {
+        localizations[key] = val as LocalizedConceptJson;
       }
     }
     return new Concept({
@@ -93,11 +116,11 @@ export class ConceptParser {
   }
 
   _parseManaged(docs: unknown[]) {
-    const mc = docs[0] as Record<string, any>;
+    const mc: YamlDoc = docs[0] as YamlDoc;
     const localizations: Record<string, LocalizedConceptJson> = {};
 
     for (const doc of docs.slice(1)) {
-      const d = doc as Record<string, any>;
+      const d = doc as YamlDoc;
       if (!d?.data?.language_code) continue;
       const lang: string = d.data.language_code;
       const lcData = { ...d.data };
@@ -133,7 +156,7 @@ export class ConceptParser {
   }
 }
 
-function assertConceptLevelOnly(mc: Record<string, any>, keys: string[]) {
+function assertConceptLevelOnly(mc: YamlDoc, keys: string[]) {
   const conceptId: string = mc?.data?.identifier ?? '<unknown>';
   for (const key of keys) {
     const camelKey = _camelCase(key);

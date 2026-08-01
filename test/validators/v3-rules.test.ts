@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Concept } from '../../src/models/concept.js';
+import type { Concept as ConceptType } from '../../src/models/concept.js';
 import { Citation } from '../../src/models/citation.js';
 import { ConceptSource } from '../../src/models/concept-source.js';
 import { ConceptRef } from '../../src/models/concept-ref.js';
@@ -15,9 +16,20 @@ import {
   SourceUrnFormatRule,
   NonVerbalRefIntegrityRule,
 } from '../../src/validators/v3-rules.js';
+import type { ValidationRule } from '../../src/validators/validation-rule.js';
 import { validateConcept } from '../../src/validators/index.js';
 
-function makeConcept(opts = {}) {
+interface MakeConceptOpts {
+  id?: string;
+  schemaVersion?: string;
+  domains?: unknown[];
+  related?: unknown[];
+  sources?: unknown[];
+  raw?: Record<string, unknown>;
+  localizations?: Record<string, unknown>;
+}
+
+function makeConcept(opts: MakeConceptOpts = {}): ConceptType {
   return new Concept({
     id: opts.id || 'test-001',
     schemaVersion: opts.schemaVersion,
@@ -33,7 +45,7 @@ function makeConcept(opts = {}) {
   });
 }
 
-function validate(rule, concept) {
+function validate(rule: ValidationRule, concept: ConceptType) {
   const result = new ValidationResult();
   rule.validate(concept, '', result);
   return result;
@@ -216,7 +228,13 @@ test('validateConcept includes RefShapeRule', () => {
 
 import { CiteRefIntegrityRule } from '../../src/validators/v3-rules.js';
 
-function makeConceptForCiteRule({ sources = [], definitionContent = null, notesContent = null, examplesContent = null, annotationsContent = null } = {}) {
+function makeConceptForCiteRule({ sources = [], definitionContent = null, notesContent = null, examplesContent = null, annotationsContent = null }: {
+  sources?: Array<ConceptSource>;
+  definitionContent?: string | null;
+  notesContent?: string | null;
+  examplesContent?: string | null;
+  annotationsContent?: string | null;
+} = {}): Concept {
   const localization = { terms: [{ designation: 'foo' }] };
   if (definitionContent) localization.definition = [{ content: definitionContent }];
   if (notesContent) localization.notes = [{ content: notesContent }];
@@ -344,8 +362,8 @@ test('CiteRefIntegrityRule: warns about unresolved cites nested inside examples'
   });
   const issues = runCiteRule(concept);
   assert.equal(issues.length, 1);
-  assert.match(issues[0].message, /does not resolve/);
-  assert.match(issues[0].path, /notes\[0\]\.examples\[0\]\.content/);
+  assert.match(issues[0]!.message, /does not resolve/);
+  assert.match(issues[0]!.path, /notes\[0\]\.examples\[0\]\.content/);
 });
 
 test('CiteRefIntegrityRule: resolves cites nested inside examples when source exists', () => {

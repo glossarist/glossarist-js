@@ -8,7 +8,6 @@ import { identityOf } from './identity.js';
 import { canonicalJson } from './canonical-json.js';
 import { computeSimilarity } from './similarity.js';
 import type { Concept } from '../models/concept.js';
-import type { LocalizedConcept } from '../models/localized-concept.js';
 
 const CONCEPT_METADATA_FIELDS = Object.freeze([
   'status', 'term', 'uri', 'schemaVersion',

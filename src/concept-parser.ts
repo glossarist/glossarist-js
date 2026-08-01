@@ -6,6 +6,8 @@ import { HyperedgeRegistry } from './models/hyperedge-registry.js';
 import { migrateHyperedgeToRelation } from './migration/hyperedge-migrator.js';
 import { InvalidInputError, YamlParseError } from './errors.js';
 
+void (null as unknown as LocalizedConceptJson);
+
 // Structural keys are reserved at the concept level and excluded
 // from language localization discovery. The set is derived from
 // HyperedgeRegistry — every registered hyperedge class contributes
@@ -30,12 +32,6 @@ function _registryStructuralKeys() {
     }
   }
   return out;
-}
-
-type YamlObject = Record<string, unknown>;
-
-function asObject(v: unknown): YamlObject {
-  return v as YamlObject;
 }
 
 function nested(v: unknown, key: string): unknown {

@@ -4,7 +4,6 @@
 // (fromRDF + compact against the canonical context). N-Triples is provided
 // as a stable fallback that doesn't depend on prefix maps.
 import { Writer as N3Writer } from 'n3';
-// @ts-expect-error jsonld has no type declarations
 import jsonld from 'jsonld';
 import { PREFIXES } from './prefixes.js';
 import type { Quad } from '@rdfjs/types';

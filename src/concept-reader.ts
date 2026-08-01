@@ -8,12 +8,7 @@ import { RelationLoader } from './models/relation-loader.js';
 import { naturalSort } from './sort.js';
 import { InvalidInputError } from './errors.js';
 import { Register } from './models/register.js';
-
-function assertDir(dir: unknown, fnName: string): asserts dir is string {
-  if (typeof dir !== 'string' || dir.trim() === '') {
-    throw new InvalidInputError(`${fnName} requires a directory path`, 'non-empty string');
-  }
-}
+import { assertDir } from './utils/assertions.js';
 
 /**
  * Read all v2 glossarist concept YAML files from a directory, then

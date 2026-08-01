@@ -205,7 +205,7 @@ export const PRED = {
     "hasParentSection": "https://www.glossarist.org/ontologies/hasParentSection",
     "sectionOrdering": "https://www.glossarist.org/ontologies/sectionOrdering",
     "$ns": "https://www.glossarist.org/ontologies/",
-  },
+  } as const,
 
   "skos": {
     "prefLabel": "http://www.w3.org/2004/02/skos/core#prefLabel",
@@ -227,13 +227,13 @@ export const PRED = {
     "narrowMatch": "http://www.w3.org/2004/02/skos/core#narrowMatch",
     "relatedMatch": "http://www.w3.org/2004/02/skos/core#relatedMatch",
     "$ns": "http://www.w3.org/2004/02/skos/core#",
-  },
+  } as const,
 
   "skosxl": {
     "literalForm": "http://www.w3.org/2008/05/skos-xl#literalForm",
     "labelRelation": "http://www.w3.org/2008/05/skos-xl#labelRelation",
     "$ns": "http://www.w3.org/2008/05/skos-xl#",
-  },
+  } as const,
 
   "iso-thes": {
     "broaderGeneric": "http://purl.org/iso25964/skos-thes#broaderGeneric",
@@ -243,19 +243,19 @@ export const PRED = {
     "broaderInstantial": "http://purl.org/iso25964/skos-thes#broaderInstantial",
     "narrowerInstantial": "http://purl.org/iso25964/skos-thes#narrowerInstantial",
     "$ns": "http://purl.org/iso25964/skos-thes#",
-  },
+  } as const,
 
   "dcterms": {
     "bibliographicCitation": "http://purl.org/dc/terms/bibliographicCitation",
     "$ns": "http://purl.org/dc/terms/",
-  },
+  } as const,
 
   "prov": {
     "wasDerivedFrom": "http://www.w3.org/ns/prov#wasDerivedFrom",
     "hadDerivation": "http://www.w3.org/ns/prov#hadDerivation",
     "qualifiedDerivation": "http://www.w3.org/ns/prov#qualifiedDerivation",
     "$ns": "http://www.w3.org/ns/prov#",
-  },
+  } as const,
 
   "rdfs": {
     "label": "http://www.w3.org/2000/01/rdf-schema#label",
@@ -263,14 +263,14 @@ export const PRED = {
     "seeAlso": "http://www.w3.org/2000/01/rdf-schema#seeAlso",
     "subClassOf": "http://www.w3.org/2000/01/rdf-schema#subClassOf",
     "$ns": "http://www.w3.org/2000/01/rdf-schema#",
-  },
+  } as const,
 
   "rdf": {
     "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#value",
     "$ns": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-  },
+  } as const,
 
-};
+} as const;
 
 export const PREFIXES = {
   "gloss": "https://www.glossarist.org/ontologies/",
@@ -285,3 +285,243 @@ export const PREFIXES = {
   "xsd": "http://www.w3.org/2001/XMLSchema#",
   "vann": "http://purl.org/vocab/vann/",
 };
+
+export type Predicate =
+  | "https://www.glossarist.org/ontologies/Concept"
+  | "https://www.glossarist.org/ontologies/ConceptCollection"
+  | "https://www.glossarist.org/ontologies/LocalizedConcept"
+  | "https://www.glossarist.org/ontologies/Designation"
+  | "https://www.glossarist.org/ontologies/Expression"
+  | "https://www.glossarist.org/ontologies/Abbreviation"
+  | "https://www.glossarist.org/ontologies/Symbol"
+  | "https://www.glossarist.org/ontologies/LetterSymbol"
+  | "https://www.glossarist.org/ontologies/GraphicalSymbol"
+  | "https://www.glossarist.org/ontologies/Prefix"
+  | "https://www.glossarist.org/ontologies/Suffix"
+  | "https://www.glossarist.org/ontologies/Pronunciation"
+  | "https://www.glossarist.org/ontologies/GrammarInfo"
+  | "https://www.glossarist.org/ontologies/DetailedDefinition"
+  | "https://www.glossarist.org/ontologies/ConceptSource"
+  | "https://www.glossarist.org/ontologies/Citation"
+  | "https://www.glossarist.org/ontologies/CitationRef"
+  | "https://www.glossarist.org/ontologies/ConceptRef"
+  | "https://www.glossarist.org/ontologies/Reference"
+  | "https://www.glossarist.org/ontologies/RelatedConcept"
+  | "https://www.glossarist.org/ontologies/PartitiveHyperedge"
+  | "https://www.glossarist.org/ontologies/PartitiveEnumeration"
+  | "https://www.glossarist.org/ontologies/PluralityMarker"
+  | "https://www.glossarist.org/ontologies/DesignationRelationship"
+  | "https://www.glossarist.org/ontologies/ConceptDate"
+  | "https://www.glossarist.org/ontologies/NonVerbalRepresentation"
+  | "https://www.glossarist.org/ontologies/NonVerbalEntity"
+  | "https://www.glossarist.org/ontologies/SharedNonVerbalEntity"
+  | "https://www.glossarist.org/ontologies/Figure"
+  | "https://www.glossarist.org/ontologies/Table"
+  | "https://www.glossarist.org/ontologies/Formula"
+  | "https://www.glossarist.org/ontologies/FigureImage"
+  | "https://www.glossarist.org/ontologies/CustomLocality"
+  | "https://www.glossarist.org/ontologies/Locality"
+  | "https://www.glossarist.org/ontologies/DatasetRegister"
+  | "https://www.glossarist.org/ontologies/Section"
+  | "https://www.glossarist.org/ontologies/identifier"
+  | "https://www.glossarist.org/ontologies/uri"
+  | "https://www.glossarist.org/ontologies/hasLocalization"
+  | "https://www.glossarist.org/ontologies/isLocalizationOf"
+  | "https://www.glossarist.org/ontologies/hasStatus"
+  | "https://www.glossarist.org/ontologies/hasDomain"
+  | "https://www.glossarist.org/ontologies/tag"
+  | "https://www.glossarist.org/ontologies/hasRelatedConcept"
+  | "https://www.glossarist.org/ontologies/hasDate"
+  | "https://www.glossarist.org/ontologies/hasSource"
+  | "https://www.glossarist.org/ontologies/hasEntryStatus"
+  | "https://www.glossarist.org/ontologies/hasDesignation"
+  | "https://www.glossarist.org/ontologies/hasDefinition"
+  | "https://www.glossarist.org/ontologies/hasNote"
+  | "https://www.glossarist.org/ontologies/hasExample"
+  | "https://www.glossarist.org/ontologies/hasScopedExample"
+  | "https://www.glossarist.org/ontologies/hasAnnotation"
+  | "https://www.glossarist.org/ontologies/hasNonVerbalRep"
+  | "https://www.glossarist.org/ontologies/domain"
+  | "https://www.glossarist.org/ontologies/release"
+  | "https://www.glossarist.org/ontologies/lineageSimilarity"
+  | "https://www.glossarist.org/ontologies/reviewType"
+  | "https://www.glossarist.org/ontologies/normativeStatus"
+  | "https://www.glossarist.org/ontologies/hasPronunciation"
+  | "https://www.glossarist.org/ontologies/hasTermType"
+  | "https://www.glossarist.org/ontologies/classification"
+  | "https://www.glossarist.org/ontologies/hasReference"
+  | "https://www.glossarist.org/ontologies/hasGrammarInfo"
+  | "https://www.glossarist.org/ontologies/geographicalArea"
+  | "https://www.glossarist.org/ontologies/isInternational"
+  | "https://www.glossarist.org/ontologies/isAbsent"
+  | "https://www.glossarist.org/ontologies/register"
+  | "https://www.glossarist.org/ontologies/prefix"
+  | "https://www.glossarist.org/ontologies/usageInfo"
+  | "https://www.glossarist.org/ontologies/fieldOfApplication"
+  | "https://www.glossarist.org/ontologies/isAcronym"
+  | "https://www.glossarist.org/ontologies/isInitialism"
+  | "https://www.glossarist.org/ontologies/isTruncation"
+  | "https://www.glossarist.org/ontologies/text"
+  | "https://www.glossarist.org/ontologies/image"
+  | "https://www.glossarist.org/ontologies/caption"
+  | "https://www.glossarist.org/ontologies/altText"
+  | "https://www.glossarist.org/ontologies/description"
+  | "https://www.glossarist.org/ontologies/expression"
+  | "https://www.glossarist.org/ontologies/latexForm"
+  | "https://www.glossarist.org/ontologies/content"
+  | "https://www.glossarist.org/ontologies/hasSubfigure"
+  | "https://www.glossarist.org/ontologies/src"
+  | "https://www.glossarist.org/ontologies/format"
+  | "https://www.glossarist.org/ontologies/role"
+  | "https://www.glossarist.org/ontologies/pronunciationContent"
+  | "https://www.glossarist.org/ontologies/pronunciationLanguage"
+  | "https://www.glossarist.org/ontologies/pronunciationScript"
+  | "https://www.glossarist.org/ontologies/pronunciationCountry"
+  | "https://www.glossarist.org/ontologies/pronunciationSystem"
+  | "https://www.glossarist.org/ontologies/relationshipType"
+  | "https://www.glossarist.org/ontologies/relationshipContent"
+  | "https://www.glossarist.org/ontologies/relationshipRef"
+  | "https://www.glossarist.org/ontologies/relatedConceptBroader"
+  | "https://www.glossarist.org/ontologies/relatedConceptNarrower"
+  | "https://www.glossarist.org/ontologies/hasPartitiveHyperedge"
+  | "https://www.glossarist.org/ontologies/comprehensive"
+  | "https://www.glossarist.org/ontologies/hasPart"
+  | "https://www.glossarist.org/ontologies/enumeration"
+  | "https://www.glossarist.org/ontologies/hasPluralityMarker"
+  | "https://www.glossarist.org/ontologies/hyperedgeContent"
+  | "https://www.glossarist.org/ontologies/PartitiveRelation"
+  | "https://www.glossarist.org/ontologies/PartitiveMember"
+  | "https://www.glossarist.org/ontologies/hasPartitiveRelation"
+  | "https://www.glossarist.org/ontologies/hasPartitive"
+  | "https://www.glossarist.org/ontologies/completeness"
+  | "https://www.glossarist.org/ontologies/presence"
+  | "https://www.glossarist.org/ontologies/count"
+  | "https://www.glossarist.org/ontologies/multiplicity"
+  | "https://www.glossarist.org/ontologies/isDelimiting"
+  | "https://www.glossarist.org/ontologies/criterion"
+  | "https://www.glossarist.org/ontologies/provides"
+  | "https://www.glossarist.org/ontologies/providedBy"
+  | "https://www.glossarist.org/ontologies/refType"
+  | "https://www.glossarist.org/ontologies/source"
+  | "https://www.glossarist.org/ontologies/urn"
+  | "https://www.glossarist.org/ontologies/term"
+  | "https://www.glossarist.org/ontologies/refId"
+  | "https://www.glossarist.org/ontologies/refVersion"
+  | "https://www.glossarist.org/ontologies/refLink"
+  | "https://www.glossarist.org/ontologies/sourceType"
+  | "https://www.glossarist.org/ontologies/sourceStatus"
+  | "https://www.glossarist.org/ontologies/sourceId"
+  | "https://www.glossarist.org/ontologies/sourceOrigin"
+  | "https://www.glossarist.org/ontologies/modification"
+  | "https://www.glossarist.org/ontologies/sourcedFrom"
+  | "https://www.glossarist.org/ontologies/hasCitationRef"
+  | "https://www.glossarist.org/ontologies/hasCitationLocality"
+  | "https://www.glossarist.org/ontologies/citationOriginal"
+  | "https://www.glossarist.org/ontologies/hasCustomLocality"
+  | "https://www.glossarist.org/ontologies/citationRefSource"
+  | "https://www.glossarist.org/ontologies/citationRefId"
+  | "https://www.glossarist.org/ontologies/citationRefVersion"
+  | "https://www.glossarist.org/ontologies/conceptRefSource"
+  | "https://www.glossarist.org/ontologies/conceptRefId"
+  | "https://www.glossarist.org/ontologies/conceptRefText"
+  | "https://www.glossarist.org/ontologies/customLocalityName"
+  | "https://www.glossarist.org/ontologies/customLocalityValue"
+  | "https://www.glossarist.org/ontologies/citationLink"
+  | "https://www.glossarist.org/ontologies/hasLocality"
+  | "https://www.glossarist.org/ontologies/dateValue"
+  | "https://www.glossarist.org/ontologies/dateType"
+  | "https://www.glossarist.org/ontologies/eventDescription"
+  | "https://www.glossarist.org/ontologies/representationType"
+  | "https://www.glossarist.org/ontologies/representationRef"
+  | "https://www.glossarist.org/ontologies/representationText"
+  | "https://www.glossarist.org/ontologies/localityType"
+  | "https://www.glossarist.org/ontologies/referenceFrom"
+  | "https://www.glossarist.org/ontologies/referenceTo"
+  | "https://www.glossarist.org/ontologies/gender"
+  | "https://www.glossarist.org/ontologies/number"
+  | "https://www.glossarist.org/ontologies/isNoun"
+  | "https://www.glossarist.org/ontologies/isVerb"
+  | "https://www.glossarist.org/ontologies/isAdjective"
+  | "https://www.glossarist.org/ontologies/isAdverb"
+  | "https://www.glossarist.org/ontologies/isPreposition"
+  | "https://www.glossarist.org/ontologies/isParticiple"
+  | "https://www.glossarist.org/ontologies/partOfSpeech"
+  | "https://www.glossarist.org/ontologies/script"
+  | "https://www.glossarist.org/ontologies/conversionSystem"
+  | "https://www.glossarist.org/ontologies/deprecates"
+  | "https://www.glossarist.org/ontologies/deprecatedBy"
+  | "https://www.glossarist.org/ontologies/supersedes"
+  | "https://www.glossarist.org/ontologies/supersededBy"
+  | "https://www.glossarist.org/ontologies/compares"
+  | "https://www.glossarist.org/ontologies/contrasts"
+  | "https://www.glossarist.org/ontologies/sequentiallyRelated"
+  | "https://www.glossarist.org/ontologies/spatiallyRelated"
+  | "https://www.glossarist.org/ontologies/temporallyRelated"
+  | "https://www.glossarist.org/ontologies/hasHomograph"
+  | "https://www.glossarist.org/ontologies/hasFalseFriend"
+  | "https://www.glossarist.org/ontologies/abbreviatedFormFor"
+  | "https://www.glossarist.org/ontologies/shortFormFor"
+  | "https://www.glossarist.org/ontologies/hasDesignationRelationship"
+  | "https://www.glossarist.org/ontologies/designationRelationshipType"
+  | "https://www.glossarist.org/ontologies/designationRelationshipContent"
+  | "https://www.glossarist.org/ontologies/relationshipTarget"
+  | "http://www.w3.org/2004/02/skos/core#prefLabel"
+  | "http://www.w3.org/2004/02/skos/core#altLabel"
+  | "http://www.w3.org/2004/02/skos/core#hiddenLabel"
+  | "http://www.w3.org/2004/02/skos/core#definition"
+  | "http://www.w3.org/2004/02/skos/core#scopeNote"
+  | "http://www.w3.org/2004/02/skos/core#note"
+  | "http://www.w3.org/2004/02/skos/core#example"
+  | "http://www.w3.org/2004/02/skos/core#notation"
+  | "http://www.w3.org/2004/02/skos/core#inScheme"
+  | "http://www.w3.org/2004/02/skos/core#hasTopConcept"
+  | "http://www.w3.org/2004/02/skos/core#broader"
+  | "http://www.w3.org/2004/02/skos/core#narrower"
+  | "http://www.w3.org/2004/02/skos/core#related"
+  | "http://www.w3.org/2004/02/skos/core#exactMatch"
+  | "http://www.w3.org/2004/02/skos/core#closeMatch"
+  | "http://www.w3.org/2004/02/skos/core#broadMatch"
+  | "http://www.w3.org/2004/02/skos/core#narrowMatch"
+  | "http://www.w3.org/2004/02/skos/core#relatedMatch"
+  | "http://www.w3.org/2008/05/skos-xl#literalForm"
+  | "http://www.w3.org/2008/05/skos-xl#labelRelation"
+  | "http://purl.org/iso25964/skos-thes#broaderGeneric"
+  | "http://purl.org/iso25964/skos-thes#narrowerGeneric"
+  | "http://purl.org/iso25964/skos-thes#broaderPartitive"
+  | "http://purl.org/iso25964/skos-thes#narrowerPartitive"
+  | "http://purl.org/iso25964/skos-thes#broaderInstantial"
+  | "http://purl.org/iso25964/skos-thes#narrowerInstantial"
+  | "https://www.glossarist.org/ontologies/language"
+  | "http://purl.org/dc/terms/bibliographicCitation"
+  | "http://www.w3.org/ns/prov#wasDerivedFrom"
+  | "http://www.w3.org/ns/prov#hadDerivation"
+  | "http://www.w3.org/ns/prov#qualifiedDerivation"
+  | "http://www.w3.org/2000/01/rdf-schema#label"
+  | "http://www.w3.org/2000/01/rdf-schema#comment"
+  | "http://www.w3.org/2000/01/rdf-schema#seeAlso"
+  | "http://www.w3.org/2000/01/rdf-schema#subClassOf"
+  | "http://www.w3.org/1999/02/22-rdf-syntax-ns#value"
+  | "https://www.glossarist.org/ontologies/datasetId"
+  | "https://www.glossarist.org/ontologies/datasetRef"
+  | "https://www.glossarist.org/ontologies/datasetYear"
+  | "https://www.glossarist.org/ontologies/datasetUrn"
+  | "https://www.glossarist.org/ontologies/datasetUrnAlias"
+  | "https://www.glossarist.org/ontologies/datasetRefAlias"
+  | "https://www.glossarist.org/ontologies/datasetStatus"
+  | "https://www.glossarist.org/ontologies/supersedesDataset"
+  | "https://www.glossarist.org/ontologies/owner"
+  | "https://www.glossarist.org/ontologies/sourceRepo"
+  | "https://www.glossarist.org/ontologies/datasetLanguage"
+  | "https://www.glossarist.org/ontologies/languageOrder"
+  | "https://www.glossarist.org/ontologies/hasSection"
+  | "https://www.glossarist.org/ontologies/hasDefaultOrdering"
+  | "https://www.glossarist.org/ontologies/datasetDescription"
+  | "https://www.glossarist.org/ontologies/aboutPath"
+  | "https://www.glossarist.org/ontologies/logo"
+  | "https://www.glossarist.org/ontologies/sectionId"
+  | "https://www.glossarist.org/ontologies/sectionName"
+  | "https://www.glossarist.org/ontologies/hasChildSection"
+  | "https://www.glossarist.org/ontologies/hasParentSection"
+  | "https://www.glossarist.org/ontologies/sectionOrdering"
+;
+

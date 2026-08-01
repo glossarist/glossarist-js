@@ -21,9 +21,7 @@ export interface GenericMemberJson extends HyperedgeMemberJson {
 export class GenericMember extends HyperedgeMember {
   readonly delimitingCharacteristic: LocalizedString;
 
-  constructor(data: Partial<GenericMemberJson> = {}) {
-    // @ts-expect-error -- Partial<GenericMemberJson> defers the required
-    // delimitingCharacteristic check to _resolveDelimitingCharacteristic.
+  constructor(data: GenericMemberJson = { delimitingCharacteristic: {} }) {
     super(data);
     this.delimitingCharacteristic = _resolveDelimitingCharacteristic(
       data.delimitingCharacteristic,

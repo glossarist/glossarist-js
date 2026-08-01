@@ -4,14 +4,9 @@ import { conceptSerializer } from './concept-serializer.js';
 import { InvalidInputError } from './errors.js';
 import type { Concept } from './models/concept.js';
 import type { Register } from './models/register.js';
+import { assertDir } from './utils/assertions.js';
 
 export type ConceptFormat = 'canonical' | 'managed' | 'auto';
-
-function assertDir(dir: unknown, fnName: string): asserts dir is string {
-  if (typeof dir !== 'string' || dir.trim() === '') {
-    throw new InvalidInputError(`${fnName} requires a directory path`, 'non-empty string');
-  }
-}
 
 export function writeConcept(dir: string, concept: Concept, format: ConceptFormat = 'auto') {
   assertDir(dir, 'writeConcept');

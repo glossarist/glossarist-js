@@ -16,17 +16,17 @@ const DCTERMS_NS = PREFIXES.dcterms;
 const DCAT_NS    = PREFIXES.dcat ?? 'http://www.w3.org/ns/dcat#';
 const XSD_NS     = PREFIXES.xsd;
 
-const FOAF: any = {
+const FOAF = {
   Image: `${FOAF_NS}Image`,
-};
-const DCTERMS: any = {
+} as const;
+const DCTERMS = {
   format: `${DCTERMS_NS}format`,
   language: `${DCTERMS_NS}language`,
-};
-const DCAT: any = {
+} as const;
+const DCAT = {
   byteSize: `${DCAT_NS}byteSize`,
   downloadURL: `${DCAT_NS}downloadURL`,
-};
+} as const;
 const XSD_INTEGER = `${XSD_NS}integer`;
 
 // No hardcoded default base URI. Callers MUST pass baseUri explicitly.

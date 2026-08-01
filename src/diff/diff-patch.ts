@@ -50,7 +50,7 @@ const LOC_METADATA_JSON_KEYS = Object.freeze({
 });
 
 export function applyDiff(oldConcept: Concept, diff: ConceptDiff): Concept {
-  const json = oldConcept.toJSON() as Record<string, any>;
+  const json = oldConcept.toJSON() as Record<string, unknown>;
 
   applyConceptLevelPatch(json, diff.concept);
   applyLanguagePatch(json, diff);
@@ -102,13 +102,13 @@ export function reverseDiff(diff: ConceptDiff): ConceptDiff {
   });
 }
 
-function applyConceptLevelPatch(json: Record<string, any>, conceptDiff: ConceptLevelDiff): void {
-  json.sources = applyListPatch(json.sources ?? [], conceptDiff.sources, (v: unknown) => ConceptSource.identityOf(v as ConceptSource));
-  json.dates = applyListPatch(json.dates ?? [], conceptDiff.dates, (v: unknown) => ConceptDate.identityOf(v as ConceptDate));
-  json.related = applyListPatch(json.related ?? [], conceptDiff.relatedConcepts, (v: unknown) => RelatedConcept.identityOf(v as RelatedConcept));
+function applyConceptLevelPatch(json: Record<string, unknown>, conceptDiff: ConceptLevelDiff): void {
+  json.sources = applyListPatch((json.sources as readonly unknown[]) ?? [], conceptDiff.sources, (v: unknown) => ConceptSource.identityOf(v as ConceptSource));
+  json.dates = applyListPatch((json.dates as readonly unknown[]) ?? [], conceptDiff.dates, (v: unknown) => ConceptDate.identityOf(v as ConceptDate));
+  json.related = applyListPatch((json.related as readonly unknown[]) ?? [], conceptDiff.relatedConcepts, (v: unknown) => RelatedConcept.identityOf(v as RelatedConcept));
 
   for (const cls of HyperedgeRegistry.allClasses()) {
-    const partition = partitionListDiff(conceptDiff.relations, cls as unknown as new (...args: any[]) => unknown);
+    const partition = partitionListDiff(conceptDiff.relations, cls as unknown as new (...args: never[]) => unknown);
     if (!partition.hasChanges) continue;
     const wireKey = cls.wireKey;
     const v1ReadKeys = cls.v1WireKeys ?? [];
@@ -116,44 +116,46 @@ function applyConceptLevelPatch(json: Record<string, any>, conceptDiff: ConceptL
       .map(k => json[k])
       .find(arr => Array.isArray(arr)) ?? json[wireKey] ?? [];
     const classIdentityOf = (cls as unknown as { identityOf?: (v: unknown) => string }).identityOf;
-    json[wireKey] = applyListPatch(existing, partition, classIdentityOf ?? identityOf);
+    json[wireKey] = applyListPatch(existing as readonly unknown[], partition, classIdentityOf ?? identityOf);
     for (const k of v1ReadKeys) {
       if (json[k] != null && json[wireKey] != null) delete json[k];
     }
   }
 
-  json.tags = applyListPatch(json.tags ?? [], conceptDiff.tags, identityOf);
+  json.tags = applyListPatch((json.tags as readonly unknown[]) ?? [], conceptDiff.tags, identityOf);
 
   applyMetadataPatch(json, conceptDiff.metadata, CONCEPT_METADATA_JSON_KEYS);
 }
 
-function applyLanguagePatch(json: Record<string, any>, conceptDiff: ConceptDiff): void {
-  if (!json.localizations) json.localizations = {};
+function applyLanguagePatch(json: Record<string, unknown>, conceptDiff: ConceptDiff): void {
+  const localizations = (json.localizations ?? {}) as Record<string, unknown>;
+  json.localizations = localizations;
   for (const entry of conceptDiff.languages.added) {
     const val = String(entry.value);
-    if (!(val in json.localizations)) {
-      json.localizations[val] = {};
+    if (!(val in localizations)) {
+      localizations[val] = {};
     }
   }
   for (const entry of conceptDiff.languages.removed) {
-    delete json.localizations[String(entry.value)];
+    delete localizations[String(entry.value)];
   }
 }
 
-function applyLocalizedPatch(json: Record<string, any>, lang: string, lcDiff: LocalizedConceptDiff): void {
-  if (!json.localizations) json.localizations = {};
-  if (!(lang in json.localizations)) {
-    json.localizations[lang] = {};
+function applyLocalizedPatch(json: Record<string, unknown>, lang: string, lcDiff: LocalizedConceptDiff): void {
+  const localizations = (json.localizations ?? {}) as Record<string, Record<string, unknown>>;
+  json.localizations = localizations;
+  if (!(lang in localizations)) {
+    localizations[lang] = {};
   }
-  const loc = json.localizations[lang];
+  const loc = localizations[lang]!;
 
-  loc.terms = applyListPatch(loc.terms ?? [], lcDiff.designations, (v: unknown) => Designation.identityOf(v as Designation));
-  loc.definition = applyListPatch(loc.definition ?? [], lcDiff.definitions, (v: unknown) => DetailedDefinition.identityOf(v as DetailedDefinition));
-  loc.notes = applyListPatch(loc.notes ?? [], lcDiff.notes, (v: unknown) => DetailedDefinition.identityOf(v as DetailedDefinition));
-  loc.examples = applyListPatch(loc.examples ?? [], lcDiff.examples, (v: unknown) => DetailedDefinition.identityOf(v as DetailedDefinition));
-  loc.sources = applyListPatch(loc.sources ?? [], lcDiff.sources, (v: unknown) => ConceptSource.identityOf(v as ConceptSource));
-  loc.dates = applyListPatch(loc.dates ?? [], lcDiff.dates, (v: unknown) => ConceptDate.identityOf(v as ConceptDate));
-  loc.related = applyListPatch(loc.related ?? [], lcDiff.related, (v: unknown) => RelatedConcept.identityOf(v as RelatedConcept));
+  loc.terms = applyListPatch((loc.terms as readonly unknown[]) ?? [], lcDiff.designations, (v: unknown) => Designation.identityOf(v as Designation));
+  loc.definition = applyListPatch((loc.definition as readonly unknown[]) ?? [], lcDiff.definitions, (v: unknown) => DetailedDefinition.identityOf(v as DetailedDefinition));
+  loc.notes = applyListPatch((loc.notes as readonly unknown[]) ?? [], lcDiff.notes, (v: unknown) => DetailedDefinition.identityOf(v as DetailedDefinition));
+  loc.examples = applyListPatch((loc.examples as readonly unknown[]) ?? [], lcDiff.examples, (v: unknown) => DetailedDefinition.identityOf(v as DetailedDefinition));
+  loc.sources = applyListPatch((loc.sources as readonly unknown[]) ?? [], lcDiff.sources, (v: unknown) => ConceptSource.identityOf(v as ConceptSource));
+  loc.dates = applyListPatch((loc.dates as readonly unknown[]) ?? [], lcDiff.dates, (v: unknown) => ConceptDate.identityOf(v as ConceptDate));
+  loc.related = applyListPatch((loc.related as readonly unknown[]) ?? [], lcDiff.related, (v: unknown) => RelatedConcept.identityOf(v as RelatedConcept));
 
   applyMetadataPatch(loc, lcDiff.metadata, LOC_METADATA_JSON_KEYS);
 }
@@ -181,7 +183,7 @@ function applyListPatch(existingItems: readonly unknown[], listDiff: ListDiff, i
   return result;
 }
 
-function applyMetadataPatch(target: Record<string, any>, metadataDiff: MetadataDiff, keyMap: Record<string, string>): void {
+function applyMetadataPatch(target: Record<string, unknown>, metadataDiff: MetadataDiff, keyMap: Record<string, string>): void {
   for (const [field, change] of Object.entries(metadataDiff.changes)) {
     const jsonKey = keyMap[field];
     if (!jsonKey) continue;
@@ -234,11 +236,12 @@ function toJsonValue(value: unknown): unknown {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return value;
   }
-  if (typeof (value as any).toJSON === 'function') return (value as any).toJSON();
+  const v = value as { toJSON?: () => unknown };
+  if (typeof v.toJSON === 'function') return v.toJSON();
   return value;
 }
 
-export function partitionListDiff(listDiff: ListDiff | null | undefined, Cls: new (...args: any[]) => unknown): ListDiff {
+export function partitionListDiff(listDiff: ListDiff | null | undefined, Cls: new (...args: never[]) => unknown): ListDiff {
   if (!listDiff) return new ListDiff({ added: [], removed: [], changed: [] });
   return new ListDiff({
     added: listDiff.added.filter(e => e.value instanceof Cls),

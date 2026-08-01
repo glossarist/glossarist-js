@@ -419,7 +419,7 @@ export class ConceptDiff extends GlossaristModel {
   }
 }
 
-type ConceptLike = Concept | { id?: string; languages?: readonly string[]; localization(lang: string): unknown } & Record<string, unknown> | null;
+export type ConceptLike = Concept | { id?: string; languages?: readonly string[]; localization(lang: string): unknown } & Record<string, unknown> | null;
 
 export function diffConcepts(oldConcept: ConceptLike, newConcept: ConceptLike, language?: string | null): ConceptDiff {
   if (!oldConcept && !newConcept) {
@@ -583,7 +583,7 @@ function fullListDiff(items: readonly unknown[], direction: 'added' | 'removed')
   return new ListDiff({ [direction]: items.map(v => new ChangeClass({ value: v })) });
 }
 
-function fullMetadataDiff(obj: Record<string, any>, fields: readonly string[], direction: 'added' | 'removed'): MetadataDiff {
+function fullMetadataDiff(obj: Record<string, unknown>, fields: readonly string[], direction: 'added' | 'removed'): MetadataDiff {
   const changes: Record<string, ChangedType> = {};
   for (const field of fields) {
     const val = obj[field];
@@ -600,13 +600,13 @@ function fullMetadataDiff(obj: Record<string, any>, fields: readonly string[], d
 function diffDesignations(oldTerms: readonly unknown[], newTerms: readonly unknown[]): ListDiff {
   return diffSet(oldTerms, newTerms, {
     identityKey: identityOf,
-    textKey: (d: any) => d?.designation ?? '',
+    textKey: (d: unknown) => (d as { designation?: string } | null)?.designation ?? '',
   });
 }
 
 function diffTextList(oldItems: readonly unknown[], newItems: readonly unknown[]): ListDiff {
   return diffList(oldItems, newItems, {
-    textKey: (d: any) => d?.content ?? '',
+    textKey: (d: unknown) => (d as { content?: string } | null)?.content ?? '',
   });
 }
 
@@ -619,7 +619,7 @@ function diffSources(oldSources: readonly unknown[], newSources: readonly unknow
 function diffDates(oldDates: readonly unknown[], newDates: readonly unknown[]): ListDiff {
   return diffSet(oldDates, newDates, {
     identityKey: identityOf,
-    textKey: (d: any) => d?.date ?? '',
+    textKey: (d: unknown) => (d as { date?: string } | null)?.date ?? '',
   });
 }
 
@@ -653,7 +653,7 @@ function relationIdentityOf(value: unknown): string {
   return identityOf(value);
 }
 
-function filterListDiffByType(listDiff: ListDiff, Cls: new (...args: any[]) => unknown): ListDiff {
+function filterListDiffByType(listDiff: ListDiff, Cls: new (...args: never[]) => unknown): ListDiff {
   if (!listDiff) return listDiff;
   return new ListDiff({
     added: listDiff.added.filter(e => e.value instanceof Cls),
@@ -664,9 +664,10 @@ function filterListDiffByType(listDiff: ListDiff, Cls: new (...args: any[]) => u
   });
 }
 
-function relationText(r: any): string {
+function relationText(r: unknown): string {
   if (!r) return '';
-  return canonicalJson(typeof r.toJSON === 'function' ? r.toJSON() : r);
+  const rx = r as { toJSON?: () => unknown };
+  return canonicalJson(typeof rx.toJSON === 'function' ? rx.toJSON() : r);
 }
 
 function diffStringSet(oldStrings: readonly unknown[], newStrings: readonly unknown[]): ListDiff {
@@ -675,7 +676,7 @@ function diffStringSet(oldStrings: readonly unknown[], newStrings: readonly unkn
   });
 }
 
-function diffMetadata(oldObj: Record<string, any>, newObj: Record<string, any>, fields: readonly string[]): MetadataDiff {
+function diffMetadata(oldObj: Record<string, unknown>, newObj: Record<string, unknown>, fields: readonly string[]): MetadataDiff {
   const changes: Record<string, ChangedType> = {};
   for (const field of fields) {
     const oldVal = oldObj[field];

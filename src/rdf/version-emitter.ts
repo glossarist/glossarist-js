@@ -16,16 +16,16 @@ const PROV_NS    = PREFIXES.prov;
 const DCTERMS_NS = PREFIXES.dcterms;
 const XSD_NS     = PREFIXES.xsd;
 
-const PROV: any = {
+const PROV = {
   Entity: `${PROV_NS}Entity`,
   wasRevisionOf: `${PROV_NS}wasRevisionOf`,
   generatedAtTime: `${PROV_NS}generatedAtTime`,
   wasAssociatedWith: `${PROV_NS}wasAssociatedWith`,
-};
-const DCTERMS: any = {
+} as const;
+const DCTERMS = {
   isVersionOf: `${DCTERMS_NS}isVersionOf`,
   description: `${DCTERMS_NS}description`,
-};
+} as const;
 const XSD_DATE_TIME = `${XSD_NS}dateTime`;
 
 /**

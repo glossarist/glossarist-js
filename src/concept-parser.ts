@@ -44,10 +44,13 @@ function deepIdentifier(docs: unknown[]): unknown {
   return nested(nested(first, 'data'), 'identifier');
 }
 
-// YAML documents are inherently unstructured at parse time — the Concept
-// constructor applies the real type constraints. We use a permissive type
-// here because the alternative (asserting each field shape individually)
-// would duplicate the validation the model layer already does.
+// YAML concept documents carry unstructured data — the Concept
+// constructor applies the real type constraints at a higher level.
+// `any` here is deliberate: YAML is the system boundary, and the
+// model layer enforces field shapes. Other approaches (Record<string,
+// unknown>) would require ~30 casts inside this file, duplicating
+// validation.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type YamlDoc = Record<string, any>;
 
 function _camelCase(s: unknown): string {
@@ -178,7 +181,7 @@ function assertConceptLevelOnly(mc: YamlDoc, keys: string[]) {
 //
 // Adding a new hyperedge type means: declare it on a class, register.
 // The parser picks it up automatically — no edits here.
-function _resolveHyperedgeData(container: Record<string, any> | null): ReadonlyArray<unknown> | null {
+function _resolveHyperedgeData(container: YamlDoc | null): ReadonlyArray<unknown> | null {
   if (!container) return null;
 
   if (Array.isArray(container.relations)) {
@@ -212,12 +215,12 @@ function _resolveHyperedgeData(container: Record<string, any> | null): ReadonlyA
 
 function _addTypeIfMissing(value: unknown, type: string) {
   if (value == null) return null;
-  if (typeof (value as any).toJSON === 'function') {
-    const hash = (value as { toJSON: () => Record<string, unknown> }).toJSON();
+  const v = value as { toJSON?: () => Record<string, unknown>; type?: unknown };
+  if (typeof v.toJSON === 'function') {
+    const hash = v.toJSON();
     return hash.type ? hash : { ...hash, type };
   }
   if (typeof value === 'object') {
-    const v = value as Record<string, unknown>;
     return v.type ? value : { ...value, type };
   }
   return value;
@@ -227,9 +230,10 @@ function _normalizeRelated(arr: unknown) {
   if (!arr || !Array.isArray(arr)) return [];
   return arr.map(r => {
     if (r instanceof RelatedConcept) return r;
-    if ((r as any)?.ref != null && typeof (r as any).ref !== 'object') {
+    const rr = r as { ref?: unknown };
+    if (rr.ref != null && typeof rr.ref !== 'object') {
       throw new InvalidInputError(
-        `RelatedConcept.ref must be an object { source, id }, got: ${typeof (r as any).ref}`,
+        `RelatedConcept.ref must be an object { source, id }, got: ${typeof rr.ref}`,
         'object',
       );
     }

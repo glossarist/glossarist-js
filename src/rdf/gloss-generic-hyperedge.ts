@@ -36,9 +36,17 @@ const HAS_GENERIC_RELATION = 'https://www.glossarist.org/ontologies/hasGenericRe
 const HAS_GENERIC = 'https://www.glossarist.org/ontologies/hasGeneric';
 const GENERIC_RELATION_TYPE = 'https://www.glossarist.org/ontologies/GenericRelation';
 
+interface MemberLike {
+  ref?: { source?: string; id?: string } | null;
+  presence?: string;
+  count?: string;
+  is_delimiting?: boolean;
+  multiplicity?: string;
+}
+
 interface GenericRelationLike {
   comprehensive?: { source?: string; id?: string } | null;
-  members?: ReadonlyArray<any>;
+  members?: ReadonlyArray<MemberLike>;
   completeness?: string | null;
   criterion?: Record<string, unknown> | null;
 }

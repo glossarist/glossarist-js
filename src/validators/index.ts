@@ -75,7 +75,7 @@ export function createConceptValidator() {
 }
 
 export function validateRegister(register: unknown) {
-  return new RegisterValidator().validate(register as any);
+  return new RegisterValidator().validate(register as Parameters<RegisterValidator['validate']>[0]);
 }
 
 export async function validateGcrPackage(pkg: GcrPackage) {

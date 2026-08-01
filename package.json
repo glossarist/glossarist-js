@@ -55,18 +55,18 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "lint": "eslint src/ test/",
-    "typecheck": "tsc --noEmit",
-    "typecheck:test": "tsc -p tsconfig.test.json --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "sync:model": "node scripts/sync-concept-model.mjs",
     "gen:predicates": "node scripts/gen-predicates.mjs",
+    "lint": "eslint src/ test/",
     "prebuild": "npm run gen:predicates",
+    "prepublishOnly": "npm run build && npm run typecheck && npm test",
     "pretest": "node test/fixtures/build-fixtures.mjs",
+    "sync:model": "node scripts/sync-concept-model.mjs",
     "test": "find test \\( -name '*.test.js' -o -name '*.test.ts' \\) | sort | xargs node --import tsx --test",
-    "test:verbose": "find test \\( -name '*.test.js' -o -name '*.test.ts' \\) | sort | xargs node --import tsx --test --test-reporter spec",
     "test:coverage": "find test \\( -name '*.test.js' -o -name '*.test.ts' \\) | sort | xargs node --import tsx --test --experimental-test-coverage",
-    "prepublishOnly": "npm run build && npm run typecheck && npm test"
+    "test:verbose": "find test \\( -name '*.test.js' -o -name '*.test.ts' \\) | sort | xargs node --import tsx --test --test-reporter spec",
+    "typecheck": "tsc --noEmit",
+    "typecheck:test": "tsc -p tsconfig.test.json --noEmit"
   },
   "keywords": [
     "glossarist",

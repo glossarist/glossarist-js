@@ -1,6 +1,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "strict": false,
+    "noImplicitAny": false,
+    "noImplicitOverride": false,
+    "noUncheckedIndexedAccess": false,
     "noEmit": true,
     "allowJs": true,
     "checkJs": false

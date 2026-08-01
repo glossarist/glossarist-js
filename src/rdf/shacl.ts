@@ -16,19 +16,20 @@ import ShaclValidator from 'rdf-validate-shacl';
 // The data-model default export carries its methods on the prototype
 // (non-enumerable), so a spread ({ ...dataModel }) does not capture
 // them. List the RDF/JS surface explicitly.
-const FACTORY: any = {
-  namedNode: dataModel.namedNode.bind(dataModel),
-  blankNode: dataModel.blankNode.bind(dataModel),
-  literal: dataModel.literal.bind(dataModel),
-  variable: dataModel.variable.bind(dataModel),
-  defaultGraph: dataModel.defaultGraph.bind(dataModel),
-  quad: dataModel.quad.bind(dataModel),
-  fromTerm: dataModel.fromTerm.bind(dataModel),
-  fromQuad: dataModel.fromQuad.bind(dataModel),
-  dataset: rdfDatasetFactory.dataset.bind(rdfDatasetFactory),
+type BoundFn = (...args: never[]) => unknown;
+const FACTORY: Record<string, BoundFn> = {
+  namedNode: dataModel.namedNode.bind(dataModel) as BoundFn,
+  blankNode: dataModel.blankNode.bind(dataModel) as BoundFn,
+  literal: dataModel.literal.bind(dataModel) as BoundFn,
+  variable: dataModel.variable.bind(dataModel) as BoundFn,
+  defaultGraph: dataModel.defaultGraph.bind(dataModel) as BoundFn,
+  quad: dataModel.quad.bind(dataModel) as BoundFn,
+  fromTerm: dataModel.fromTerm.bind(dataModel) as BoundFn,
+  fromQuad: dataModel.fromQuad.bind(dataModel) as BoundFn,
+  dataset: rdfDatasetFactory.dataset.bind(rdfDatasetFactory) as BoundFn,
 };
-const createDataset: (quads?: Iterable<unknown>) => any = FACTORY.dataset;
-const ShaclValidatorCtor = (ShaclValidator as any).default ?? ShaclValidator;
+const createDataset: (quads?: Iterable<unknown>) => any = FACTORY.dataset as (quads?: Iterable<unknown>) => any;
+const ShaclValidatorCtor = (ShaclValidator as { default?: typeof ShaclValidator }).default ?? ShaclValidator;
 // Path to the vendored SHACL shapes (synced from glossarist/concept-model
 // via `npm run sync:model`). Resolved relative to this source file so it
 // works regardless of the consumer's cwd.
@@ -82,7 +83,7 @@ export async function loadShapes({ shapesPath = SHAPES_PATH }: { shapesPath?: st
 // quadsToDataset below.
 export async function validateShacl(dataDataset: unknown, { shapes, shapesPath }: { shapes?: unknown; shapesPath?: string } = {}) {
   const shapesDataset = shapes ?? await loadShapes({ shapesPath });
-  const validator = new ShaclValidatorCtor(shapesDataset);
+  const validator = new ShaclValidatorCtor(shapesDataset as never);
   return validator.validate(dataDataset);
 }
 

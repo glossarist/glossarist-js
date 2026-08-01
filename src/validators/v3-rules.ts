@@ -6,6 +6,10 @@ import { GraphicalSymbol } from '../models/designation.js';
 
 type LocalizedConcept = NonNullable<ReturnType<Concept['localization']>>;
 
+interface SourceOriginRef { source?: string; id?: string }
+interface SourceLocality { type?: string; reference_from?: string; referenceFrom?: string }
+interface SourceOrigin { ref?: SourceOriginRef | null; locality?: SourceLocality | null }
+
 const _eachLocalization = (concept: Concept, fn: (lang: string, lc: LocalizedConcept) => void) => {
   for (const lang of concept.languages) {
     const lc = concept.localization(lang);
@@ -22,7 +26,7 @@ export class RefShapeRule extends ValidationRule {
       const sources = lc.sources;
       for (let i = 0; i < sources.length; i++) {
         sourceIdx++;
-        const origin = sources[i]!.origin as any;
+        const origin = sources[i]!.origin as SourceOrigin | null | undefined;
         if (!origin) continue;
 
         const ref = origin.ref;
@@ -40,7 +44,7 @@ export class RefShapeRule extends ValidationRule {
 
     const related = concept.relatedConcepts;
     for (let i = 0; i < related.length; i++) {
-      const ref = related[i]!.ref as any;
+      const ref = related[i]!.ref as SourceOriginRef | null | undefined;
       if (!ref) continue;
       if (!ref.source && !ref.id) {
         this.addIssue(result,
@@ -58,10 +62,10 @@ export class LocalityCompletenessRule extends ValidationRule {
     _eachLocalization(concept, (lang, lc) => {
       const sources = lc.sources;
       for (let i = 0; i < sources.length; i++) {
-        const origin = sources[i]!.origin as any;
+        const origin = sources[i]!.origin as SourceOrigin | null | undefined;
         if (!origin || !origin.locality) continue;
 
-        const loc = origin.locality as any;
+        const loc = origin.locality;
         if (!loc.type) {
           this.addIssue(result,
             `${path}localizations.${lang}.sources[${i}].origin.locality.type`,
@@ -82,7 +86,7 @@ export class LocalizationConsistencyRule extends ValidationRule {
 
   override validate(concept: Concept, path: string, result: ValidationResult) {
     const langs = concept.languages;
-    const raw = concept.raw as any;
+    const raw = concept.raw as { data?: { localized_concepts?: Record<string, unknown> } } | undefined;
     const data = raw?.data || {};
     const declaredLangs = data.localized_concepts
       ? Object.keys(data.localized_concepts)
@@ -115,7 +119,7 @@ export class DomainRefRule extends ValidationRule {
 
   override validate(concept: Concept, path: string, result: ValidationResult) {
     for (let i = 0; i < concept.domains.length; i++) {
-      const json = concept.domains[i]!.toJSON() as any;
+      const json = concept.domains[i]!.toJSON() as { concept_id?: string; urn?: string };
       if (!json.concept_id && !json.urn) {
         this.addIssue(result,
           `${path}domains[${i}]`,
@@ -151,7 +155,7 @@ export class SourceUrnFormatRule extends ValidationRule {
     _eachLocalization(concept, (lang, lc) => {
       const sources = lc.sources;
       for (let i = 0; i < sources.length; i++) {
-        const source = (sources[i]!.origin as any)?.ref?.source;
+        const source = (sources[i]!.origin as SourceOrigin | null | undefined)?.ref?.source;
         if (!source || !source.startsWith('urn:')) continue;
         if (!URN_RE.test(source)) {
           this.addIssue(result,

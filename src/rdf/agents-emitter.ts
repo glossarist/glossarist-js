@@ -15,24 +15,24 @@ const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
 const DCTERMS_NS = PREFIXES.dcterms;
 const RDFS_NS    = PREFIXES.rdfs;
 
-const PROV: any = {
+const PROV = {
   Person: `${PROV_NS}Person`,
   Organization: `${PROV_NS}Organization`,
   Agent: `${PROV_NS}Agent`,
   actedOnBehalfOf: `${PROV_NS}actedOnBehalfOf`,
-};
-const FOAF: any = {
+} as const;
+const FOAF = {
   Person: `${FOAF_NS}Person`,
   Organization: `${FOAF_NS}Organization`,
   name: `${FOAF_NS}name`,
   mbox: `${FOAF_NS}mbox`,
-};
-const DCTERMS: any = {
+} as const;
+const DCTERMS = {
   description: `${DCTERMS_NS}description`,
-};
-const RDFS: any = {
+} as const;
+const RDFS = {
   seeAlso: `${RDFS_NS}seeAlso`,
-};
+} as const;
 
 // No hardcoded default agent/org base URIs. Callers MUST pass agentBase
 // explicitly so agent IRIs reflect the consumer's domain.

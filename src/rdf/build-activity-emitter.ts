@@ -18,7 +18,7 @@ const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
 const GLOSS_NS   = PREFIXES.gloss;
 const XSD_NS     = PREFIXES.xsd;
 
-const PROV: any = {
+const PROV = {
   Activity: `${PROV_NS}Activity`,
   StartingPoint: `${PROV_NS}StartingPoint`,
   EndingPoint: `${PROV_NS}EndingPoint`,
@@ -31,17 +31,17 @@ const PROV: any = {
   used: `${PROV_NS}used`,
   wasAssociatedWith: `${PROV_NS}wasAssociatedWith`,
   version: `${PROV_NS}version`,
-};
-const DCTERMS: any = {
+} as const;
+const DCTERMS = {
   identifier: `${DCTERMS_NS}identifier`,
   description: `${DCTERMS_NS}description`,
-};
-const FOAF: any = {
+} as const;
+const FOAF = {
   Person: `${FOAF_NS}Person`,
-};
-const GLOSS: any = {
+} as const;
+const GLOSS = {
   conceptCount: `${GLOSS_NS}conceptCount`,
-};
+} as const;
 const XSD_DATE_TIME = `${XSD_NS}dateTime`;
 const XSD_INTEGER = `${XSD_NS}integer`;
 

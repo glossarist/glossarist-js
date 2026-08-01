@@ -1,7 +1,12 @@
 import { GlossaristModel } from '../models/base.js';
 import { Added, Removed, Matched, deserializeChange } from './change.js';
 import type { Added as AddedType, Removed as RemovedType, Matched as MatchedType } from './change.js';
-import { ConceptDiff, DiffStats, diffConcepts } from './concept-diff.js';
+import {
+  ConceptDiff,
+  DiffStats,
+  diffConcepts,
+} from './concept-diff.js';
+import type { ConceptLike } from './concept-diff.js';
 import { averageSimilarity } from './similarity.js';
 import type { Concept } from '../models/concept.js';
 
@@ -167,7 +172,7 @@ export function diffConceptCollections(
       continue;
     }
 
-    const diff = diffConcepts(oldConcept as any, newConcept as any, language);
+    const diff = diffConcepts(oldConcept as unknown as ConceptLike, newConcept as unknown as ConceptLike, language);
     if (diff.hasChanges || !options.skipUnchanged) {
       conceptDiffs[id] = diff;
     }
@@ -186,7 +191,8 @@ export function diffConceptCollections(
 function extractConcepts(collection: Iterable<Concept> | Concept[] | null): Concept[] {
   if (collection == null) return [];
   if (Array.isArray(collection)) return collection;
-  if (typeof (collection as any).toArray === 'function') return (collection as any).toArray();
+  const c = collection as Iterable<Concept> & { toArray?: () => Concept[] };
+  if (typeof c.toArray === 'function') return c.toArray();
   if (Symbol.iterator in Object(collection)) return [...collection];
   return [];
 }
@@ -215,7 +221,7 @@ function wrapIdList<T extends ChangeInstance>(data: ReadonlyArray<unknown> | nul
       }
       return c as T;
     }
-    const deserialized = deserializeChange(c as any);
+    const deserialized = deserializeChange(c as Parameters<typeof deserializeChange>[0]);
     if (!(deserialized instanceof expectedClass)) {
       throw new Error(
         `ConceptCollectionDiff: deserialized entry type ` +

@@ -28,11 +28,18 @@ import type { ValidationResult } from './validation-result.js';
 import { refKey, criterionKey } from './ref-keys.js';
 import { AbstractHyperedge } from '../models/abstract-hyperedge.js';
 
+interface HyperedgeLike {
+  members?: ReadonlyArray<unknown>;
+  comprehensive?: { source?: string; id?: string } | null;
+  criterion?: Record<string, unknown> | null;
+  constructor: { name: string; typeTag?: string };
+}
+
 export class HyperedgeCoherenceRule extends ValidationRule {
   constructor() { super('hyperedge-coherence'); }
 
   override validate(concept: Concept, path: string, result: ValidationResult) {
-    const hyperedges = (concept.relations ?? []).filter(r => r instanceof AbstractHyperedge);
+    const hyperedges = (concept.relations ?? []).filter(r => r instanceof AbstractHyperedge) as unknown as HyperedgeLike[];
     if (hyperedges.length === 0) return;
 
     for (let i = 0; i < hyperedges.length; i++) {
@@ -48,10 +55,10 @@ export class HyperedgeCoherenceRule extends ValidationRule {
 
     const seen = new Map<string, number>();
     for (let i = 0; i < hyperedges.length; i++) {
-      const rel = hyperedges[i] as any;
-      const typeTag = rel?.constructor?.typeTag ?? '';
-      const compKey = refKey(rel?.comprehensive ?? null);
-      const critKey = criterionKey(rel?.criterion);
+      const rel = hyperedges[i]!;
+      const typeTag = rel.constructor?.typeTag ?? '';
+      const compKey = refKey(rel.comprehensive ?? null);
+      const critKey = criterionKey(rel.criterion ?? null);
       if (compKey == null || critKey == null) continue;
       const key = `${typeTag}|${compKey}|${critKey}`;
       if (seen.has(key)) {
@@ -65,18 +72,16 @@ export class HyperedgeCoherenceRule extends ValidationRule {
       }
     }
 
-    const byType = new Map<string, any[]>();
+    const byType = new Map<string, HyperedgeLike[]>();
     for (const rel of hyperedges) {
-      const r = rel as any;
-      const typeTag = r?.constructor?.typeTag ?? '';
+      const typeTag = rel.constructor?.typeTag ?? '';
       if (!byType.has(typeTag)) byType.set(typeTag, []);
       byType.get(typeTag)!.push(rel);
     }
     for (const [typeTag, rels] of byType) {
       if (rels.length <= 1) continue;
       for (const rel of rels) {
-        const r = rel as any;
-        if (!r.criterion) {
+        if (!rel.criterion) {
           const idx = hyperedges.indexOf(rel);
           result.addWarning(
             `${path}relations[${idx}].criterion`,
@@ -89,6 +94,4 @@ export class HyperedgeCoherenceRule extends ValidationRule {
   }
 }
 
-// Backward-compat alias. Existing imports of PartitiveRelationCoherenceRule
-// continue to work; the rule is now type-blind.
 export const PartitiveRelationCoherenceRule = HyperedgeCoherenceRule;

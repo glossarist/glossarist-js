@@ -21,7 +21,7 @@ const DCTERMS_NS = PREFIXES.dcterms;
 const SKOS_NS    = PREFIXES.skos;
 const PROV_NS    = PREFIXES.prov;
 
-const DCAT: any = {
+const DCAT = {
   DatasetSeries: `${DCAT_NS}DatasetSeries`,
   Catalog: `${DCAT_NS}Catalog`,
   ConceptScheme: `${SKOS_NS}ConceptScheme`,
@@ -31,17 +31,17 @@ const DCAT: any = {
   theme: `${DCAT_NS}theme`,
   keyword: `${DCAT_NS}keyword`,
   contactPoint: `${DCAT_NS}contactPoint`,
-};
-const DCTERMS: any = {
+} as const;
+const DCTERMS = {
   title: `${DCTERMS_NS}title`,
   description: `${DCTERMS_NS}description`,
   identifier: `${DCTERMS_NS}identifier`,
   subject: `${DCTERMS_NS}subject`,
   publisher: `${DCTERMS_NS}publisher`,
-};
-const PROV: any = {
+} as const;
+const PROV = {
   wasDerivedFrom: `${PROV_NS}wasDerivedFrom`,
-};
+} as const;
 
 /**
  * @typedef {'lineage' | 'topic' | 'family' | 'collection' | 'default'} DatasetGroupKind

@@ -14,7 +14,7 @@ const PROV_NS    = PREFIXES.prov;
 const DCTERMS_NS = PREFIXES.dcterms;
 const XSD_NS     = PREFIXES.xsd;
 
-const PROV: any = {
+const PROV = {
   Activity:        `${PROV_NS}Activity`,
   Entity:          `${PROV_NS}Entity`,
   SoftwareAgent:   `${PROV_NS}SoftwareAgent`,
@@ -24,11 +24,11 @@ const PROV: any = {
   generatedAtTime: `${PROV_NS}generatedAtTime`,
   startedAtTime:   `${PROV_NS}startedAtTime`,
   endedAtTime:     `${PROV_NS}endedAtTime`,
-};
-const DCTERMS: any = {
+} as const;
+const DCTERMS = {
   isVersionOf:  `${DCTERMS_NS}isVersionOf`,
   title:        `${DCTERMS_NS}title`,
-};
+} as const;
 const FOAF_NS = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
 const XSD_DATETIME = `${XSD_NS}dateTime`;
 

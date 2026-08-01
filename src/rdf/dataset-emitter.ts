@@ -52,7 +52,7 @@ export interface DatasetEmitterInput {
   contactIri?: string;
 }
 
-const DCAT: any = {
+const DCAT = {
   Dataset: `${DCAT_NS}Dataset`,
   ConceptScheme: `${SKOS_NS}ConceptScheme`,
   Distribution: `${DCAT_NS}Distribution`,
@@ -62,26 +62,26 @@ const DCAT: any = {
   byteSize: `${DCAT_NS}byteSize`,
   distribution: `${DCAT_NS}distribution`,
   contactPoint: `${DCAT_NS}contactPoint`,
-};
-const DCTERMS: any = {
+} as const;
+const DCTERMS = {
   title: `${DCTERMS_NS}title`,
   description: `${DCTERMS_NS}description`,
   modified: `${DCTERMS_NS}modified`,
   identifier: `${DCTERMS_NS}identifier`,
   language: `${DCTERMS_NS}language`,
   publisher: `${DCTERMS_NS}publisher`,
-};
-const SKOS: any = {
+} as const;
+const SKOS = {
   hasTopConcept: `${SKOS_NS}hasTopConcept`,
   member: `${SKOS_NS}member`,
-};
-const PROV: any = {
+} as const;
+const PROV = {
   wasDerivedFrom: `${PROV_NS}wasDerivedFrom`,
-};
-const GLOSS: any = {
+} as const;
+const GLOSS = {
   hasParentSection: `${GLOSS_NS}hasParentSection`,
   hasChildSection: `${GLOSS_NS}hasChildSection`,
-};
+} as const;
 const XSD_DATE = `${XSD_NS}date`;
 const XSD_INTEGER = `${XSD_NS}integer`;
 

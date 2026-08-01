@@ -4,7 +4,6 @@ import type { MentionParseResult } from './reference-mention.js';
 import type { Concept } from './models/concept.js';
 
 type RefType = 'concept' | 'bibliography' | 'figure' | 'table' | 'formula' | 'dataset' | 'typed-ref' | 'standard';
-type Registry = Record<string, any>;
 
 interface ReferenceExtras {
   uri?: string | null;
@@ -55,24 +54,41 @@ export class Reference {
   }
 }
 
-function refTarget(rc: any): string {
+function refTarget(rc: { content?: string; ref?: ConceptRef | { id?: string; source?: string } | null }): string {
   if (rc.content) return rc.content;
   if (rc.ref instanceof ConceptRef) {
     return rc.ref.id ?? rc.ref.source ?? '';
   }
-  return '';
+  const ref = rc.ref as { id?: string; source?: string } | null | undefined;
+  return ref?.id ?? ref?.source ?? '';
 }
 
-function hyperedgeRefTarget(ref: any): string {
+function hyperedgeRefTarget(ref: { id?: string; source?: string } | null | undefined): string {
   if (!ref) return '';
   if (ref.id) return ref.id;
   if (ref.source) return ref.source;
   return '';
 }
 
+interface RegistryCollection {
+  byId(id: string): unknown;
+  byIdAnd(id: string, version: string): unknown;
+}
+type Registry = Record<string, unknown>;
+type NvrEntity = { findById(id: string): unknown };
+
+function getRegistryCollection(registry: Registry, key: string): RegistryCollection | null {
+  const entry = registry[key] as { concepts?: RegistryCollection } | RegistryCollection | undefined;
+  if (!entry) return null;
+  if (entry && typeof entry === 'object' && 'concepts' in entry && entry.concepts) {
+    return entry.concepts as RegistryCollection;
+  }
+  return entry as RegistryCollection;
+}
+
 export function resolveBibliographyRecord(citationRef: { source?: string; id?: string; version?: string } | null | undefined, registry: Registry): unknown {
   if (!citationRef?.source || !citationRef?.id) return null;
-  const bioColl = registry[`bibliography:${citationRef.source}`]?.concepts;
+  const bioColl = getRegistryCollection(registry, `bibliography:${citationRef.source}`);
   if (!bioColl) return null;
   if (citationRef.version) {
     return bioColl.byIdAnd(citationRef.id, citationRef.version);
@@ -83,7 +99,7 @@ export function resolveBibliographyRecord(citationRef: { source?: string; id?: s
 export function findNonVerbalEntity(ref: { lookupKey?: { entityType?: string; entityId?: string } | null }, registry: Registry): unknown {
   const { entityType, entityId } = ref.lookupKey ?? {};
   if (!entityType || !entityId) return null;
-  const collection = registry[`nvr:${entityType}`];
+  const collection = registry[`nvr:${entityType}`] as Iterable<NvrEntity> | undefined;
   if (!collection) return null;
   for (const entity of collection) {
     const found = entity.findById(entityId);
@@ -97,7 +113,7 @@ export class ReferenceResolver {
     const refs: Reference[] = [];
 
     for (const rc of concept.relatedConcepts) {
-      const target = refTarget(rc as any);
+      const target = refTarget(rc as unknown as Parameters<typeof refTarget>[0]);
       if (target) {
         refs.push(new Reference('concept', target, rc.type, 'relatedConcepts', {
           lookupKey: { id: target },
@@ -293,17 +309,17 @@ export class ReferenceResolver {
     if (lookupKey?.id) {
       const dataset = lookupKey.dataset;
       if (dataset) {
-        return registry[dataset]?.concepts?.byId(lookupKey.id) ?? null;
+        return getRegistryCollection(registry, dataset)?.byId(lookupKey.id) ?? null;
       }
-      for (const entry of Object.values(registry)) {
-        const found = entry?.concepts?.byId(lookupKey.id);
+      for (const key of Object.keys(registry)) {
+        const found = getRegistryCollection(registry, key)?.byId(lookupKey.id);
         if (found) return found;
       }
       return null;
     }
     const resolution = ref.resolution as { datasetId?: string; conceptId?: string } | null | undefined;
     if (ref.uri && resolution?.datasetId) {
-      return registry[resolution.datasetId]?.concepts?.byId(resolution.conceptId) ?? null;
+      return getRegistryCollection(registry, resolution.datasetId)?.byId(resolution.conceptId ?? '') ?? null;
     }
     return null;
   }

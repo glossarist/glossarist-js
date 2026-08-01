@@ -5,6 +5,9 @@ import { Concept } from './models/concept.js';
 import type { LocalizedConceptJson } from './models/localized-concept.js';
 import { InvalidInputError } from './errors.js';
 
+// YAML concept documents are unstructured; the Concept constructor
+// enforces field shapes at a higher level.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type YamlDoc = Record<string, any>;
 
 export class V1Reader {

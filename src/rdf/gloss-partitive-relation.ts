@@ -31,9 +31,17 @@ import { namedNode, literal, quad } from './terms.js';
 
 const COMPLETENESS_NS = 'https://www.glossarist.org/ontologies/completeness/';
 
+interface MemberLike {
+  ref?: { source?: string; id?: string } | null;
+  presence?: string;
+  count?: string;
+  is_delimiting?: boolean;
+  multiplicity?: string;
+}
+
 interface PartitiveRelationLike {
   comprehensive?: { source?: string; id?: string } | null;
-  partitives?: ReadonlyArray<any>;
+  partitives?: ReadonlyArray<MemberLike>;
   completeness?: string | null;
   criterion?: Record<string, unknown> | null;
 }

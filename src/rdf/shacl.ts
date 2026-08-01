@@ -28,7 +28,8 @@ const FACTORY: Record<string, BoundFn> = {
   fromQuad: dataModel.fromQuad.bind(dataModel) as BoundFn,
   dataset: rdfDatasetFactory.dataset.bind(rdfDatasetFactory) as BoundFn,
 };
-const createDataset: (quads?: Iterable<unknown>) => any = FACTORY.dataset as (quads?: Iterable<unknown>) => any;
+type DatasetFactory = (quads?: Iterable<unknown>) => unknown;
+const createDataset: DatasetFactory = FACTORY.dataset as DatasetFactory;
 const ShaclValidatorCtor = (ShaclValidator as { default?: typeof ShaclValidator }).default ?? ShaclValidator;
 // Path to the vendored SHACL shapes (synced from glossarist/concept-model
 // via `npm run sync:model`). Resolved relative to this source file so it
@@ -49,9 +50,9 @@ const SHAPES_PATH = resolve(
 // `shapesPath` option (or future overrides) don't get cross-talk.
 const SHAPES_CACHE = new Map<string, unknown>();
 
-async function parseTurtle(text: string, baseIri: string): Promise<any> {
+async function parseTurtle(text: string, baseIri: string): Promise<unknown> {
   const parser = new N3Parser({ baseIRI: baseIri });
-  const out = createDataset();
+  const out = createDataset() as { add(q: unknown): void };
   return new Promise((resolve, reject) => {
     parser.parse(text, (err, quad) => {
       if (err) reject(err);
@@ -88,7 +89,7 @@ export async function validateShacl(dataDataset: unknown, { shapes, shapesPath }
 }
 
 export function quadsToDataset(quads: Iterable<unknown>): unknown {
-  const ds = createDataset();
+  const ds = createDataset() as { add(q: unknown): void };
   for (const q of quads) ds.add(q);
   return ds;
 }

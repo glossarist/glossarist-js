@@ -21,17 +21,17 @@ export class GcrValidator {
       return;
     }
 
-    let meta: any;
+    let meta: Record<string, unknown> | undefined;
     try {
-      meta = yaml.load(raw);
+      meta = yaml.load(raw) as Record<string, unknown>;
     } catch (e) {
       result.addError(`metadata.yaml: invalid YAML: ${(e as Error).message}`);
       return;
     }
 
-    if (!meta.shortname) result.addError('metadata.yaml missing shortname');
-    if (!meta.version) result.addError('metadata.yaml missing version');
-    if (meta.concept_count == null) result.addError('metadata.yaml missing concept_count');
+    if (!meta!.shortname) result.addError('metadata.yaml missing shortname');
+    if (!meta!.version) result.addError('metadata.yaml missing version');
+    if (meta!.concept_count == null) result.addError('metadata.yaml missing concept_count');
   }
 
   async _validateConcepts(pkg: GcrPackage, result: ValidationResult): Promise<void> {

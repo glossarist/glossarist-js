@@ -18,7 +18,7 @@ export function writeTurtle(quads: Iterable<Quad>, { prefixes = PREFIXES }: { pr
   const sorted = sortQuads(quads);
   return new Promise((resolve, reject) => {
     const writer = new N3Writer({ prefixes, format: 'Turtle' });
-    for (const q of sorted) writer.addQuad(q as any);
+    for (const q of sorted) writer.addQuad(q as Parameters<typeof writer.addQuad>[0]);
     writer.end((err: Error | null, result: string) => {
       if (err) reject(err);
       else resolve(result);
@@ -30,7 +30,7 @@ export function writeNTriples(quads: Iterable<Quad>): Promise<string> {
   const sorted = sortQuads(quads);
   return new Promise((resolve, reject) => {
     const writer = new N3Writer({ format: 'N-Triples' });
-    for (const q of sorted) writer.addQuad(q as any);
+    for (const q of sorted) writer.addQuad(q as Parameters<typeof writer.addQuad>[0]);
     writer.end((err: Error | null, result: string) => {
       if (err) reject(err);
       else resolve(result);

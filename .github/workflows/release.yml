@@ -26,6 +26,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: npm ci
       - run: npm run lint
+      - run: npm run build
       - run: npm test
       - name: Set version from workflow input (patch release)
         if: github.event_name == 'workflow_dispatch'

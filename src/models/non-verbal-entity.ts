@@ -2,7 +2,16 @@ import { RegistrableModel } from './registrable.js';
 import { ConceptSource } from './concept-source.js';
 import type { ConceptSourceJson } from './concept-source.js';
 
-export interface NonVerbalEntityJson {
+// P4 terminology alignment: NonVerbalEntity (which was ambiguous —
+// "non-verbal designation" or "non-concept entity"?) is renamed to
+// NonConceptEntity. This makes the categorical distinction clear:
+//
+//   NonConceptEntity  — Figure/Table/Formula (NOT a concept)
+//   NonVerbRep        — a non-verbal designation of a concept (symbol `kg`)
+//
+// `NonVerbalEntity` remains as a deprecated alias for backward compat.
+
+export interface NonConceptEntityJson {
   caption?: string | null;
   description?: string | null;
   alt?: string | null;
@@ -10,14 +19,17 @@ export interface NonVerbalEntityJson {
   type?: string | null;
 }
 
-export class NonVerbalEntity extends RegistrableModel {
+/** @deprecated Use NonConceptEntityJson. Kept for backward compat. */
+export type NonVerbalEntityJson = NonConceptEntityJson;
+
+export class NonConceptEntity extends RegistrableModel {
   readonly caption: string | null;
   readonly description: string | null;
   readonly alt: string | null;
   protected readonly _rawSources: ReadonlyArray<ConceptSourceJson | ConceptSource>;
   protected _sources: ReadonlyArray<ConceptSource> | null = null;
 
-  constructor(data: NonVerbalEntityJson = {}) {
+  constructor(data: NonConceptEntityJson = {}) {
     super();
     this.caption = data.caption ?? null;
     this.description = data.description ?? null;
@@ -39,10 +51,10 @@ export class NonVerbalEntity extends RegistrableModel {
    * registers without editing the emitter (OCP).
    */
   rdfClass(): string {
-    return 'NonVerbalEntity';
+    return 'NonConceptEntity';
   }
 
-  findById(_targetId: string): NonVerbalEntity | null {
+  findById(_targetId: string): NonConceptEntity | null {
     return null;
   }
 
@@ -50,8 +62,8 @@ export class NonVerbalEntity extends RegistrableModel {
     return [];
   }
 
-  override toJSON(): NonVerbalEntityJson {
-    const obj: NonVerbalEntityJson = {};
+  override toJSON(): NonConceptEntityJson {
+    const obj: NonConceptEntityJson = {};
     if (this.caption != null) obj.caption = this.caption;
     if (this.description != null) obj.description = this.description;
     if (this.alt != null) obj.alt = this.alt;
@@ -59,7 +71,18 @@ export class NonVerbalEntity extends RegistrableModel {
     return obj;
   }
 
-  static override fromJSON(data: NonVerbalEntityJson): NonVerbalEntity {
-    return NonVerbalEntity.fromData(data);
+  static override fromJSON(data: NonConceptEntityJson): NonConceptEntity {
+    return NonConceptEntity.fromData(data);
   }
 }
+
+/**
+ * @deprecated Use NonConceptEntity instead. The old name conflated
+ * non-verbal designations (NonVerbRep — a concept designation like
+ * symbol `kg`) with non-concept entities (Figure/Table/Formula —
+ * standalone entities that are NOT concepts).
+ */
+export const NonVerbalEntity = NonConceptEntity;
+
+/** @deprecated Use NonConceptEntity. Type alias for backward compat. */
+export type NonVerbalEntity = NonConceptEntity;

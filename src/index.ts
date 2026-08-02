@@ -27,7 +27,9 @@ export { ManagedConceptCollection } from './managed-concept-collection.js';
 export { validateConcept, validateRegister, validateGcrPackage, createConceptValidator, ValidationError, ValidationRule, ValidationResult, RegisterValidator, GcrValidator } from './validators/index.js';
 export { conceptUuid, localizedConceptUuid, uuidV5 } from './uuid.js';
 export { ReferenceResolver, Reference, referenceResolver, resolveBibliographyRecord, findNonVerbalEntity } from './reference-resolver.js';
-export { parseMention } from './reference-mention.js';
+export type { CitationClassification, CitationInput, CiteResolution } from './reference-resolver.js';
+export { parseMention, extractMentionsFromText } from './reference-mention.js';
+export type { MentionKind, MentionParseResult, ParseOptions, ExtractedMention } from './reference-mention.js';
 export { ReferenceClassifier } from './render-classification.js';
 export { V1Reader, migrateV1ToV2 } from './v1-reader.js';
 export { GlossaristError, InvalidInputError, YamlParseError } from './errors.js';
@@ -50,6 +52,8 @@ export {
   OPEN_ENDED_PATTERNS,
 } from './validators/extensional-completeness.js';
 export type { ExtensionalDefinitionLike, ExtensionalCompletenessIssue } from './validators/extensional-completeness.js';
+export { validateNoRawHtml } from './validators/raw-html-validator.js';
+export type { HtmlValidationIssue } from './validators/raw-html-validator.js';
 
 export {
   COMPILED_EXTENSIONS,
@@ -75,7 +79,8 @@ export {
   Designation, Expression, Abbreviation, Symbol, GraphicalSymbol,
   Citation, ConceptRef, ConceptSource, RelatedConcept, DesignationRelationship, ConceptReference, ConceptDate,
   DetailedDefinition, NonVerbRep, NON_VERBAL_TYPES,
-  NonVerbalEntity, SharedNonVerbalEntity,
+  NonConceptEntity, NonVerbalEntity,
+  SharedNonVerbalEntity,
   Figure, FigureImage, Table, Formula,
   NonVerbalReference, FigureReference, TableReference, FormulaReference,
   BibliographyEntry, BibliographyData,

@@ -5,6 +5,39 @@ import type { Concept } from './models/concept.js';
 
 type RefType = 'concept' | 'bibliography' | 'figure' | 'table' | 'formula' | 'dataset' | 'typed-ref' | 'standard';
 
+// ── P3: Citation classification as public API ─────────────────────────
+//
+// The four classification values are a public contract:
+//   internal-citation       — case 1: co-deployed, link locally
+//   external-citation       — case 2: routing table, link externally
+//   self-contained-citation — case 3: flat bib record with link
+//   unresolved-citation     — no match
+//
+// concept-browser renders based on these; dataset authors can reason
+// about which classification their citations will get.
+
+export type CitationClassification =
+  | 'internal-citation'
+  | 'external-citation'
+  | 'self-contained-citation'
+  | 'unresolved-citation';
+
+export interface CitationInput {
+  /** The cite key, e.g. `foo` from `{{cite:foo}}` */
+  key?: string | null;
+  /** The source id from the concept's sources array */
+  sourceId?: string | null;
+  /** Optional explicit citation object (with ref.source/ref.id) */
+  ref?: { source?: string | null; id?: string | null; version?: string | null } | null;
+  /** Optional external link URL */
+  link?: string | null;
+}
+
+export interface CiteResolution {
+  classification: CitationClassification;
+  resolved: { registerId: string; conceptId: string } | null;
+}
+
 interface ReferenceExtras {
   uri?: string | null;
   citation?: unknown;
@@ -109,6 +142,59 @@ export function findNonVerbalEntity(ref: { lookupKey?: { entityType?: string; en
 }
 
 export class ReferenceResolver {
+  /**
+   * The canonical citation resolution entry point.
+   *
+   * Walks the cascade: sourceRefs → routing → citation.link → unresolved.
+   * Both classification and navigation target come from this one call,
+   * so they can never disagree.
+   *
+   * Classification mapping:
+   *   internal-citation       — the citation resolves to a concept in the
+   *                             same dataset (sourceDatasetId matches)
+   *   external-citation       — the citation resolves to a concept in a
+   *                             different known dataset (routing entry)
+   *   self-contained-citation — the citation has a flat bib record
+   *                             (citation.link present, no concept resolution)
+   *   unresolved-citation     — no match in any source
+   */
+  resolveCite(
+    citation: CitationInput,
+    sourceDatasetId?: string | null,
+  ): CiteResolution {
+    const ref = citation.ref ?? null;
+    const sourceId = citation.sourceId ?? ref?.source ?? null;
+    const id = citation.key ?? ref?.id ?? null;
+
+    // Case 3: flat bib record with link — self-contained citation.
+    if (citation.link && !sourceId && !id) {
+      return {
+        classification: 'self-contained-citation',
+        resolved: null,
+      };
+    }
+
+    if (!sourceId || !id) {
+      return { classification: 'unresolved-citation', resolved: null };
+    }
+
+    // Case 1: internal — the citation's source dataset matches the current dataset.
+    if (sourceDatasetId && sourceId === sourceDatasetId) {
+      return {
+        classification: 'internal-citation',
+        resolved: { registerId: sourceId, conceptId: id },
+      };
+    }
+
+    // Case 2: external — the citation's source is a different known dataset.
+    // The routing table is consumer-side; we classify as external and let
+    // the caller look up the URL.
+    return {
+      classification: 'external-citation',
+      resolved: { registerId: sourceId, conceptId: id },
+    };
+  }
+
   extractReferences(concept: Concept): Reference[] {
     const refs: Reference[] = [];
 

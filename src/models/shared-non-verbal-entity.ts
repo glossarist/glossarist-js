@@ -1,12 +1,19 @@
-import { NonVerbalEntity } from './non-verbal-entity.js';
-import type { NonVerbalEntityJson } from './non-verbal-entity.js';
+import { NonConceptEntity } from './non-verbal-entity.js';
+import type { NonConceptEntityJson } from './non-verbal-entity.js';
 
-export interface SharedNonVerbalEntityJson extends NonVerbalEntityJson {
+export interface SharedNonVerbalEntityJson extends NonConceptEntityJson {
   id?: string | null;
   identifier?: string | null;
 }
 
-export class SharedNonVerbalEntity extends NonVerbalEntity {
+/**
+ * SharedNonVerbalEntity — a NonConceptEntity with stable identity
+ * (id/identifier). Figure/Table/Formula extend this.
+ *
+ * @deprecated This class will be merged into NonConceptEntity in a
+ * future release. New code should extend NonConceptEntity directly.
+ */
+export class SharedNonVerbalEntity extends NonConceptEntity {
   readonly id: string | null;
   readonly identifier: string | null;
 

@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { RelatedConcept, ConceptRef } from '../../src/models/index.js';
 
-describe('RelatedConcept.target — cross-dataset resolved concept URI', () => {
+describe('RelatedConcept.target — cross-dataset link URL', () => {
   it('accepts a target field in the constructor', () => {
     const rc = new RelatedConcept({
       type: 'superseded_by',
@@ -45,5 +45,48 @@ describe('RelatedConcept.target — cross-dataset resolved concept URI', () => {
     assert.ok(rc.ref instanceof ConceptRef);
     assert.equal(rc.ref?.source, 'CIE S 017:2020');
     assert.equal(rc.ref?.id, '17-21-097');
+  });
+});
+
+describe('RelatedConcept.target — identity includes target (prevents diff data loss)', () => {
+  it('two instances with different target values have different identities', () => {
+    const a = new RelatedConcept({
+      type: 'supersedes',
+      ref: { source: 'ISO', id: '704' },
+      target: 'https://a.com',
+    });
+    const b = new RelatedConcept({
+      type: 'supersedes',
+      ref: { source: 'ISO', id: '704' },
+      target: 'https://b.com',
+    });
+    assert.notEqual(a.identity(), b.identity());
+  });
+
+  it('two instances with the same target value have the same identity', () => {
+    const a = new RelatedConcept({
+      type: 'supersedes',
+      ref: { source: 'ISO', id: '704' },
+      target: 'https://same.com',
+    });
+    const b = new RelatedConcept({
+      type: 'supersedes',
+      ref: { source: 'ISO', id: '704' },
+      target: 'https://same.com',
+    });
+    assert.equal(a.identity(), b.identity());
+  });
+
+  it('identity distinguishes target present from target absent', () => {
+    const withTarget = new RelatedConcept({
+      type: 'see',
+      ref: { source: 'ISO', id: '704' },
+      target: 'https://x.com',
+    });
+    const withoutTarget = new RelatedConcept({
+      type: 'see',
+      ref: { source: 'ISO', id: '704' },
+    });
+    assert.notEqual(withTarget.identity(), withoutTarget.identity());
   });
 });

@@ -32,6 +32,7 @@ export { parseMention, extractMentionsFromText } from './reference-mention.js';
 export type { MentionKind, MentionParseResult, ParseOptions, ExtractedMention } from './reference-mention.js';
 export { parseMentions, parseMentionStrict, InvalidMentionError } from './mentions/parser.js';
 export type { Segment, Mention as StrictMention, TextSegment, Target, TargetType, MentionKind as StrictMentionKind } from './mentions/parser.js';
+export { resolveMention, resolveAll } from './mentions/resolver.js';
 export { ReferenceClassifier } from './render-classification.js';
 export { V1Reader, migrateV1ToV2 } from './v1-reader.js';
 export { GlossaristError, InvalidInputError, YamlParseError } from './errors.js';

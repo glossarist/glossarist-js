@@ -52,8 +52,7 @@ function resolveConceptLike(
   isCite: boolean,
 ): ResolvedMention {
   const target = mention.target;
-  let concept: unknown = null;
-
+  let concept: unknown;
   if (target.type === 'urn') {
     concept = context.resolveConcept?.({ urn: target.urn }) ?? null;
   } else if (target.type === 'dataset_qualified') {

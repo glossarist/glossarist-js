@@ -45,12 +45,15 @@ export interface RelatedConceptJson {
   type?: RelationshipType;
   content?: LocalizedString | string | null;
   ref?: ConceptRefJson | ConceptRef | null;
+  /** Resolved concept URI for cross-dataset relations (e.g. supersedes links). */
+  target?: string | null;
 }
 
 export class RelatedConcept extends GlossaristModel {
   readonly type: RelationshipType;
   readonly content: LocalizedString | null;
   readonly ref: ConceptRef | null;
+  readonly target: string | null;
 
   constructor(data: RelatedConceptJson = {}) {
     super();
@@ -61,6 +64,7 @@ export class RelatedConcept extends GlossaristModel {
         ? data.ref
         : new ConceptRef(data.ref)
       : null;
+    this.target = data.target ?? null;
   }
 
   /**
@@ -77,6 +81,7 @@ export class RelatedConcept extends GlossaristModel {
     const obj: RelatedConceptJson = { type: this.type };
     if (this.content != null) obj.content = this.content;
     if (this.ref != null) obj.ref = this.ref.toJSON();
+    if (this.target != null) obj.target = this.target;
     return obj;
   }
 

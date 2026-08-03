@@ -45,7 +45,16 @@ export interface RelatedConceptJson {
   type?: RelationshipType;
   content?: LocalizedString | string | null;
   ref?: ConceptRefJson | ConceptRef | null;
-  /** Resolved concept URI for cross-dataset relations (e.g. supersedes links). */
+  /**
+   * Explicit cross-dataset link URL authored in the YAML data.
+   *
+   * MECE boundary: `ref` is the canonical, deployment-independent
+   * reference ({source, id}). `target` is an author-provided URL for
+   * cases where the dataset explicitly records a resolved link (e.g.
+   * supersedes links to external standards). The resolver layer
+   * computes runtime URIs from `ref`; `target` is not computed —
+   * it is data.
+   */
   target?: string | null;
 }
 
@@ -89,11 +98,12 @@ export class RelatedConcept extends GlossaristModel {
     value: {
       type?: string;
       ref?: { source?: string | null; id?: string | null } | null;
+      target?: string | null;
     } | null | undefined,
   ): string {
     const v = value ?? {};
     const ref = v.ref;
-    return `${v.type ?? ''}|${ref?.source ?? ''}|${ref?.id ?? ''}`;
+    return `${v.type ?? ''}|${ref?.source ?? ''}|${ref?.id ?? ''}|${v.target ?? ''}`;
   }
 
   override identity(): string {

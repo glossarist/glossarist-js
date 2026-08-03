@@ -52,12 +52,13 @@ function resolveConceptLike(
   isCite: boolean,
 ): ResolvedMention {
   const target = mention.target;
-  let concept: unknown;
-  if (target.type === 'urn') {
-    concept = context.resolveConcept?.({ urn: target.urn }) ?? null;
-  } else if (target.type === 'dataset_qualified') {
-    concept = context.resolveConcept?.({ dataset: target.dataset, id: target.id }) ?? null;
-  } else {
+  const concept = target.type === 'urn'
+    ? context.resolveConcept?.({ urn: target.urn }) ?? null
+    : target.type === 'dataset_qualified'
+      ? context.resolveConcept?.({ dataset: target.dataset, id: target.id }) ?? null
+      : null;
+
+  if (!concept) {
     return {
       status: 'unresolved',
       kind: mention.kind,

@@ -86,7 +86,7 @@ function parseTarget(text: string): Target {
  */
 function validateTargetForKind(kind: MentionKind, target: Target, raw: string, position: number): void {
   const allowed: Record<MentionKind, TargetType[]> = {
-    concept: ['dataset_qualified', 'urn'],
+    concept: ['dataset_qualified', 'urn', 'entity_id'],
     cite: ['dataset_qualified', 'urn'],
     fig: ['entity_id', 'urn'],
     table: ['entity_id', 'urn'],
@@ -124,17 +124,35 @@ function validateTargetForKind(kind: MentionKind, target: Target, raw: string, p
 export function parseMentionStrict(raw: string, position: number = 0): Mention {
   const body = raw.trim();
 
-  // Split kind:target[,label]
+  // Implicit same-dataset concept reference — no kind prefix needed.
+  // {{17-12, label}} and {{designation text, label}} are valid local
+  // concept references within the same dataset.
+  // Only check for implicit forms when there's no recognized kind: prefix.
   const colonIdx = body.indexOf(':');
-  if (colonIdx === -1) {
-    throw new InvalidMentionError(
-      raw,
-      `missing kind prefix — every mention must be {{kind:target}}; got '${body}'`,
-      position,
-    );
+  const KNOWN_KINDS = ['concept', 'cite', 'fig', 'table', 'formula', 'bib', 'link', 'image'];
+
+  // Check if the text before the first colon is a known kind
+  const possibleKind = colonIdx > 0 ? body.slice(0, colonIdx).trim().toLowerCase() : '';
+  const hasKnownKind = KNOWN_KINDS.includes(possibleKind);
+
+  if (!hasKnownKind) {
+    // No kind prefix → implicit same-dataset concept reference.
+    // Split target,label (same as explicit kinds)
+    const commaIdx = body.indexOf(',');
+    const targetStr = (commaIdx >= 0 ? body.slice(0, commaIdx) : body).trim();
+    const label = commaIdx >= 0 ? body.slice(commaIdx + 1).trim() : null;
+    const target = parseTarget(targetStr);
+    return {
+      kind: 'concept',
+      target,
+      label,
+      raw: body,
+      start: position,
+      end: position + raw.length,
+    };
   }
 
-  const kindStr = body.slice(0, colonIdx).trim().toLowerCase();
+  const kindStr = possibleKind;
   const rest = body.slice(colonIdx + 1);
 
   // Split target,label

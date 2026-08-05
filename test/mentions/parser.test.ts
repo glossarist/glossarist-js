@@ -55,30 +55,30 @@ describe('parseMentionStrict — valid mentions', () => {
     assert.equal(m.target.dataset, 'ISO:10241-1');
     assert.equal(m.target.id, '2011');
   });
+
+  it('accepts bare numeric ID as implicit concept (same-dataset)', () => {
+    const m = parseMentionStrict('17-12, achromatic stimulus');
+    assert.equal(m.kind, 'concept');
+    assert.equal(m.target.type, 'entity_id');
+    assert.equal(m.target.id, '17-12');
+    assert.equal(m.label, 'achromatic stimulus');
+  });
+
+  it('accepts designation text as implicit concept (same-dataset)', () => {
+    const m = parseMentionStrict('measurement unit');
+    assert.equal(m.kind, 'concept');
+    assert.equal(m.target.type, 'entity_id');
+    assert.equal(m.target.id, 'measurement unit');
+  });
+
+  it('accepts concept:bare_id as same-dataset reference', () => {
+    const m = parseMentionStrict('concept:112-01-10');
+    assert.equal(m.kind, 'concept');
+    assert.equal(m.target.type, 'entity_id');
+  });
 });
 
 describe('parseMentionStrict — invalid mentions throw errors', () => {
-  it('rejects bare ID without kind prefix', () => {
-    assert.throws(
-      () => parseMentionStrict('measurement unit'),
-      (e: Error) => e instanceof InvalidMentionError && e.message.includes('missing kind prefix'),
-    );
-  });
-
-  it('rejects numeric ID without kind prefix', () => {
-    assert.throws(
-      () => parseMentionStrict('112-01-10'),
-      (e: Error) => e instanceof InvalidMentionError && e.message.includes('missing kind prefix'),
-    );
-  });
-
-  it('rejects concept:bare_id (must be DATASET:ID)', () => {
-    assert.throws(
-      () => parseMentionStrict('concept:112-01-10'),
-      (e: Error) => e instanceof InvalidMentionError && e.message.includes('concept target must be'),
-    );
-  });
-
   it('rejects cite:bare_id (must be DATASET:ID)', () => {
     assert.throws(
       () => parseMentionStrict('cite:sourceId1'),
@@ -106,13 +106,6 @@ describe('parseMentionStrict — invalid mentions throw errors', () => {
       (e: Error) => e instanceof InvalidMentionError && e.message.includes('link target must be'),
     );
   });
-
-  it('rejects unknown kind', () => {
-    assert.throws(
-      () => parseMentionStrict('ref:IEV:702-02-07'),
-      (e: Error) => e instanceof InvalidMentionError && e.message.includes("unknown kind 'ref'"),
-    );
-  });
 });
 
 describe('parseMentions — text segmentation', () => {
@@ -126,7 +119,7 @@ describe('parseMentions — text segmentation', () => {
 
   it('throws on first invalid mention in text', () => {
     assert.throws(
-      () => parseMentions('See {{112-01-10}} for details.'),
+      () => parseMentions('See {{link:/not-a-url}} for details.'),
       InvalidMentionError,
     );
   });

@@ -70,6 +70,22 @@ export abstract class AbstractHyperedge extends GlossaristModel {
 
   hasCriterion(): boolean { return this.criterion != null; }
 
+  get hasExternalMembers(): boolean {
+    return this.members.some(m => m.ref?.isExternal);
+  }
+
+  get hasEllipsisMember(): boolean {
+    return this.members.some(m => m.ref?.isEllipsis);
+  }
+
+  get externalMembers(): ReadonlyArray<HyperedgeMember> {
+    return this.members.filter(m => m.ref?.isExternal);
+  }
+
+  get ellipsisMembers(): ReadonlyArray<HyperedgeMember> {
+    return this.members.filter(m => m.ref?.isEllipsis);
+  }
+
   override identity(): string {
     const Ctor = this.constructor as unknown as { identityOf: (v: unknown) => string };
     return Ctor.identityOf(this);
@@ -93,10 +109,10 @@ function _ensureComprehensive(
   value: ConceptRefJson | ConceptRef | null | undefined,
 ): ConceptRef {
   const ref = value instanceof ConceptRef ? value : new ConceptRef(value ?? {});
-  if (!ref.source && !ref.id && !ref.text) {
+  if (!ref.source && !ref.id && !ref.text && !ref.ellipsis) {
     throw new Error(
       'AbstractHyperedge.comprehensive must be a non-empty ConceptReference ' +
-      '(source, id, or text required)',
+      '(source, id, text, or ellipsis required)',
     );
   }
   return ref;

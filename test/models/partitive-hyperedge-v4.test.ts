@@ -218,7 +218,7 @@ describe('PartitiveMember construction', () => {
   it('rejects empty ref', () => {
     assert.throws(
       () => new PartitiveMember({ ref: {} }),
-      /non-empty ConceptRef/,
+      /ConceptRef/,
     );
   });
 

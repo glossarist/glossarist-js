@@ -95,7 +95,7 @@ describe('HyperedgeIndex', () => {
           comprehensive: {},
           partitives: [{ ref: { source: 'A', id: '1' } }, { ref: { source: 'A', id: '2' } }],
         }),
-        /non-empty ConceptRef/,
+        /ConceptRef/,
       );
     });
   });

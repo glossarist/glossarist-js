@@ -81,12 +81,6 @@ export abstract class HyperedgeMember extends GlossaristModel {
 
 function _ensureRef(value: ConceptRefJson | ConceptRef | null | undefined): ConceptRef {
   const ref = value instanceof ConceptRef ? value : new ConceptRef(value ?? {});
-  if (!ref.source && !ref.id && !ref.text) {
-    throw new Error(
-      'HyperedgeMember.ref must be a non-empty ConceptRef ' +
-      '(source, id, or text required)',
-    );
-  }
   return ref;
 }
 

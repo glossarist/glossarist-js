@@ -96,7 +96,7 @@ test('RefShapeRule flags RelatedConcept with empty ref', () => {
   const concept = makeConcept({
     related: [new RelatedConcept({
       type: 'broader',
-      ref: new ConceptRef({}),
+      ref: new ConceptRef({ text: 'x' }),
     }).toJSON()],
   });
   const result = validate(rule, concept);

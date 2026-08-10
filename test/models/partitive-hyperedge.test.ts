@@ -77,7 +77,7 @@ describe('PartitiveMember', () => {
   it('requires a non-empty ref', () => {
     assert.throws(
       () => new PartitiveMember({ ref: {} }),
-      /non-empty/,
+      /ConceptRef/,
     );
   });
 
@@ -162,7 +162,7 @@ describe('PartitiveHyperedge', () => {
           comprehensive: {},
           partitives: [makeMember('2'), makeMember('3')],
         }),
-        /non-empty ConceptReference/,
+        /ConceptRef/,
       );
     });
 

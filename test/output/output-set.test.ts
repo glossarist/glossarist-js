@@ -117,6 +117,25 @@ describe('CSV writer', () => {
     assert.ok(eng[7]!.includes('line one') && eng[7]!.includes('second sense'));
   });
 
+  // Concepts parsed from YAML (parseConceptYaml) never carry a preset
+  // uri — without uriBase/registerId the column shipped empty
+  // (concept-browser 0.7.136 regression on real datasets).
+  it('fills the uri column from uriBase/registerId when the concept has no preset uri', () => {
+    const bare = new Concept({
+      id: '0.01',
+      termid: '0.01',
+      status: 'valid',
+      localizations: { eng: { terms: [{ designation: 'metrology' }] } },
+    });
+    const rows = parseCsvRows(conceptsToCsv([bare], { uriBase: URI_BASE, registerId: REGISTER_ID }));
+    assert.equal(rows[1]![1], `${URI_BASE}/${REGISTER_ID}/concept/0.01`);
+  });
+
+  it('keeps a preset concept uri verbatim even when uriBase/registerId are given', () => {
+    const rows = parseCsvRows(conceptsToCsv([richConcept()], { uriBase: 'https://other.example', registerId: 'other' }));
+    assert.equal(rows[1]![1], `${URI_BASE}/${REGISTER_ID}/concept/111-01-01`);
+  });
+
   it('definition newlines are embedded inside quoted cells (RFC 4180)', () => {
     const rows = parseCsvRows(conceptsToCsv([richConcept()]));
     const eng = rows[1]!;

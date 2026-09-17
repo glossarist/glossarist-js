@@ -19,6 +19,7 @@ const COMPILED_EXTENSIONS = Object.freeze(new Map([
   ['jsonld', 'jsonld'],
   ['turtle', 'ttl'],
   ['jsonl', 'jsonl'],
+  ['csv', 'csv'],
 ]));
 
 /** Canonical format identifiers, in a stable order. */

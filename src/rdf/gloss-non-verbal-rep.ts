@@ -21,6 +21,7 @@ import { deterministicBnode } from './deterministic-id.js';
 import { namedNode, literal, quad } from './terms.js';
 import { conceptSourceToQuads } from './gloss-source.js';
 import type { ConceptSourceLike } from './gloss-source.js';
+import { stripTrailingSlashes } from '../utils/strings.js';
 
 const DCTERMS_DESCRIPTION = `${PREFIXES.dcterms}description`;
 const DCTERMS_FORMAT = `${PREFIXES.dcterms}format`;
@@ -93,7 +94,7 @@ export function* nonVerbalRepToQuads(nvr: NvrEntity, { parentUri, index, languag
 export function nonVerbalEntityUri(entity: NvrEntity, { registerId, uriBase }: NvrOptions): string {
   const id = String(entity.id ?? entity.identifier ?? '');
   const kind = String(entity.rdfClass() ?? 'NonVerbalEntity').toLowerCase();
-  const base = String(uriBase ?? '').replace(/\/+$/, '');
+  const base = stripTrailingSlashes(uriBase);
   return `${base}/${registerId}/${kind}/${id}`;
 }
 

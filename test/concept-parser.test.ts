@@ -122,6 +122,52 @@ describe('ConceptParser', () => {
       assert.deepEqual(concept.languages, ['eng']);
     });
 
+    // Canonical GCR V3 places language_code at the document TOP level
+    // (glossarist-ruby output; seen in oimlsmart/vocab datasets). The
+    // docs-only nested check silently dropped every localization for
+    // this shape, producing Concepts with empty languages — hollow
+    // CSV/JSON-LD aggregates downstream.
+    it('reads canonical GCR V3 language_code at the document top level', () => {
+      const raw = [
+        '---',
+        'data:',
+        '  identifier: 0.01',
+        '  localized_concepts:',
+        '    eng: 364d2f52-70a7-53e8-bbfd-49d3fc17d867',
+        '    fra: c080c49b-c394-55d0-b2b2-b33811ad2b1d',
+        'id: c792e7e4-fc3e-5ce5-a632-e82b8d570ded',
+        'schema_version: 3',
+        '---',
+        'data:',
+        '  definition:',
+        '    - content: science of measurement and its application',
+        '  terms:',
+        '    - designation: metrology',
+        '      type: expression',
+        '      normative_status: preferred',
+        'language_code: eng',
+        'entry_status: valid',
+        'id: 364d2f52-70a7-53e8-bbfd-49d3fc17d867',
+        '---',
+        'data:',
+        '  definition:',
+        '    - content: science des mesurages et ses applications',
+        '  terms:',
+        '    - designation: métrologie',
+        '      type: expression',
+        '      normative_status: preferred',
+        'language_code: fra',
+        'entry_status: valid',
+        'id: c080c49b-c394-55d0-b2b2-b33811ad2b1d',
+      ].join('\n');
+      const concept = conceptParser.parse(raw);
+      assert.equal(concept.id, '0.01');
+      assert.deepEqual(concept.languages.sort(), ['eng', 'fra']);
+      assert.equal(concept.localization('eng').terms[0].designation, 'metrology');
+      assert.equal(concept.localization('eng').definition[0].content, 'science of measurement and its application');
+      assert.equal(concept.localization('fra').terms[0].designation, 'métrologie');
+    });
+
     it('parses domains from managed concept data', () => {
       const raw = [
         '---',

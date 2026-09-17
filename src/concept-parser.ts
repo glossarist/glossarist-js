@@ -120,8 +120,12 @@ export class ConceptParser {
 
     for (const doc of docs.slice(1)) {
       const d = doc as YamlDoc;
-      if (!d?.data?.language_code) continue;
-      const lang: string = d.data.language_code;
+      // Canonical GCR V3 carries language_code at the document top level;
+      // the managed writer has also produced it nested under `data`.
+      // Read either placement — the docs-only check silently dropped all
+      // localizations for canonical GCR files (hollow Concepts).
+      const lang: string | undefined = d?.language_code ?? d?.data?.language_code;
+      if (!lang) continue;
       const lcData = { ...d.data };
       delete lcData.language_code;
       localizations[lang] = lcData;

@@ -25,6 +25,7 @@ import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { partitiveMemberToQuads } from './gloss-partitive-member.js';
 import { namedNode, literal, quad } from './terms.js';
+import { encodeIriPathSegment } from './iri.js';
 
 const COMPLETENESS_NS = 'https://www.glossarist.org/ontologies/completeness/';
 
@@ -89,7 +90,7 @@ export function genericHyperedgeSubjectUri(parentUri: string, relation: GenericR
   const base = parentUri.replace(/\/concept\/[^/]+$/, '');
   const carrierId = parentUri.split('/concept/')[1] ?? `carrier-${index}`;
   const compId = relation?.comprehensive?.id ?? `comp-${index}`;
-  return `${base}/generic-relation/${carrierId}/${compId}`;
+  return `${base}/generic-relation/${carrierId}/${encodeIriPathSegment(compId)}`;
 }
 
 export const GENERIC_HYPEREDGE_LINK_PREDICATE = HAS_GENERIC_RELATION;
@@ -98,7 +99,7 @@ function conceptRefUri(ref: { id?: string; source?: string } | null | undefined,
   const id = ref?.id;
   if (id) {
     const base = parentUri.split('/concept/')[0];
-    return `${base}/concept/${id}`;
+    return `${base}/concept/${encodeIriPathSegment(id)}`;
   }
   return `urn:glossarist:${ref?.source ?? 'unknown'}:`;
 }

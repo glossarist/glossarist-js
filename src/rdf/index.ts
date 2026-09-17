@@ -10,6 +10,7 @@ export {
 } from './curie.js';
 export { deterministicBnodeId } from './bnode-id.js';
 export { deterministicId, deterministicBnode } from './deterministic-id.js';
+export { encodeIriPathSegment } from './iri.js';
 export { namedNode, blankNode, literal, defaultGraph, quad } from './terms.js';
 export {
   conceptUri,

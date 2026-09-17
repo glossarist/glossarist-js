@@ -2,11 +2,13 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { Parser } from 'n3';
 import {
   bibliographyToQuads,
   bibliographyEntryIri,
   normalizeBibliographyData,
   collectQuads,
+  writeTurtleSync,
 } from '../../src/rdf/index.js';
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
@@ -134,5 +136,47 @@ describe('normalizeBibliographyData', () => {
     assert.deepEqual(normalizeBibliographyData(null), []);
     assert.deepEqual(normalizeBibliographyData(undefined), []);
     assert.deepEqual(normalizeBibliographyData('string'), []);
+  });
+});
+
+// Regression: entry ids taken verbatim from bibliography.yaml (they double
+// as source-citation lookup keys, e.g. "[ISO/IEC 17000:2004, 2.7]") used to
+// be interpolated raw into subject IRIs, emitting unparseable Turtle like
+// <https://host/reg/bib/ISO/IEC 17000:2004>. Seen on oimlsmart viml-*
+// bib.ttl in production.
+describe('bibliography entry IRIs with IRIREF-forbidden characters', () => {
+  const BASE = 'https://oimlsmart.github.io/vocab';
+  const REGISTER = 'viml-2013';
+  const SPACED_IDS = ['ISO/IEC 17000:2004', 'OIML V 2-200:2012'];
+  const EXPECTED_IRIS = [
+    `${BASE}/${REGISTER}/bib/ISO/IEC%2017000:2004`,
+    `${BASE}/${REGISTER}/bib/OIML%20V%202-200:2012`,
+  ];
+
+  it('encodes the entry id segment but keeps the identifier literal verbatim', () => {
+    const quads = collectQuads(bibliographyToQuads({
+      baseUri: BASE,
+      registerId: REGISTER,
+      entries: SPACED_IDS.map((id) => ({ id, reference: id })),
+    }));
+    for (const iri of EXPECTED_IRIS) {
+      assert.ok(quads.some((q) => q.subject.value === iri), `expected subject ${iri}`);
+    }
+    for (const id of SPACED_IDS) {
+      assert.ok(quads.some((q) => q.predicate.value === `${DCTERMS}identifier` && q.object.value === id),
+        'identifier literal must stay verbatim for citation lookup');
+    }
+  });
+
+  it('emits Turtle that parses', () => {
+    const quads = collectQuads(bibliographyToQuads({
+      baseUri: BASE,
+      registerId: REGISTER,
+      entries: SPACED_IDS.map((id) => ({ id, reference: id })),
+    }));
+    const turtle = writeTurtleSync(quads);
+    const parsed = new Parser().parse(turtle);
+    assert.equal(parsed.length, quads.length);
+    assert.ok(parsed.some((q) => q.subject.value === `${BASE}/${REGISTER}/bib/ISO/IEC%2017000:2004`));
   });
 });

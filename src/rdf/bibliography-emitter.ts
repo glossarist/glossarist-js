@@ -12,6 +12,7 @@
 import { namedNode, literal, quad } from './terms.js';
 import { PREFIXES } from './prefixes.js';
 import { RDF_TYPE } from './curie.js';
+import { encodeIriPathSegment } from './iri.js';
 
 // Namespace IRIs from canonical PREFIXES. foaf is absent from the
 // JSON-LD context (therefore not in PREFIXES) — declare locally.
@@ -49,7 +50,7 @@ export interface BibliographyInput {
 
 export function bibliographyEntryIri(registerId: string, entryId: string, baseUri?: string): string {
   if (!baseUri) throw new Error('bibliographyEntryIri requires baseUri — the deployment canonical URI root. glossarist-js does NOT default to glossarist.org because instance data identity must reflect the consumer domain.');
-  return `${baseUri}/${registerId}/bib/${entryId}`;
+  return `${baseUri}/${registerId}/bib/${encodeIriPathSegment(entryId)}`;
 }
 
 export function* bibliographyToQuads(input: BibliographyInput) {

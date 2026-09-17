@@ -13,6 +13,7 @@ import { genericHyperedgeToQuads, genericHyperedgeSubjectUri, GENERIC_HYPEREDGE_
 import { PartitiveHyperedge } from '../models/partitive-hyperedge.js';
 import { GenericHyperedge } from '../models/generic-hyperedge.js';
 import { namedNode, literal, quad } from './terms.js';
+import { stripTrailingSlashes } from '../utils/strings.js';
 
 // Per-type RDF emitter dispatch. Keyed by class. Adding a new hyperedge
 // type with its own emitter means: (1) write the emitter module,
@@ -67,13 +68,13 @@ interface ConceptOptions {
 function nonVerbalReferenceUri(ref: NonVerbalRefLike, options: ConceptOptions): string | null {
   const kind = NVR_KIND_SEGMENT[ref.constructor.name];
   if (!kind || !ref.entityId) return null;
-  const base = String(options.uriBase ?? '').replace(/\/+$/, '');
+  const base = stripTrailingSlashes(options.uriBase);
   return `${base}/${options.registerId}/${kind}/${ref.entityId}`;
 }
 
 export function conceptUri(concept: ConceptLike, { registerId, uriBase }: ConceptOptions): string {
   const id = String(concept.id ?? concept.termid ?? '');
-  const base = String(uriBase ?? '').replace(/\/+$/, '');
+  const base = stripTrailingSlashes(uriBase);
   return `${base}/${registerId}/concept/${id}`;
 }
 

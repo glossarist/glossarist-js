@@ -5,6 +5,7 @@
 //   const ttl = await xform.toTurtle(concept);
 
 import { conceptToQuads } from '../rdf/gloss-concept.js';
+import { stripTrailingSlashes } from '../utils/strings.js';
 import {
   collectQuads,
   writeTurtle,
@@ -32,7 +33,7 @@ export class ConceptToGlossTransform {
 
   constructor(options: { registerId?: string; uriBase?: string; jsonldContext?: unknown } = {}) {
     this.registerId = options.registerId;
-    this.uriBase = (options.uriBase ?? '').replace(/\/+$/, '');
+    this.uriBase = stripTrailingSlashes(options.uriBase);
     if (!this.uriBase) {
       throw new Error(
         'ConceptToGlossTransform requires options.uriBase — the deployment canonical URI root.',

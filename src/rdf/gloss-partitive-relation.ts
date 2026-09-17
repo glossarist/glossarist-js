@@ -28,6 +28,7 @@ import { PRED } from './predicates.js';
 import { WELL_KNOWN } from './prefixes.js';
 import { partitiveMemberToQuads } from './gloss-partitive-member.js';
 import { namedNode, literal, quad } from './terms.js';
+import { encodeIriPathSegment } from './iri.js';
 
 const COMPLETENESS_NS = 'https://www.glossarist.org/ontologies/completeness/';
 
@@ -84,14 +85,14 @@ export function partitiveRelationSubjectUri(parentUri: string, relation: Partiti
   const base = parentUri.replace(/\/concept\/[^/]+$/, '');
   const carrierId = parentUri.split('/concept/')[1] ?? `carrier-${index}`;
   const compId = relation?.comprehensive?.id ?? `comp-${index}`;
-  return `${base}/partitive-relation/${carrierId}/${compId}`;
+  return `${base}/partitive-relation/${carrierId}/${encodeIriPathSegment(compId)}`;
 }
 
 function conceptRefUri(ref: { id?: string; source?: string } | null | undefined, parentUri: string): string {
   const id = ref?.id;
   if (id) {
     const base = parentUri.split('/concept/')[0];
-    return `${base}/concept/${id}`;
+    return `${base}/concept/${encodeIriPathSegment(id)}`;
   }
   return `urn:glossarist:${ref?.source ?? 'unknown'}:`;
 }

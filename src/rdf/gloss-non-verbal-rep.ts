@@ -22,6 +22,7 @@ import { namedNode, literal, quad } from './terms.js';
 import { conceptSourceToQuads } from './gloss-source.js';
 import type { ConceptSourceLike } from './gloss-source.js';
 import { stripTrailingSlashes } from '../utils/strings.js';
+import { encodeIriPathSegment } from './iri.js';
 
 const DCTERMS_DESCRIPTION = `${PREFIXES.dcterms}description`;
 const DCTERMS_FORMAT = `${PREFIXES.dcterms}format`;
@@ -95,7 +96,7 @@ export function nonVerbalEntityUri(entity: NvrEntity, { registerId, uriBase }: N
   const id = String(entity.id ?? entity.identifier ?? '');
   const kind = String(entity.rdfClass() ?? 'NonVerbalEntity').toLowerCase();
   const base = stripTrailingSlashes(uriBase);
-  return `${base}/${registerId}/${kind}/${id}`;
+  return `${base}/${registerId}/${kind}/${encodeIriPathSegment(id)}`;
 }
 
 export function* nonVerbalEntityToQuads(entity: NvrEntity, options: NvrOptions) {

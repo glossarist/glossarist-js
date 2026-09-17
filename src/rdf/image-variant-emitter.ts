@@ -10,6 +10,7 @@
 import { namedNode, literal, quad } from './terms.js';
 import { PREFIXES } from './prefixes.js';
 import { RDF_TYPE } from './curie.js';
+import { encodeIriPathSegment } from './iri.js';
 
 const FOAF_NS    = PREFIXES.foaf ?? 'http://xmlns.com/foaf/0.1/';
 const DCTERMS_NS = PREFIXES.dcterms;
@@ -53,7 +54,7 @@ const MIME_BY_FORMAT: Readonly<Record<ImageFormat, string>> = Object.freeze({
 export function imageVariantIri(input: ImageVariantInput, baseUri: string): string {
   if (!baseUri) throw new Error('imageVariantIri requires baseUri — the deployment canonical URI root.');
   const langSuffix = input.lang ? `${input.lang}.` : '';
-  return `${baseUri}/${input.registerId}/image/${input.figureId}/${langSuffix}${input.format}`;
+  return `${baseUri}/${input.registerId}/image/${encodeIriPathSegment(input.figureId)}/${langSuffix}${input.format}`;
 }
 
 export function* imageVariantToQuads(input: ImageVariantInput, baseUri: string) {

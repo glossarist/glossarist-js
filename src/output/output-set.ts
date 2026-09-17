@@ -128,7 +128,11 @@ export async function emitOutputSet(
         out.jsonl = conceptsToJsonl(concepts);
         break;
       case 'csv':
-        out.csv = conceptsToCsv(concepts, { languageOrder: options.languageOrder });
+        out.csv = conceptsToCsv(concepts, {
+          languageOrder: options.languageOrder,
+          uriBase: options.uriBase,
+          registerId: options.registerId,
+        });
         break;
       case 'yaml': {
         const docs = concepts.map((c) => conceptSerializer.toYaml(c));

@@ -9,6 +9,7 @@
 // the v3 wire-format round-trip tests. No second normalization layer.
 
 import type { Concept } from '../models/concept.js';
+import { conceptUri } from '../rdf/gloss-concept.js';
 
 export const CSV_COLUMNS = Object.freeze([
   'termid',
@@ -28,6 +29,10 @@ export const CSV_COLUMNS = Object.freeze([
 export interface CsvOptions {
   /** Preferred language column order; unlisted languages append after. */
   languageOrder?: readonly string[];
+  /** Deployment URI root + register — fills the `uri` column for concepts
+   * parsed from YAML, which never carry a preset uri. */
+  uriBase?: string;
+  registerId?: string;
 }
 
 function csvEscape(value: string): string {
@@ -84,14 +89,19 @@ function splitTerms(
   return { term: preferred.designation, altTerms };
 }
 
-function conceptRowCells(concept: Concept, lang: string, sources: ReadonlyArray<SourceLike>): string[] {
+function conceptRowCells(concept: Concept, lang: string, sources: ReadonlyArray<SourceLike>, options: CsvOptions = {}): string[] {
   const lc = concept.localization(lang);
   const terms = lc?.terms ?? [];
   const { term, altTerms } = splitTerms(terms);
+  const uri =
+    concept.uri ??
+    (options.uriBase && options.registerId
+      ? conceptUri(concept, { registerId: options.registerId, uriBase: options.uriBase })
+      : '');
 
   return [
     concept.termid ?? concept.id,
-    concept.uri ?? '',
+    uri,
     concept.status ?? '',
     joinSemicolons(concept.domains.map((d) => d.conceptId)),
     lang,
@@ -119,7 +129,7 @@ export function conceptsToCsv(
 
     if (languages.length === 0) {
       rows.push(
-        conceptRowCells(concept, '', concept.sources).map(csvEscape).join(','),
+        conceptRowCells(concept, '', concept.sources, options).map(csvEscape).join(','),
       );
       continue;
     }
@@ -128,7 +138,7 @@ export function conceptsToCsv(
       const lc = concept.localization(lang);
       const sources: ReadonlyArray<SourceLike> =
         lc?.sources?.length ? lc.sources : concept.sources;
-      rows.push(conceptRowCells(concept, lang, sources).map(csvEscape).join(','));
+      rows.push(conceptRowCells(concept, lang, sources, options).map(csvEscape).join(','));
     }
   }
 

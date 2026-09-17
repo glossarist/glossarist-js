@@ -26,7 +26,8 @@ describe('CompiledFormat registry', () => {
     assert.equal(COMPILED_EXTENSIONS.get('jsonld'), 'jsonld');
     assert.equal(COMPILED_EXTENSIONS.get('turtle'), 'ttl');
     assert.equal(COMPILED_EXTENSIONS.get('jsonl'), 'jsonl');
-    assert.equal(COMPILED_EXTENSIONS.size, 4);
+    assert.equal(COMPILED_EXTENSIONS.get('csv'), 'csv');
+    assert.equal(COMPILED_EXTENSIONS.size, 5);
   });
 
   it('COMPILED_FORMATS is a frozen array of known formats', () => {
@@ -46,7 +47,7 @@ describe('CompiledFormat registry', () => {
   });
 
   it('compiledFilename throws for unknown format', () => {
-    assert.throws(() => compiledFilename('csv', '001'), RangeError);
+    assert.throws(() => compiledFilename('rtf', '001'), RangeError);
   });
 
   it('compiledPath returns full ZIP path', () => {
@@ -60,7 +61,7 @@ describe('CompiledFormat registry', () => {
     assert.equal(isKnownFormat('jsonld'), true);
     assert.equal(isKnownFormat('turtle'), true);
     assert.equal(isKnownFormat('jsonl'), true);
-    assert.equal(isKnownFormat('csv'), false);
+    assert.equal(isKnownFormat('csv'), true);
     assert.equal(isKnownFormat(''), false);
   });
 
@@ -273,7 +274,7 @@ describe('GcrWriter with compiled formats', () => {
     await assert.rejects(
       () => GcrWriter.createBuffer({
         concepts: [],
-        compiledFormats: { csv: { '001': 'data' } },
+        compiledFormats: { rtf: { '001': 'data' } },
       }),
       RangeError,
     );

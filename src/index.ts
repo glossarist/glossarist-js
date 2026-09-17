@@ -97,6 +97,29 @@ export {
 
 export { AssetIndex } from './validators/asset-index.js';
 
+// Canonical dataset output-set API (glossarist-js#132). Every format is a
+// projection of the same Concept model walk; turtle/jsonld delegate to the
+// rdf/ quad layer so predicates stay context.jsonld-aligned.
+export {
+  CSV_COLUMNS,
+  conceptsToCsv,
+  conceptToTbx,
+  conceptsToTbx,
+  conceptToJsonl,
+  conceptsToJsonl,
+  conceptToTurtle,
+  emitOutputSet,
+  emitPerConceptFiles,
+  OUTPUT_FORMATS,
+  PER_CONCEPT_FORMATS,
+  type CsvOptions,
+  type TbxOptions,
+  type ConceptTurtleOptions,
+  type OutputFormat,
+  type OutputSet,
+  type EmitOutputSetOptions,
+} from './output/index.js';
+
 export {
   ENTITY_DIRECTORIES,
   ENTITY_TYPES,

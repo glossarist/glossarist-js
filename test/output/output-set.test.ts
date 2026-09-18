@@ -136,6 +136,37 @@ describe('CSV writer', () => {
     assert.equal(rows[1]![1], `${URI_BASE}/${REGISTER_ID}/concept/111-01-01`);
   });
 
+  // The uri column is a link a human opens; deployments whose site routes
+  // differ from their RDF identity pass the route shape here (concept-browser
+  // emits `<uriBase>/dataset/<register>/concept/` to match its SPA routes).
+  it('conceptUriPrefix wins over the uriBase/registerId fallback', () => {
+    const bare = new Concept({
+      id: '0.01',
+      termid: '0.01',
+      status: 'valid',
+      localizations: { eng: { terms: [{ designation: 'metrology' }] } },
+    });
+    const rows = parseCsvRows(conceptsToCsv([bare], {
+      uriBase: URI_BASE,
+      registerId: REGISTER_ID,
+      conceptUriPrefix: `${URI_BASE}/dataset/${REGISTER_ID}/concept/`,
+    }));
+    assert.equal(rows[1]![1], `${URI_BASE}/dataset/${REGISTER_ID}/concept/0.01`);
+  });
+
+  it('conceptUriPrefix applies to the concept identifier', () => {
+    // Concept.termid is a read-only alias of id, so the prefix always
+    // carries the identifier.
+    const both = new Concept({
+      id: '0.02',
+      termid: '0.02',
+      status: 'valid',
+      localizations: { eng: { terms: [{ designation: 'x' }] } },
+    });
+    const rows = parseCsvRows(conceptsToCsv([both], { conceptUriPrefix: 'https://s.example/r/concept/' }));
+    assert.equal(rows[1]![1], 'https://s.example/r/concept/0.02');
+  });
+
   it('definition newlines are embedded inside quoted cells (RFC 4180)', () => {
     const rows = parseCsvRows(conceptsToCsv([richConcept()]));
     const eng = rows[1]!;

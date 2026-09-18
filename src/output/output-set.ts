@@ -48,6 +48,9 @@ export interface EmitOutputSetOptions {
   formats?: readonly OutputFormat[];
   /** Preferred language order for the CSV projection. */
   languageOrder?: readonly string[];
+  /** Optional site-navigation URI prefix for the CSV `uri` column —
+   * wins over the uriBase/registerId RDF-canonical fallback. */
+  conceptUriPrefix?: string;
 }
 
 export type OutputSet = Partial<Record<OutputFormat, string>>;
@@ -132,6 +135,7 @@ export async function emitOutputSet(
           languageOrder: options.languageOrder,
           uriBase: options.uriBase,
           registerId: options.registerId,
+          conceptUriPrefix: options.conceptUriPrefix,
         });
         break;
       case 'yaml': {

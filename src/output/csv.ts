@@ -33,6 +33,12 @@ export interface CsvOptions {
    * parsed from YAML, which never carry a preset uri. */
   uriBase?: string;
   registerId?: string;
+  /** Site-navigation URI prefix (e.g. `<uriBase>/dataset/<register>/concept/`)
+   * — wins over the uriBase/registerId RDF-canonical fallback. The `uri`
+   * column is a link a human opens, so deployments whose site routes differ
+   * from their RDF identity pass the route shape here. Preset `concept.uri`
+   * still wins over both. */
+  conceptUriPrefix?: string;
 }
 
 function csvEscape(value: string): string {
@@ -95,9 +101,11 @@ function conceptRowCells(concept: Concept, lang: string, sources: ReadonlyArray<
   const { term, altTerms } = splitTerms(terms);
   const uri =
     concept.uri ??
-    (options.uriBase && options.registerId
-      ? conceptUri(concept, { registerId: options.registerId, uriBase: options.uriBase })
-      : '');
+    (options.conceptUriPrefix != null
+      ? `${options.conceptUriPrefix}${concept.termid ?? concept.id}`
+      : options.uriBase && options.registerId
+        ? conceptUri(concept, { registerId: options.registerId, uriBase: options.uriBase })
+        : '');
 
   return [
     concept.termid ?? concept.id,

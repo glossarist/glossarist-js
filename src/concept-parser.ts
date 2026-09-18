@@ -6,8 +6,6 @@ import { HyperedgeRegistry } from './models/hyperedge-registry.js';
 import { migrateHyperedgeToRelation } from './migration/hyperedge-migrator.js';
 import { InvalidInputError, YamlParseError } from './errors.js';
 
-void (null as unknown as LocalizedConceptJson);
-
 // Structural keys are reserved at the concept level and excluded
 // from language localization discovery. The set is derived from
 // HyperedgeRegistry — every registered hyperedge class contributes
@@ -119,16 +117,9 @@ export class ConceptParser {
     const localizations: Record<string, LocalizedConceptJson> = {};
 
     for (const doc of docs.slice(1)) {
-      const d = doc as YamlDoc;
-      // Canonical GCR V3 carries language_code at the document top level;
-      // the managed writer has also produced it nested under `data`.
-      // Read either placement — the docs-only check silently dropped all
-      // localizations for canonical GCR files (hollow Concepts).
-      const lang: string | undefined = d?.language_code ?? d?.data?.language_code;
-      if (!lang) continue;
-      const lcData = { ...d.data };
-      delete lcData.language_code;
-      localizations[lang] = lcData;
+      const lang = _localizationLanguage(doc as YamlDoc);
+      if (lang == null) continue;
+      localizations[lang] = _localizationDocData(doc as YamlDoc);
     }
 
     const conceptLevelOnlyKeys = [
@@ -159,8 +150,35 @@ export class ConceptParser {
   }
 }
 
-function assertConceptLevelOnly(mc: YamlDoc, keys: string[]) {
-  const conceptId: string = mc?.data?.identifier ?? '<unknown>';
+// ── GCR V3 localization-document layout ────────────────────────────────
+//
+// Two serializations exist for the per-language documents that follow the
+// concept document in a multi-doc YAML file:
+//
+//   managed (our writer):  { id, data: { language_code, ...fields } }
+//   canonical GCR V3
+//   (glossarist-ruby):     { id, language_code, entry_status, ...siblings,
+//                            data: { terms, definition, ...fields } }
+//
+// These two helpers are the single place that knows the layout. The field
+// payload is the union of top-level siblings and `data:`, with `data:`
+// winning on conflict (our writer's canonical placement).
+
+const LOCALIZATION_DOC_STRUCTURAL_KEYS = new Set(['id', 'language_code', 'schema_version']);
+
+function _localizationLanguage(doc: YamlDoc): string | null {
+  return doc?.language_code ?? doc?.data?.language_code ?? null;
+}
+
+function _localizationDocData(doc: YamlDoc): YamlDoc {
+  const merged: YamlDoc = {};
+  for (const [key, value] of Object.entries(doc)) {
+    if (!LOCALIZATION_DOC_STRUCTURAL_KEYS.has(key)) merged[key] = value;
+  }
+  return { ...merged, ...doc.data };
+}
+
+function assertConceptLevelOnly(mc: YamlDoc, keys: string[]) {  const conceptId: string = mc?.data?.identifier ?? '<unknown>';
   for (const key of keys) {
     const camelKey = _camelCase(key);
     if (mc?.data?.[key] != null && mc[key] == null && mc[camelKey] == null) {

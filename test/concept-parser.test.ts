@@ -168,6 +168,61 @@ describe('ConceptParser', () => {
       assert.equal(concept.localization('fra').terms[0].designation, 'métrologie');
     });
 
+    it('reads top-level entry_status on canonical GCR V3 localization docs', () => {
+      const raw = [
+        '---',
+        'data:',
+        '  identifier: 0.02',
+        '---',
+        'data:',
+        '  terms:',
+        '    - designation: metrology',
+        'language_code: eng',
+        'entry_status: valid',
+        'id: x1',
+      ].join('\n');
+      const concept = conceptParser.parse(raw);
+      assert.equal(concept.localization('eng').entryStatus, 'valid');
+    });
+
+    it('data: placement wins when a field appears at both levels', () => {
+      const raw = [
+        '---',
+        'data:',
+        '  identifier: 0.03',
+        '---',
+        'data:',
+        '  entry_status: draft',
+        '  terms:',
+        '    - designation: from-data',
+        'language_code: eng',
+        'entry_status: valid',
+        'id: x1',
+      ].join('\n');
+      const concept = conceptParser.parse(raw);
+      assert.equal(concept.localization('eng').entryStatus, 'draft');
+    });
+
+    it('does not leak localization-doc structural keys into the payload', () => {
+      const raw = [
+        '---',
+        'data:',
+        '  identifier: 0.04',
+        '---',
+        'data:',
+        '  terms:',
+        '    - designation: x',
+        'language_code: eng',
+        'schema_version: 3',
+        'id: 364d2f52-70a7-53e8-bbfd-49d3fc17d867',
+      ].join('\n');
+      const json = conceptParser.parse(raw).localization('eng').toJSON();
+      // id/schema_version must not leak in; language_code IS re-emitted
+      // by the model itself (its own field, not a passthrough).
+      assert.equal('id' in json, false);
+      assert.equal('schema_version' in json, false);
+    });
+
     it('parses domains from managed concept data', () => {
       const raw = [
         '---',

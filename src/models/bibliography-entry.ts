@@ -1,3 +1,4 @@
+import type { RelatonItem } from 'relaton';
 import { GlossaristModel } from './base.js';
 
 export interface BibliographyEntryJson {
@@ -36,5 +37,22 @@ export class BibliographyEntry extends GlossaristModel {
 
   static override fromJSON(data: BibliographyEntryJson): BibliographyEntry {
     return new BibliographyEntry(data);
+  }
+
+  static fromRelatonItem(item: RelatonItem): BibliographyEntry {
+    const docids = item.docidentifier ?? [];
+    const primary = docids.find((d) => d.primary) ?? docids[0];
+    const id = primary?.content ?? item.id ?? null;
+    const titles = item.title ?? [];
+    const mainTitle = titles.find((t) => t.type === 'main') ?? titles[0];
+    const link = item.source?.find((s) => s.type === 'src')?.content ??
+      item.source?.[0]?.content ?? null;
+    return new BibliographyEntry({
+      id,
+      reference: id,
+      title: mainTitle?.content ?? null,
+      link,
+      type: item.type ?? null,
+    });
   }
 }

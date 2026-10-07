@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { InvalidInputError } from '../../src/errors.js';
 import { BibliographyEntry } from '../../src/models/bibliography-entry.js';
 import { BibliographyData } from '../../src/models/bibliography-data.js';
 
@@ -116,5 +117,54 @@ bibliography:
   it('treats null/undefined as empty', () => {
     assert.equal(new BibliographyData(null).entries.length, 0);
     assert.equal(new BibliographyData(undefined).entries.length, 0);
+  });
+});
+
+describe('BibliographyData.fromRelaton', () => {
+  const isoRecord = [
+    'id: ISO704',
+    'type: standard',
+    'title:',
+    '- content: Terminology work — Principles and methods',
+    '  type: main',
+    'docidentifier:',
+    '- content: ISO 704:2022',
+    '  type: ISO',
+    '  primary: true',
+    'source:',
+    '- content: https://www.iso.org/standard/704',
+    '  type: src',
+  ].join('\n');
+
+  it('imports a single Relaton record', async () => {
+    const data = await BibliographyData.fromRelaton(isoRecord);
+    assert.equal(data.entries.length, 1);
+    const entry = data.entries[0]!;
+    assert.equal(entry.id, 'ISO 704:2022');
+    assert.equal(entry.reference, 'ISO 704:2022');
+    assert.equal(entry.title, 'Terminology work — Principles and methods');
+    assert.equal(entry.link, 'https://www.iso.org/standard/704');
+    assert.equal(entry.type, 'standard');
+  });
+
+  it('imports multi-document Relaton YAML', async () => {
+    const twoDocs = `---\n${isoRecord}\n---\nid: ISO1087-1\ntype: standard\ndocidentifier:\n- content: ISO 1087-1:2019\n  type: ISO\n  primary: true\n`;
+    const data = await BibliographyData.fromRelaton(twoDocs);
+    assert.equal(data.entries.length, 2);
+    assert.equal(data.entries[1]!.id, 'ISO 1087-1:2019');
+    assert.equal(data.entries[1]!.title, null);
+  });
+
+  it('round-trips imported entries through toYAML/fromYAML', async () => {
+    const data = await BibliographyData.fromRelaton(isoRecord);
+    const restored = BibliographyData.fromYAML(data.toYAML());
+    assert.deepEqual(restored.entries[0]!.toJSON(), data.entries[0]!.toJSON());
+  });
+
+  it('throws InvalidInputError on an invalid record', async () => {
+    await assert.rejects(
+      () => BibliographyData.fromRelaton('type: not-a-real-type'),
+      InvalidInputError,
+    );
   });
 });

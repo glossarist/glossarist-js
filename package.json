@@ -102,7 +102,8 @@
     "jsonld": "^9.0.0",
     "jszip": "^3.10.1",
     "n3": "^1.17.0",
-    "rdf-validate-shacl": "^0.6.5"
+    "rdf-validate-shacl": "^0.6.5",
+    "relaton": "^0.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -5,19 +5,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Test Commands
 
 - `npm install` — install dependencies
-- `npm test` — regenerate fixtures (pretest) then run all tests
-- `npm run test:verbose` — run tests with spec reporter
-- `npm run test:coverage` — run tests with coverage report
-- `npm run lint` — lint src/ and test/
-- Run a single test file: `node --test test/gcr-reader.test.js`
-- Run tests matching a pattern: `node --test --test-name-pattern 'pattern' test/**/*.test.js`
-- Rebuild test fixture GCR files manually: `node test/fixtures/build-fixtures.js`
+- `npm run build` — compile TypeScript to `dist/` (tsc, `tsconfig.build.json`; regenerates RDF predicates first)
+- `npm run typecheck` — `tsc --noEmit` over `src/` (strict); `npm run typecheck:test` — over `src/` + `test/` (non-strict)
+- `npm test` — regenerate fixtures (pretest) then run all tests (tsx + Node built-in test runner)
+- `npm run test:verbose` / `npm run test:coverage` — spec reporter / coverage
+- `npm run lint` — eslint over `src/` and `test/`
+- Run a single test file: `node --import tsx --test test/models/bibliography-data.test.ts`
+- Run tests matching a pattern: `node --import tsx --test --test-name-pattern 'pattern' test/**/*.test.ts`
+- Rebuild test fixture GCR files manually: `node test/fixtures/build-fixtures.mjs`
+- Sync vendored concept-model artifacts + regenerate RDF predicates: `npm run sync:model && npm run gen:predicates`
 
 Integration tests in `test/integration.test.js` look for real GCR packages at `/tmp/isotc204-release.gcr` and `/tmp/iev-release.gcr` and skip automatically if absent.
 
 ## Architecture
 
-This is a pure ESM package (`"type": "module"`) with no build step. The public API is re-exported from `src/index.js`. Only `src/` is published to npm.
+This is a TypeScript package (`"type": "module"`) compiled to `dist/` by tsc (published via `prepublishOnly`; `main`/`types` point into `dist`). The public API lives in `src/index.ts` and is re-exported through package `exports` entry points (`glossarist/gcr`, `glossarist/models`, `glossarist/rdf`, `glossarist/transforms`, `glossarist/output`, `glossarist/validators`). Sources are `.ts`; tests run through tsx.
 
 ### Layers (top to bottom)
 
@@ -28,8 +30,8 @@ This is a pure ESM package (`"type": "module"`) with no build step. The public A
 - **Dataset assets** — `DATASET_ASSETS` in `src/dataset-asset.js` defines the known file/directory assets (bibliography.yaml, images/) bundled in GCR packages. `GcrPackage` exposes `bibliography()`, `hasImages()`, `imageFile()`, `imageFileNames()`, `allImageFiles()`; `GcrWriter` accepts `bibliography` and `images` options. Mirrors Ruby glossarist gem's `GcrPackage::DATASET_ASSETS`.
 - **Serialization layer** — `ConceptSerializer` (canonical + managed YAML output)
 - **Parsing layer** — `ConceptParser` (format detection + normalization), `parseConceptYaml` (backward compat)
-- **Model layer** — domain classes with no I/O dependencies: `Concept`, `LocalizedConcept`, `Designation` hierarchy, `Citation`, `DetailedDefinition`, `NonVerbRep`, `ConceptSource`, `RelatedConcept`, `ConceptDate`, `GcrMetadata`, `GcrStatistics`
-- **Supporting** — `GlossaristModel` base class, `ValidationRule` framework, `GcrValidator` (full-package async validation), `ValidationResult`, UUID generation, reference resolution, V1 migration, `naturalSort` (in `src/sort.js`)
+- **Model layer** — domain classes with no I/O dependencies: `Concept`, `LocalizedConcept`, `Designation` hierarchy, `Citation`, `DetailedDefinition`, `NonVerbRep`, `ConceptSource`, `RelatedConcept`, `ConceptDate`, `GcrMetadata`, `GcrStatistics`, `BibliographyData`/`BibliographyEntry` (plus `BibliographyData.fromRelaton` importing Relaton records via the npm `relaton` package — lazily imported, so browser bundles that never call it stay light)
+- **Supporting** — `GlossaristModel` base class, `ValidationRule` framework, `GcrValidator` (full-package async validation), `ValidationResult`, UUID generation, reference resolution, V1 migration, `naturalSort` (in `src/sort.ts`)
 
 ### Error hierarchy
 
@@ -63,7 +65,7 @@ Language codes are discovered dynamically from YAML keys — any object-valued k
 
 ### Testing
 
-Uses Node.js built-in test runner (`node:test` + `node:assert/strict`). Test glob: `test/**/*.test.js` (includes `test/models/` subdirectory). Fixtures are regenerated automatically via `pretest` hook.
+Uses Node.js built-in test runner (`node:test` + `node:assert/strict`) executed through tsx. Test glob: `test/**/*.test.ts` (includes `test/models/` subdirectory). Fixtures are regenerated automatically via `pretest` hook.
 
 ### Linting
 
@@ -71,8 +73,8 @@ ESLint 10 with flat config (`eslint.config.js`). Uses `@eslint/js` recommended c
 
 ### CI/CD
 
-- **CI** (`.github/workflows/ci.yml`): lint + test on Node 20/22/24 + coverage
-- **Release** (`.github/workflows/release.yml`): publish to npm + create GitHub release on `v*` tag push
+- **CI** (`.github/workflows/ci.yml`): lint + typecheck + test matrix (Node 20/22/24) + coverage + `model-drift` job (regenerates `src/rdf/predicates.ts` from the vendored concept-model context; fails when it doesn't reproduce). Vendored-shape provenance: `data/concept-model/SOURCE.json` claims a release tag but the artifacts were synced from concept-model **main** (they contain both `completeness` and the `PartitiveHyperedge` terms). NOTE: upgrading to the v3.1.1 tag remodels partitives (`PartitiveHyperedge`/`PartitiveEnumeration`, `completeness`/`criterion` gone from the context) and requires porting `src/rdf/gloss-partitive-relation.ts` and the Ruby twin first.
+- **Release** (`.github/workflows/release.yml`): publish to npm + create GitHub release — triggered by `v*` tag push or `workflow_dispatch` with a `version` input
 - **Dependabot** (`.github/dependabot.yml`): weekly npm + GitHub Actions dependency updates
 
 ## ABSOLUTE RULE: NEVER HARDCODE DEPLOYMENT CONFIGURATION

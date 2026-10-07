@@ -52,3 +52,17 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run test:coverage
+
+  model-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: npm run gen:predicates
+      - name: Fail when generated predicates drift from the vendored concept-model context
+        run: |
+          git diff --exit-code -- src/rdf \
+            || { echo "::error::src/rdf/predicates.ts does not match the vendored context — run npm run gen:predicates and commit"; exit 1; }

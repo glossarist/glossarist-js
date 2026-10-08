@@ -43,12 +43,12 @@ describe('PartitiveHyperedge RDF shape — cross-repo contract', () => {
     );
   });
 
-  it('emits rdf:type gloss:PartitiveHyperedge', () => {
+  it('emits rdf:type gloss:PartitiveRelation', () => {
     const concept = new Concept({ id: '112-02-09', partitiveRelations: [makeRelation()] });
     const quads = quadsFor(concept);
     assert.ok(quads.some(q =>
       q.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' &&
-      q.object.value === 'https://www.glossarist.org/ontologies/PartitiveHyperedge' &&
+      q.object.value === 'https://www.glossarist.org/ontologies/PartitiveRelation' &&
       q.object.termType === 'NamedNode',
     ));
   });

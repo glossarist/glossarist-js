@@ -336,6 +336,42 @@ describe('emitOutputSet', () => {
     );
   });
 
+  it('jsonld aggregate carries every concept node under one @graph', async () => {
+    const out = await emitOutputSet([richConcept(), bareConcept(), richConcept()], {
+      registerId: REGISTER_ID,
+      uriBase: URI_BASE,
+      formats: ['jsonld'],
+    });
+    const doc = JSON.parse(out.jsonld!);
+    assert.ok(doc['@context']);
+    assert.ok(Array.isArray(doc['@graph']));
+    const ids = (doc['@graph'] as { '@id': string }[]).map((n) => n['@id']);
+    assert.ok(ids.filter((id) => String(id).includes('111-01-01')).length >= 2);
+    assert.ok(ids.some((id) => String(id).includes('222-02-02')));
+  });
+
+  it('chunked jsonld equals the single-pass compaction', async () => {
+    const concepts = [richConcept(), bareConcept(), richConcept()];
+    const out = await emitOutputSet(concepts, {
+      registerId: REGISTER_ID,
+      uriBase: URI_BASE,
+      formats: ['jsonld'],
+    });
+    // The chunked writer assembles per-concept compacted nodes; against a
+    // prefix-only context this must equal the one-pass compaction of all
+    // quads (same nodes, same term selection, sorted by node @id).
+    const { writeJsonld, defaultJsonldContext } = await import('../../src/rdf/document-writer.js');
+    const { conceptToQuads } = await import('../../src/rdf/gloss-concept.js');
+    const quads = concepts.flatMap((c) => [
+      ...(conceptToQuads(c, { registerId: REGISTER_ID, uriBase: URI_BASE }) as Iterable<Quad>),
+    ]);
+    const singlePass = JSON.parse(await writeJsonld(quads, { context: defaultJsonldContext() }));
+    const chunked = JSON.parse(out.jsonld!);
+    const sort = (doc: { '@graph'?: { '@id': string }[] }) =>
+      JSON.stringify((doc['@graph'] ?? [doc]).slice().sort((a, b) => String(a['@id']).localeCompare(String(b['@id']))));
+    assert.equal(sort(chunked), sort(singlePass));
+  });
+
   it('turtle and jsonld share the quad-layer predicates', async () => {
     const out = await emitOutputSet([richConcept()], {
       registerId: REGISTER_ID,

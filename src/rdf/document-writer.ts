@@ -46,7 +46,7 @@ export async function writeJsonld(quads: Iterable<Quad>, { context = defaultJson
   return JSON.stringify(compacted, null, 2);
 }
 
-function defaultJsonldContext(): Record<string, string> {
+export function defaultJsonldContext(): Record<string, string> {
   const ctx: Record<string, string> = {};
   for (const [prefix, uri] of Object.entries(PREFIXES)) {
     ctx[prefix] = uri;

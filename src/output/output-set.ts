@@ -10,7 +10,7 @@
 import type { Quad } from '@rdfjs/types';
 import type { Concept } from '../models/concept.js';
 import { conceptToQuads } from '../rdf/gloss-concept.js';
-import { writeTurtle, writeJsonld } from '../rdf/document-writer.js';
+import { writeTurtle, writeJsonld, defaultJsonldContext } from '../rdf/document-writer.js';
 import { PREFIXES } from '../rdf/prefixes.js';
 import { conceptSerializer } from '../concept-serializer.js';
 import { InvalidInputError } from '../errors.js';
@@ -99,6 +99,42 @@ function collectQuads(
   return quads;
 }
 
+// Compacting the whole corpus in one jsonld.js pass is superlinear — the
+// ISO 10303-2 aggregate (7.3k concepts, ~150k quads) spent over an hour in
+// jsonld.compact. The context is prefix-only, so term selection cannot
+// interact across nodes: compacting each concept separately and assembling
+// a single @graph produces the same compact document at linear cost.
+async function writeJsonldCorpus(
+  concepts: readonly Concept[],
+  options: EmitOutputSetOptions,
+): Promise<string> {
+  const context = defaultJsonldContext();
+  const nodes: Record<string, unknown>[] = [];
+  const seen = new Set<string>();
+  for (const concept of concepts) {
+    const doc = JSON.parse(
+      await writeJsonld(collectQuads([concept], options), { context }),
+    ) as Record<string, unknown>;
+    const graph = doc['@graph'];
+    const emitted = Array.isArray(graph)
+      ? (graph as Record<string, unknown>[])
+      : [Object.fromEntries(
+          Object.entries(doc).filter(([k]) => k !== '@context'),
+        )];
+    // conceptToQuads mints blank labels from the model, so identical
+    // concept content reuses the same labels — the single-pass compaction
+    // merges them into one node; dedupe keeps that semantics.
+    for (const node of emitted) {
+      const key = JSON.stringify(node);
+      if (!seen.has(key)) {
+        seen.add(key);
+        nodes.push(node);
+      }
+    }
+  }
+  return JSON.stringify({ '@context': context, '@graph': nodes }, null, 2);
+}
+
 /**
  * Aggregate output set: one document per requested format, keyed by
  * format name. Filenames follow `{registerId}.{ext}`.
@@ -112,8 +148,10 @@ export async function emitOutputSet(
 
   const out: OutputSet = {};
 
-  // Shared quad collection for the RDF projections (single model walk).
-  const needsQuads = formats.includes('turtle') || formats.includes('jsonld');
+  // Shared quad collection for the Turtle projection (single model walk).
+  // JSON-LD compacts per concept and collects its own quads, so a
+  // whole-corpus quad array is never retained for it.
+  const needsQuads = formats.includes('turtle');
   const quads = needsQuads ? collectQuads(concepts, options) : [];
 
   for (const format of formats) {
@@ -122,7 +160,7 @@ export async function emitOutputSet(
         out.turtle = await writeTurtle(quads, { prefixes: { ...PREFIXES } });
         break;
       case 'jsonld':
-        out.jsonld = await writeJsonld(quads);
+        out.jsonld = await writeJsonldCorpus(concepts, options);
         break;
       case 'tbx':
         out.tbx = conceptsToTbx(concepts, { registerId: options.registerId });

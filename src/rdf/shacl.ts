@@ -85,7 +85,7 @@ const SH_NS = 'http://www.w3.org/ns/shacl#';
 // are ignored by the validator.
 function stripSparqlConstraints(dataset: unknown): unknown {
   const ds = dataset as { match: (s?: unknown, p?: unknown, o?: unknown) => Iterable<{ predicate: unknown }> };
-  const sparqlPredicate = FACTORY.namedNode(`${SH_NS}sparql`);
+  const sparqlPredicate = dataModel.namedNode(`${SH_NS}sparql`);
   const keep: unknown[] = [];
   for (const q of ds.match()) {
     const { predicate } = q as { predicate: unknown };

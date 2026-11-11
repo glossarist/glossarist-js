@@ -71,6 +71,31 @@ export async function loadShapes({ shapesPath = SHAPES_PATH }: { shapesPath?: st
   return dataset;
 }
 
+const SH_NS = 'http://www.w3.org/ns/shacl#';
+
+// Strips SPARQL-based constraints (sh:sparql [...]) from a shapes
+// dataset. rdf-validate-shacl has no SPARQL engine and THROWS
+// ("Cannot find validator for constraint component
+// sh:SPARQLConstraintComponent") when a shape carries one; the
+// concept-model shapes use SPARQL constraints for checks like the
+// ISO 704 extensional-definition completeness (concept-model
+// v3.2.0), which the Ruby SHACL toolchain executes — the JS side
+// degrades to skipping them rather than failing the whole
+// validation. Orphaned blank-node subtrees become unreferenced and
+// are ignored by the validator.
+function stripSparqlConstraints(dataset: unknown): unknown {
+  const ds = dataset as { match: (s?: unknown, p?: unknown, o?: unknown) => Iterable<{ predicate: unknown }> };
+  const sparqlPredicate = FACTORY.namedNode(`${SH_NS}sparql`);
+  const keep: unknown[] = [];
+  for (const q of ds.match()) {
+    const { predicate } = q as { predicate: unknown };
+    const isSparql = typeof (predicate as { equals?: unknown })?.equals === 'function'
+      && (predicate as { equals: (t: unknown) => boolean }).equals(sparqlPredicate);
+    if (!isSparql) keep.push(q);
+  }
+  return quadsToDataset(keep);
+}
+
 // Validates a single RDFJS Dataset against the concept-model SHACL shapes.
 // Returns the underlying ValidationReport from rdf-validate-shacl.
 //
@@ -83,7 +108,7 @@ export async function loadShapes({ shapesPath = SHAPES_PATH }: { shapesPath?: st
 // pass a custom factory. Callers still control Dataset creation via
 // quadsToDataset below.
 export async function validateShacl(dataDataset: unknown, { shapes, shapesPath }: { shapes?: unknown; shapesPath?: string } = {}) {
-  const shapesDataset = shapes ?? await loadShapes({ shapesPath });
+  const shapesDataset = stripSparqlConstraints(shapes ?? await loadShapes({ shapesPath }));
   const validator = new ShaclValidatorCtor(shapesDataset as never);
   return validator.validate(dataDataset);
 }

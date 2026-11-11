@@ -81,6 +81,47 @@ gloss:ConceptCollection a owl:Class ;
     Corresponds to ManagedConceptCollection in glossarist-ruby.
   """@en .
 
+gloss:ConceptSystem a owl:Class ;
+  rdfs:subClassOf skos:Collection ;
+  rdfs:label "Concept System"@en ;
+  rdfs:comment """
+    A structured set of concepts established according to the
+    relations between them, each concept being determined by its
+    position in the set (ISO 12620 A.7.1).
+
+    Promotes the previously-implicit concept system to a first-class
+    entity. Lives per-file at concept-systems/<id>.yaml. See
+    docs/design/concept-systems.md.
+  """@en .
+
+gloss:ConceptSystemType a owl:Class ;
+  rdfs:label "Concept System Type"@en ;
+  rdfs:comment "ISO 12620 A.7.1 concept system type: generic | partitive | sequential | associative | mixed."@en .
+
+gloss:hasSystemType a owl:ObjectProperty ;
+  rdfs:domain gloss:ConceptSystem ;
+  rdfs:range skos:Concept ;
+  rdfs:label "has system type"@en ;
+  rdfs:comment "The ISO 12620 A.7.1 type of the concept system."@en .
+
+gloss:hasSystemMember a owl:ObjectProperty ;
+  rdfs:domain gloss:ConceptSystem ;
+  rdfs:range gloss:ConceptRef ;
+  rdfs:label "has system member"@en ;
+  rdfs:comment "A concept in this concept system."@en .
+
+gloss:hasHyperedge a owl:ObjectProperty ;
+  rdfs:domain gloss:ConceptSystem ;
+  rdfs:range gloss:AbstractHyperedge ;
+  rdfs:label "has hyperedge"@en ;
+  rdfs:comment "An n-ary hyperedge belonging to this concept system."@en .
+
+gloss:hasRootConcept a owl:ObjectProperty ;
+  rdfs:domain gloss:ConceptSystem ;
+  rdfs:range gloss:ConceptRef ;
+  rdfs:label "has root concept"@en ;
+  rdfs:comment "A top-level concept in this system (no superordinate)."@en .
+
 # ── Localization Layer ───────────────────────────────────────────────────
 
 gloss:LocalizedConcept a owl:Class ;
@@ -192,45 +233,107 @@ gloss:Reference a owl:Class ;
 gloss:RelatedConcept a owl:Class ;
   rdfs:label "Related Concept"@en ;
   rdfs:comment """
-    A concept with a typed relationship (deprecates, broader, equivalent, etc.).
-    Binary: one source concept, one target concept via a ConceptRef.
-    For one-to-many partitive decompositions with plurality markers or
-    open/closed enumeration, use gloss:PartitiveHyperedge.
+    A concept with a typed relationship (deprecates, broader,
+    equivalent, etc.). Binary: one source concept, one target
+    concept via a ConceptRef.
+
+    For one-to-many partitive decompositions (ISO 704 rake), use
+    gloss:PartitiveRelation. For ExternalConcept resolution, use
+    gloss:provides / gloss:providedBy.
   """@en .
 
-gloss:PartitiveHyperedge a owl:Class ;
-  rdfs:label "Partitive Hyperedge"@en ;
+gloss:PartitiveRelation a owl:Class ;
+  rdfs:label "Partitive Relation"@en ;
   rdfs:comment """
-    A one-to-many partitive decomposition: one comprehensive (whole)
-    concept related to one or more parts as a SINGLE relationship.
+    ISO 704 / ISO 1087-1 / ISO 12620 partitive relation. Connects
+    a comprehensive concept (superordinate concept partitive) to
+    two or more partitive concepts (subordinate concepts
+    partitive) which fitted together constitute the comprehensive.
 
-    Used when the source diagram depicts a partitive rake whose
-    membership or notation is jointly significant — i.e. the
-    decomposition cannot be faithfully split into binary
-    RelatedConcept edges without losing invariants (which
-    comprehensive a part belongs to, the plurality of the rake,
-    the completeness of the enumeration).
+    Shown as a rake or bracket in source diagrams. All partitives
+    within one relation are coordinate concepts (ISO 12620): they
+    share the comprehensive AND the criterion of subdivision.
 
-    Independent of gloss:hasRelatedConcept. A concept may have both
-    binary related entries and partitive hyperedges.
+    Glossarist extensions beyond ISO notation:
+      - criterion as structured multilingual data
+      - Per-member presence + count (ISO 704:2022 MECE decomposition
+        of the diagram line notation: required/optional ×
+        exactly_one/at_least_one/multiple)
+      - is_delimiting (ISO 704 delimiting part, bold 3x-width line)
+
+    Distinct from binary has_part / is_part_of edges, which express
+    pairwise part-of assertions without completeness claims.
+
+    Stored per-file at relations/<comprehensive-id>/<slug>.yaml —
+    see docs/design/relations-as-files.md.
   """@en .
 
-gloss:PartitiveEnumeration a owl:Class ;
-  rdfs:label "Partitive Enumeration"@en ;
+gloss:PartitiveMember a owl:Class ;
+  rdfs:label "Partitive Member"@en ;
   rdfs:comment """
-    Whether the parts array of a PartitiveHyperedge constitutes the
-    COMPLETE decomposition of the comprehensive (closed) or only a
-    PARTIAL one (open). Orthogonal to PluralityMarker.
+    One member of a PartitiveRelation — a partitive concept (via
+    ConceptRef) plus ISO 704:2022 presence, count, and delimiting
+    metadata. presence + count decompose the line notation: presence
+    (required/optional) encodes the line style (solid/dashed), count
+    (exactly_one/at_least_one/multiple) encodes the line count.
+    is_delimiting is orthogonal: a delimiting part behaves like a
+    delimiting characteristic, distinguishing the comprehensive from
+    coordinate concepts (ISO 704 bold 3x-width line).
   """@en .
 
-gloss:PluralityMarker a owl:Class ;
-  rdfs:label "Plurality Marker"@en ;
+gloss:ConceptSystemMember a owl:Class ;
+  rdfs:label "Concept System Member"@en ;
   rdfs:comment """
-    Diagram notation flags that travel with a PartitiveHyperedge so
-    the rendering layer can reproduce the source diagram's notation
-    (close-set double line, dashed line). Originates from VIM
-    (International Vocabulary of Metrology) concept-relationship
-    diagrams. Orthogonal to PartitiveEnumeration.
+    Abstract base shape for members of any n-ary concept-system
+    relation (PartitiveMember, GenericMember, future AssociativeMember).
+    Carries the shared MECE dimensions: presence (required/optional),
+    count (exactly_one/at_least_one/multiple), is_delimiting (boolean).
+
+    The three dimensions are orthogonal. The combination (optional,
+    at_least_one) is invalid and collapses to (optional, multiple).
+
+    See docs/design/abstract-nary-relation.md for the rationale.
+  """@en .
+
+gloss:AbstractNaryRelation a owl:Class ;
+  rdfs:label "Abstract N-ary Relation"@en ;
+  rdfs:comment """
+    Abstract base shape for all n-ary concept-system relations.
+    Declares the shared fields: comprehensive, members[2..*],
+    completeness, criterion, sources, notes, status.
+
+    Concrete leaves: PartitiveRelation, GenericRelation, future
+    AssociativeRelation / SequentialRelation. See
+    docs/design/abstract-nary-relation.md.
+  """@en .
+
+gloss:GenericRelation a owl:Class ;
+  rdfs:label "Generic Relation"@en ;
+  rdfs:comment """
+    ISO 704 / ISO 1087-1 / ISO 12620 generic relation. Connects
+    a comprehensive concept (the genus) to two or more specific
+    concepts (the species) which together constitute a decomposition
+    by some criterion of subdivision.
+
+    Shown as a rake or bracket in source diagrams (ISO 704 §5.5.4.1).
+    All species within one relation are coordinate concepts.
+
+    Distinct from binary broader_generic / narrower_generic edges.
+    A single species should be expressed as a binary edge, not a
+    GenericRelation.
+
+    Justified by OIML V 2-200:2010 evidence (~8 generic hyperedges,
+    several with 6+ criterion groups). See docs/design/generic-relation.md.
+
+    Stored per-file at relations/<comprehensive-id>/<slug>.yaml.
+  """@en .
+
+gloss:GenericMember a owl:Class ;
+  rdfs:label "Generic Member"@en ;
+  rdfs:comment """
+    One member of a GenericRelation — a specific concept (species)
+    plus ISO 704:2022 presence, count, and delimiting metadata.
+    Same MECE shape as PartitiveMember.
   """@en .
 
 gloss:DesignationRelationship a owl:Class ;
@@ -352,35 +455,128 @@ gloss:hasRelatedConcept a owl:ObjectProperty ;
   rdfs:label "has related concept"@en ;
   rdfs:comment "DATA: Typed binary semantic relationship — applicable at concept and localization levels."@en .
 
-gloss:hasPartitiveHyperedge a owl:ObjectProperty ;
+gloss:hasPartitiveRelation a owl:ObjectProperty ;
   rdfs:domain gloss:Concept ;
-  rdfs:range gloss:PartitiveHyperedge ;
-  rdfs:label "has partitive hyperedge"@en ;
-  rdfs:comment "DATA: One-to-many partitive decomposition on a managed concept. Concept-level only — hyperedges are not localized."@en .
+  rdfs:range gloss:PartitiveRelation ;
+  rdfs:label "has partitive relation"@en ;
+  rdfs:comment "DATA: ISO 704 partitive relation on a managed concept. Concept-level only — relations are not localized. Per-file storage under relations/<id>/."@en .
+
+gloss:hasGenericRelation a owl:ObjectProperty ;
+  rdfs:domain gloss:Concept ;
+  rdfs:range gloss:GenericRelation ;
+  rdfs:label "has generic relation"@en ;
+  rdfs:comment "DATA: ISO 704 §5.5.4.1 generic relation on a managed concept. Concept-level only. Per-file storage under relations/<id>/."@en .
+
+gloss:hasGeneric a owl:ObjectProperty ;
+  rdfs:domain gloss:GenericRelation ;
+  rdfs:range gloss:GenericMember ;
+  rdfs:label "has generic"@en ;
+  rdfs:comment "A generic member (species) of a GenericRelation."@en .
+
+gloss:hasMember a owl:ObjectProperty ;
+  rdfs:domain [
+    a owl:Class ;
+    owl:unionOf ( gloss:PartitiveRelation gloss:GenericRelation )
+  ] ;
+  rdfs:range gloss:ConceptSystemMember ;
+  rdfs:label "has member"@en ;
+  rdfs:comment "DATA: Uniform wire-name for any n-ary relation member. Type-discriminated on the relation."@en .
+
+gloss:hasDefinitionType a owl:ObjectProperty ;
+  rdfs:domain gloss:DetailedDefinition ;
+  rdfs:range skos:Concept ;
+  rdfs:label "has definition type"@en ;
+  rdfs:comment "ISO 704:2022 §5.3 definition strategy (intensional, extensional, partitive, translated). Defaults to intensional when omitted."@en .
+
+gloss:hasNote a owl:ObjectProperty ;
+  rdfs:domain [
+    a owl:Class ;
+    owl:unionOf ( gloss:Concept gloss:LocalizedConcept gloss:AbstractNaryRelation )
+  ] ;
+  rdfs:range rdf:langString ;
+  rdfs:label "has note"@en ;
+  rdfs:comment "Free-form localized note. Used on concepts, localizations, and (new) n-ary relations."@en .
 
 gloss:comprehensive a owl:ObjectProperty ;
-  rdfs:domain gloss:PartitiveHyperedge ;
+  rdfs:domain [
+    a owl:Class ;
+    owl:unionOf ( gloss:PartitiveRelation gloss:GenericRelation )
+  ] ;
   rdfs:range gloss:ConceptRef ;
   rdfs:label "comprehensive"@en ;
-  rdfs:comment "The whole concept that owns the parts in a partitive hyperedge. Exactly one per hyperedge."@en .
+  rdfs:comment "The superordinate concept of an n-ary rake. For PartitiveRelation: the whole; for GenericRelation: the genus. Exactly one per relation."@en .
 
-gloss:hasPart a owl:ObjectProperty ;
-  rdfs:domain gloss:PartitiveHyperedge ;
+gloss:hasPartitive a owl:ObjectProperty ;
+  rdfs:domain gloss:PartitiveRelation ;
+  rdfs:range gloss:PartitiveMember ;
+  rdfs:label "has partitive"@en ;
+  rdfs:comment "A partitive member of a relation. ISO 704 requires two or more. Equivalent to gloss:hasMember on the Partitive wire type."@en .
+
+gloss:ref a owl:ObjectProperty ;
+  rdfs:domain gloss:ConceptSystemMember ;
   rdfs:range gloss:ConceptRef ;
-  rdfs:label "has part"@en ;
-  rdfs:comment "A partitive member of a hyperedge. A hyperedge has one or more parts."@en .
+  rdfs:label "ref"@en ;
+  rdfs:comment "The ConceptRef identifying the target concept of an n-ary member."@en .
 
-gloss:enumeration a owl:ObjectProperty ;
-  rdfs:domain gloss:PartitiveHyperedge ;
-  rdfs:range gloss:PartitiveEnumeration ;
-  rdfs:label "enumeration"@en ;
-  rdfs:comment "Whether the encoded parts constitute a complete (closed) or partial (open) decomposition."@en .
+gloss:presence a owl:ObjectProperty ;
+  rdfs:domain gloss:ConceptSystemMember ;
+  rdfs:range skos:Concept ;
+  rdfs:label "presence"@en ;
+  rdfs:comment "ISO 704:2022 member presence: required (solid line) or optional (dashed line). Whether the member must exist or may exist."@en .
 
-gloss:hasPluralityMarker a owl:ObjectProperty ;
-  rdfs:domain gloss:PartitiveHyperedge ;
-  rdfs:range gloss:PluralityMarker ;
-  rdfs:label "has plurality marker"@en ;
-  rdfs:comment "Diagram notation flag on a hyperedge (double for close-set double line, dashed for uncertainty)."@en .
+gloss:count a owl:ObjectProperty ;
+  rdfs:domain gloss:ConceptSystemMember ;
+  rdfs:range skos:Concept ;
+  rdfs:label "count"@en ;
+  rdfs:comment "ISO 704:2022 member count: exactly_one (single line), at_least_one (1 solid + 1 dashed), multiple (double line)."@en .
+
+gloss:isDelimiting a owl:DatatypeProperty ;
+  rdfs:domain gloss:ConceptSystemMember ;
+  rdfs:range xsd:boolean ;
+  rdfs:label "is delimiting"@en ;
+  rdfs:comment "ISO 704 delimiting member (bold 3x-width line). When true, this member behaves like a delimiting characteristic distinguishing the comprehensive from coordinate concepts."@en .
+
+gloss:completeness a owl:ObjectProperty ;
+  rdfs:domain gloss:PartitiveRelation ;
+  rdfs:range skos:Concept ;
+  rdfs:label "completeness"@en ;
+  rdfs:comment "Whether the encoded partitives fitted together constitute the comprehensive (complete) or only some of it (partial)."@en .
+
+gloss:criterion a owl:DatatypeProperty ;
+  rdfs:domain gloss:PartitiveRelation ;
+  rdfs:range rdf:langString ;
+  rdfs:label "criterion"@en ;
+  rdfs:comment "ISO 12620 coordinate-concept coherence: the subdivision criterion for an n-ary hyperedge."@en .
+
+gloss:characteristic a owl:DatatypeProperty ;
+  rdfs:domain gloss:GenericMember ;
+  rdfs:range rdf:langString ;
+  rdfs:label "characteristic"@en ;
+  rdfs:comment """
+    ISO 704:2022 §5.5.4.2.1 delimiting characteristic — the
+    intension-difference that distinguishes this species from
+    coordinate concepts within the same generic rake.
+
+    Example (computer mouse by movement detection):
+      mechanical mouse:     'detecting movement by means of rollers'
+      optomechanical mouse: 'detecting movement by means of rollers and light sensors'
+      optical mouse:        'detecting movement by means of light sensors'
+
+    Without characteristic text, a rake is just a list of narrower
+    concepts, not a coordinated decomposition per §5.5.4.2.1.
+  """@en .
+
+
+gloss:provides a owl:ObjectProperty ;
+  rdfs:subPropertyOf gloss:hasRelatedConcept ;
+  rdfs:label "provides"@en ;
+  rdfs:comment "The subject concept provides substance for the object external concept."@en .
+
+gloss:providedBy a owl:ObjectProperty ;
+  rdfs:subPropertyOf gloss:hasRelatedConcept ;
+  rdfs:label "provided by"@en ;
+  rdfs:comment "The subject external concept is provided by the object concept."@en ;
+  owl:inverseOf gloss:provides .
 
 gloss:hasDate a owl:ObjectProperty ;
   rdfs:domain [
@@ -700,12 +896,6 @@ gloss:relationshipContent a owl:DatatypeProperty ;
   rdfs:label "relationship content"@en ;
   rdfs:comment "Free-text description of the relationship."@en .
 
-gloss:hyperedgeContent a owl:DatatypeProperty ;
-  rdfs:domain gloss:PartitiveHyperedge ;
-  rdfs:range xsd:string ;
-  rdfs:label "hyperedge content"@en ;
-  rdfs:comment "Free-form text associated with a PartitiveHyperedge, e.g. a diagram caption or label."@en .
-
 gloss:relationshipRef a owl:ObjectProperty ;
   rdfs:domain gloss:RelatedConcept ;
   rdfs:range gloss:ConceptRef ;
@@ -745,10 +935,22 @@ gloss:refType a owl:DatatypeProperty ;
   rdfs:comment "Type qualifier: local, designation, urn, domain."@en .
 
 gloss:urn a owl:DatatypeProperty ;
-  rdfs:domain gloss:Reference ;
+  rdfs:domain [
+    a owl:Class ;
+    owl:unionOf ( gloss:Reference gloss:NonConceptEntity ) ;
+  ] ;
   rdfs:range xsd:anyURI ;
   rdfs:label "URN"@en ;
-  rdfs:comment "Direct URN reference to the target concept."@en .
+  rdfs:comment """
+    Direct URN reference.
+
+    On gloss:Reference: a URN identifying the target concept for
+    cross-dataset resolution.
+    On gloss:NonConceptEntity: an optional canonical URN for cross-dataset
+    figure/table/formula resolution. Enables {{fig:urn:...}} inline
+    mentions to route via the deployment's uriPatterns — same cascade
+    as concept URN resolution.
+  """@en .
 
 gloss:term a owl:DatatypeProperty ;
   rdfs:domain gloss:Reference ;
@@ -892,6 +1094,35 @@ gloss:conceptRefText a owl:DatatypeProperty ;
   rdfs:range xsd:string ;
   rdfs:label "concept ref text"@en ;
   rdfs:comment "Target designation text for lexical relationships (e.g. close_match, abbreviated_form_for)."@en .
+
+gloss:external a owl:DatatypeProperty ;
+  rdfs:domain gloss:ConceptRef ;
+  rdfs:range xsd:boolean ;
+  rdfs:label "external"@en ;
+  rdfs:comment """
+    When true, this ConceptRef references a parenthetical/external
+    concept — one taken as a primitive in the current analysis but
+    not formally defined in this dataset. The renderer shows the
+    text in parentheses: (text). No separate concept file required.
+
+    Mutually exclusive with source/id. Used in hyperedge members and
+    binary relationships for ISO 704:2022 parenthetic-term notation.
+  """@en .
+
+gloss:ellipsis a owl:DatatypeProperty ;
+  rdfs:domain gloss:ConceptRef ;
+  rdfs:range xsd:boolean ;
+  rdfs:label "ellipsis"@en ;
+  rdfs:comment """
+    When true, this ConceptRef represents a known gap — a member
+    position that exists but whose target is unidentified. The
+    renderer shows '...' at this position.
+
+    Mutually exclusive with all other fields. Used in sequential
+    hyperedges where gap position matters, and for hyperedges where
+    the author wants to explicitly mark that more members exist
+    beyond completeness: partial.
+  """@en .
 
 # ── CustomLocality ─────────────────────────────────────────────────────────
 
@@ -1304,7 +1535,7 @@ gloss:sectionOrdering a owl:ObjectProperty ;
   rdfs:label "section ordering"@en ;
   rdfs:comment "Per-section ordering override; if absent, inherits dataset default."@en .
 
-# ── Non-Verbal Entities (ISO 10241-1 §6.5) ──────────────────────────────
+# ── Non-Concept Entities (ISO 10241-1 §6.5) ───────────────────────────
 
 gloss:NonVerbalEntity a owl:Class ;
   rdfs:label "Non-Verbal Entity"@en ;
@@ -1314,17 +1545,29 @@ gloss:NonVerbalEntity a owl:Class ;
     payload: caption, description, alt, sources.
   """@en .
 
-gloss:SharedNonVerbalEntity a owl:Class ;
+gloss:NonConceptEntity a owl:Class ;
   rdfs:subClassOf gloss:NonVerbalEntity ;
-  rdfs:label "Shared Non-Verbal Entity"@en ;
+  rdfs:label "Non-Concept Entity"@en ;
   rdfs:comment """
-    A non-verbal entity that has stable dataset-wide identity. Figure,
-    Table, and Formula inherit from this. Distinct from NonVerbRep,
-    which is concept-local and positional.
+    A dataset-shared entity that is NOT a concept: Figure, Table,
+    Formula. Has stable dataset-wide identity. Distinct from
+    NonVerbRep (which is a concept-local non-verbal designation) and
+    from NonVerbalRepresentation (which is a designation modality of
+    a concept).
+
+    A figure illustrates a concept; it does not designate it. Calling
+    it "non-verbal" was a category error — non-verbal refers to the
+    modality of expression, not the ontological category. These are
+    non-concept entities that happen to use visual/tabular/formulaic
+    modality.
   """@en .
 
+# Deprecated alias — kept for backward compat. New code should use
+# gloss:NonConceptEntity.
+gloss:SharedNonVerbalEntity owl:equivalentClass gloss:NonConceptEntity .
+
 gloss:Figure a owl:Class ;
-  rdfs:subClassOf gloss:SharedNonVerbalEntity ;
+  rdfs:subClassOf gloss:NonConceptEntity ;
   rdfs:label "Figure"@en ;
   rdfs:comment """
     A dataset-level figure entity with localized caption/alt and
@@ -1332,12 +1575,12 @@ gloss:Figure a owl:Class ;
   """@en .
 
 gloss:Table a owl:Class ;
-  rdfs:subClassOf gloss:SharedNonVerbalEntity ;
+  rdfs:subClassOf gloss:NonConceptEntity ;
   rdfs:label "Table"@en ;
   rdfs:comment "A dataset-level table entity with localized content."@en .
 
 gloss:Formula a owl:Class ;
-  rdfs:subClassOf gloss:SharedNonVerbalEntity ;
+  rdfs:subClassOf gloss:NonConceptEntity ;
   rdfs:label "Formula"@en ;
   rdfs:comment "A dataset-level formula entity with localized expression."@en .
 

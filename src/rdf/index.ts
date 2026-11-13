@@ -50,6 +50,8 @@ export {
   writeTurtle,
   writeNTriples,
   writeJsonld,
+  writeJsonldDirect,
+  writeJsonldReference,
   sortQuads,
 } from './document-writer.js';
 export { writeTurtleSync } from './write-turtle-sync.js';
